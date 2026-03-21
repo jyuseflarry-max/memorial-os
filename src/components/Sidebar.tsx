@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   RadioTower,
@@ -13,47 +14,129 @@ import {
   Wifi,
   WifiOff,
   Loader2,
+  ChevronDown,
+  Dumbbell,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 
-const NAV_ITEMS = [
-  { label: "Command Center",   href: "/",          icon: RadioTower  },
-  { label: "Drill Vault",      href: "/drill-vault", icon: Layers    },
-  { label: "Player Bio-Stats", href: "/players",   icon: Users       },
-  { label: "Practice Calendar",href: "/calendar",  icon: Calendar    },
-  { label: "Session Planner",  href: "/planner",   icon: CalendarDays},
+// ── Nav structure ─────────────────────────────────────────────────────────
+
+const NAV_GROUPS = [
+  {
+    label: "Practice",
+    icon: Dumbbell,
+    items: [
+      { label: "Command Center",    href: "/",            icon: RadioTower   },
+      { label: "Practice Calendar", href: "/calendar",    icon: Calendar     },
+      { label: "Session Planner",   href: "/planner",     icon: CalendarDays },
+      { label: "Drill Vault",       href: "/drill-vault", icon: Layers       },
+      { label: "Player Bio-Stats",  href: "/players",     icon: Users        },
+    ],
+  },
 ];
+
+const STAFF_ITEMS = [
+  { label: "Manage Roster", href: "/admin/roster", icon: UserCog },
+];
+
+// ── Collapsible nav group ────────────────────────────────────────────────
+
+function NavGroup({
+  label,
+  icon: GroupIcon,
+  items,
+  pathname,
+}: {
+  label: string;
+  icon: React.ElementType;
+  items: { label: string; href: string; icon: React.ElementType }[];
+  pathname: string;
+}) {
+  const hasActive = items.some((i) => i.href === pathname);
+  const [open, setOpen] = useState(true); // open by default
+
+  return (
+    <div>
+      {/* Group header */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors text-gray-500 hover:text-gray-300 hover:bg-gray-800/60"
+      >
+        <div className="flex items-center gap-2">
+          <GroupIcon size={13} className={hasActive ? "text-mustang-red" : "text-gray-600"} />
+          <span className={hasActive ? "text-mustang-red" : ""}>{label}</span>
+        </div>
+        <ChevronDown
+          size={13}
+          className={`transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"}`}
+        />
+      </button>
+
+      {/* Items */}
+      {open && (
+        <div className="mt-0.5 ml-2 pl-3 border-l border-gray-800 flex flex-col gap-0.5">
+          {items.map(({ label, href, icon: Icon }) => {
+            const active = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-mustang-red/15 text-mustang-red"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <Icon size={16} className={active ? "text-mustang-red" : "text-gray-500"} />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { dbConnected, dbError, loading } = usePlayers();
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0">
+    <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0 print:hidden">
       {/* Logo / Wordmark */}
-      <div className="flex items-center gap-3 mb-10 px-2">
+      <div className="flex items-center gap-3 mb-8 px-2">
         <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          <Image
-            src="/mustang-logo.png"
-            alt="Memorial Mustangs"
-            width={32}
-            height={32}
-            priority
-          />
+          <Image src="/mustang-logo.png" alt="Memorial Mustangs" width={32} height={32} priority />
         </div>
         <div>
-          <p className="text-white font-semibold text-sm leading-tight tracking-wide">
-            Memorial
-          </p>
-          <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">
-            Basketball OS
-          </p>
+          <p className="text-white font-semibold text-sm leading-tight tracking-wide">Memorial</p>
+          <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">Basketball OS</p>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+      {/* Collapsible nav groups */}
+      <nav className="flex flex-col gap-3">
+        {NAV_GROUPS.map((group) => (
+          <NavGroup
+            key={group.label}
+            label={group.label}
+            icon={group.icon}
+            items={group.items}
+            pathname={pathname}
+          />
+        ))}
+      </nav>
+
+      {/* Staff Only */}
+      <div className="mt-4 pt-4 border-t border-gray-800">
+        <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest px-3 mb-1">
+          Staff Only
+        </p>
+        {STAFF_ITEMS.map(({ label, href, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
@@ -65,60 +148,27 @@ export default function Sidebar() {
                   : "text-gray-400 hover:bg-gray-800 hover:text-white"
               }`}
             >
-              <Icon
-                size={18}
-                className={active ? "text-mustang-red" : "text-gray-500"}
-              />
+              <Icon size={18} className={active ? "text-mustang-red" : "text-gray-500"} />
               {label}
             </Link>
           );
         })}
-      </nav>
-
-      {/* Staff Only */}
-      <div className="mt-6 pt-5 border-t border-gray-800">
-        <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest px-3 mb-1">
-          Staff Only
-        </p>
-        {(() => {
-          const href = "/admin/roster";
-          const active = pathname === href;
-          return (
-            <Link
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? "bg-mustang-red/15 text-mustang-red"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
-              }`}
-            >
-              <UserCog
-                size={18}
-                className={active ? "text-mustang-red" : "text-gray-500"}
-              />
-              Manage Roster
-            </Link>
-          );
-        })()}
       </div>
 
       {/* Footer — live DB status */}
       <div className="mt-auto px-2 pt-6 border-t border-gray-800 flex flex-col gap-2">
         {loading && !dbConnected ? (
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500">
-            <Loader2 size={10} className="animate-spin" />
-            CONNECTING…
+            <Loader2 size={10} className="animate-spin" /> CONNECTING…
           </div>
         ) : dbConnected ? (
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-green-400">
-            <Wifi size={10} />
-            DB CONNECTED
+            <Wifi size={10} /> DB CONNECTED
           </div>
         ) : (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-red-400">
-              <WifiOff size={10} />
-              DB OFFLINE
+              <WifiOff size={10} /> DB OFFLINE
             </div>
             {dbError && (
               <p className="text-[9px] font-mono text-red-500/70 leading-tight break-words">
