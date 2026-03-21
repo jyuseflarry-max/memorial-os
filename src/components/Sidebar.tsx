@@ -8,6 +8,7 @@ import {
   Layers,
   Users,
   CalendarDays,
+  Calendar,
   UserCog,
   Wifi,
   WifiOff,
@@ -16,10 +17,11 @@ import {
 import { usePlayers } from "@/context/PlayerContext";
 
 const NAV_ITEMS = [
-  { label: "Command Center", href: "/", icon: RadioTower },
-  { label: "Drill Vault", href: "/drill-vault", icon: Layers },
-  { label: "Player Bio-Stats", href: "/players", icon: Users },
-  { label: "Session Planner", href: "/planner", icon: CalendarDays },
+  { label: "Command Center",   href: "/",          icon: RadioTower  },
+  { label: "Drill Vault",      href: "/drill-vault", icon: Layers    },
+  { label: "Player Bio-Stats", href: "/players",   icon: Users       },
+  { label: "Practice Calendar",href: "/calendar",  icon: Calendar    },
+  { label: "Session Planner",  href: "/planner",   icon: CalendarDays},
 ];
 
 export default function Sidebar() {
