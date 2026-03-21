@@ -8,7 +8,11 @@ import {
   Users,
   CalendarDays,
   UserCog,
+  Wifi,
+  WifiOff,
+  Loader2,
 } from "lucide-react";
+import { usePlayers } from "@/context/PlayerContext";
 
 const NAV_ITEMS = [
   { label: "Command Center", href: "/", icon: RadioTower },
@@ -19,6 +23,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { dbConnected, dbError, loading } = usePlayers();
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0">
@@ -88,11 +93,31 @@ export default function Sidebar() {
         })()}
       </div>
 
-      {/* Footer */}
-      <div className="mt-auto px-2 pt-6 border-t border-gray-800">
-        <p className="text-gray-600 text-xs font-mono">
-          SYSTEM STATUS: <span className="text-green-400">NOMINAL</span>
-        </p>
+      {/* Footer — live DB status */}
+      <div className="mt-auto px-2 pt-6 border-t border-gray-800 flex flex-col gap-2">
+        {loading && !dbConnected ? (
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500">
+            <Loader2 size={10} className="animate-spin" />
+            CONNECTING…
+          </div>
+        ) : dbConnected ? (
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-green-400">
+            <Wifi size={10} />
+            DB CONNECTED
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-red-400">
+              <WifiOff size={10} />
+              DB OFFLINE
+            </div>
+            {dbError && (
+              <p className="text-[9px] font-mono text-red-500/70 leading-tight break-words">
+                {dbError.slice(0, 60)}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );

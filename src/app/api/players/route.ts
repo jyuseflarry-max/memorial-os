@@ -1,0 +1,39 @@
+import { NextRequest } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase/server";
+
+/** GET /api/players — list all players ordered by jersey number */
+export async function GET() {
+  try {
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .order("jersey_number", { ascending: true });
+
+    if (error) throw error;
+    return Response.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+/** POST /api/players — insert a single player, return the created row */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const supabase = getSupabaseServer();
+
+    const { data, error } = await supabase
+      .from("players")
+      .insert([{ ...body, updated_at: new Date().toISOString() }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return Response.json(data, { status: 201 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}

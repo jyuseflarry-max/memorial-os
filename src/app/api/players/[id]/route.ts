@@ -1,0 +1,49 @@
+import { NextRequest } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase/server";
+
+/** PATCH /api/players/[id] — partial update, returns updated row */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const supabase = getSupabaseServer();
+
+    const { data, error } = await supabase
+      .from("players")
+      .update({ ...body, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return Response.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+/** DELETE /api/players/[id] — remove player row */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = getSupabaseServer();
+
+    const { error } = await supabase
+      .from("players")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+    return new Response(null, { status: 204 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
