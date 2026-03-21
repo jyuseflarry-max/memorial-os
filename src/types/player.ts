@@ -3,14 +3,15 @@
 // Supabase SQL (run in dashboard → SQL Editor):
 //
 // CREATE TABLE players (
-//   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-//   name             TEXT        NOT NULL,
-//   jersey_number    SMALLINT    NOT NULL UNIQUE,
-//   position         TEXT        NOT NULL,
-//   status           TEXT        NOT NULL DEFAULT 'Active',
-//   titan_load       NUMERIC     NOT NULL DEFAULT 0,
+//   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+//   name              TEXT        NOT NULL,
+//   jersey_number     SMALLINT    NOT NULL UNIQUE,
+//   position          TEXT        NOT NULL,
+//   class_year        TEXT,
+//   status            TEXT        NOT NULL DEFAULT 'Active',
+//   titan_load        NUMERIC     NOT NULL DEFAULT 0,
 //   latest_vibe_score NUMERIC(3,2),
-//   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+//   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 // );
 //
 // CREATE TABLE vibe_checks (
@@ -38,6 +39,7 @@ export interface Player {
   name: string;
   jersey_number: number;
   position: string;
+  class_year?: string;
   status: PlayerStatus;
   /** Hudl Titan load units — higher means more cumulative stress */
   titan_load: number;

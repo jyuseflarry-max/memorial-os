@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MOCK_PLAYERS } from "@/lib/mock-players";
+import { usePlayers } from "@/context/PlayerContext";
 import { VibeScale, computeVibeScore } from "@/types/player";
 import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile } from "lucide-react";
 
@@ -84,6 +84,7 @@ function ScaleButtons({
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function VibeCheckPage() {
+  const { players } = usePlayers();
   const [stepIndex, setStepIndex] = useState(0);
   const [form, setForm] = useState<FormState>({
     playerId: "",
@@ -114,7 +115,7 @@ export default function VibeCheckPage() {
     setStepIndex((i) => Math.max(i - 1, 0));
   }
 
-  const selectedPlayer = MOCK_PLAYERS.find((p) => p.id === form.playerId);
+  const selectedPlayer = players.find((p) => p.id === form.playerId);
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
@@ -156,7 +157,7 @@ export default function VibeCheckPage() {
                 onChange={(e) => setForm((f) => ({ ...f, playerId: e.target.value }))}
               >
                 <option value="">— Pick your name —</option>
-                {MOCK_PLAYERS.map((p) => (
+                {players.map((p) => (
                   <option key={p.id} value={p.id}>
                     #{p.jersey_number} {p.name}
                   </option>

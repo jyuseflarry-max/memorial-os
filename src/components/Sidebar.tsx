@@ -7,6 +7,7 @@ import {
   Layers,
   Users,
   CalendarDays,
+  UserCog,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -59,6 +60,33 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Staff Only */}
+      <div className="mt-6 pt-5 border-t border-gray-800">
+        <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest px-3 mb-1">
+          Staff Only
+        </p>
+        {(() => {
+          const href = "/admin/roster";
+          const active = pathname === href;
+          return (
+            <Link
+              href={href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                active
+                  ? "bg-orange-500/15 text-orange-400"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+              }`}
+            >
+              <UserCog
+                size={18}
+                className={active ? "text-orange-400" : "text-gray-500"}
+              />
+              Manage Roster
+            </Link>
+          );
+        })()}
+      </div>
 
       {/* Footer */}
       <div className="mt-auto px-2 pt-6 border-t border-gray-800">

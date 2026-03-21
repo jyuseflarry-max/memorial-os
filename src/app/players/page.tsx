@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, ExternalLink } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_PLAYERS } from "@/lib/mock-players";
+import { usePlayers } from "@/context/PlayerContext";
 import {
   Player,
   PlayerStatus,
@@ -170,11 +170,12 @@ const FILTER_OPTIONS = ["All", "green", "yellow", "red", PlayerStatus.Out, Playe
 type FilterOption = (typeof FILTER_OPTIONS)[number];
 
 export default function PlayersPage() {
+  const { players } = usePlayers();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterOption>("All");
 
   const filtered = useMemo(() => {
-    return MOCK_PLAYERS.filter((p) => {
+    return players.filter((p) => {
       const matchesQuery =
         !query ||
         p.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -195,7 +196,7 @@ export default function PlayersPage() {
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Player Bio-Stats</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {MOCK_PLAYERS.length} ATHLETES · READINESS SNAPSHOT
+            {players.length} ATHLETES · READINESS SNAPSHOT
           </p>
         </div>
         <Link
@@ -209,7 +210,7 @@ export default function PlayersPage() {
 
       {/* Summary */}
       <div className="mb-5">
-        <SummaryChips players={MOCK_PLAYERS} />
+        <SummaryChips players={players} />
       </div>
 
       {/* Controls */}
