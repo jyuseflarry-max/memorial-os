@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Moon, Activity, Brain, Zap, Clock } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { usePlayers } from "@/context/PlayerContext";
 import {
@@ -13,47 +13,41 @@ import {
   computeReadiness,
 } from "@/types/player";
 
-// ── Traffic Light dot ─────────────────────────────────────────────────────
+// ── Vibe check row type ───────────────────────────────────────────────────
 
-const LIGHT_CONFIG: Record<
-  TrafficLight,
-  { dot: string; label: string; badge: string }
-> = {
-  green: {
-    dot: "bg-green-400 shadow-green-400/60",
-    label: "Ready",
-    badge: "text-green-400 bg-green-400/10 border-green-400/20",
-  },
-  yellow: {
-    dot: "bg-yellow-400 shadow-yellow-400/60",
-    label: "Monitor",
-    badge: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-  },
-  red: {
-    dot: "bg-red-400 shadow-red-400/60",
-    label: "At Risk",
-    badge: "text-red-400 bg-red-400/10 border-red-400/20",
-  },
+interface VibeCheckRow {
+  player_id: string;
+  sleep_hours: number;
+  soreness: number;
+  stress: number;
+  mood_energy: number;
+  vibe_score: number;
+  submitted_at: string;
+}
+
+// ── Traffic light config ──────────────────────────────────────────────────
+
+const LIGHT_CONFIG: Record<TrafficLight, { dot: string; label: string; badge: string }> = {
+  green:  { dot: "bg-green-400 shadow-green-400/60",   label: "Ready",   badge: "text-green-400 bg-green-400/10 border-green-400/20" },
+  yellow: { dot: "bg-yellow-400 shadow-yellow-400/60", label: "Monitor", badge: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+  red:    { dot: "bg-red-400 shadow-red-400/60",        label: "At Risk", badge: "text-red-400 bg-red-400/10 border-red-400/20" },
 };
 
 function TrafficDot({ light }: { light: TrafficLight }) {
-  const { dot } = LIGHT_CONFIG[light];
-  return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${dot}`} />;
+  return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${LIGHT_CONFIG[light].dot}`} />;
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<PlayerStatus, string> = {
-  [PlayerStatus.Active]: "text-gray-300 bg-gray-700 border-gray-600",
-  [PlayerStatus.Out]: "text-red-400 bg-red-400/10 border-red-400/20",
+  [PlayerStatus.Active]:     "text-gray-300 bg-gray-700 border-gray-600",
+  [PlayerStatus.Out]:        "text-red-400 bg-red-400/10 border-red-400/20",
   [PlayerStatus.Restricted]: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
 };
 
 function StatusBadge({ status }: { status: PlayerStatus }) {
   return (
-    <span
-      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[status]}`}
-    >
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[status]}`}>
       {status}
     </span>
   );
@@ -62,43 +56,76 @@ function StatusBadge({ status }: { status: PlayerStatus }) {
 // ── Readiness bar ─────────────────────────────────────────────────────────
 
 function ReadinessBar({ player }: { player: Player }) {
-  const r = computeReadiness(player);
+  const r   = computeReadiness(player);
   const pct = Math.round(r * 100);
-  const color =
-    r >= 0.65 ? "bg-green-400" : r >= 0.35 ? "bg-yellow-400" : "bg-red-400";
+  const color = r >= 0.65 ? "bg-green-400" : r >= 0.35 ? "bg-yellow-400" : "bg-red-400";
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 bg-gray-700 rounded-full h-1.5 overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs font-mono text-gray-400 w-8 text-right">{pct}%</span>
     </div>
   );
 }
 
+// ── Survey metric mini-bar ────────────────────────────────────────────────
+
+function MetricBar({
+  icon: Icon,
+  label,
+  value,
+  max = 5,
+  color,
+  invert = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  max?: number;
+  color: string;
+  invert?: boolean;
+}) {
+  // For soreness/stress, higher = worse, so we invert visually
+  const displayValue = invert ? max + 1 - value : value;
+  const pct = (displayValue / max) * 100;
+  return (
+    <div className="flex items-center gap-2">
+      <Icon size={11} className={`shrink-0 ${color}`} />
+      <span className="text-[10px] font-mono text-gray-500 w-14 shrink-0">{label}</span>
+      <div className="flex-1 bg-gray-700 rounded-full h-1 overflow-hidden">
+        <div className={`h-full rounded-full ${color.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10px] font-mono text-gray-400 w-5 text-right">{value}</span>
+    </div>
+  );
+}
+
+// ── Time-ago helper ───────────────────────────────────────────────────────
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins < 60)  return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
+
 // ── Summary chips ─────────────────────────────────────────────────────────
 
 function SummaryChips({ players }: { players: Player[] }) {
   const counts = players.reduce(
-    (acc, p) => {
-      acc[getTrafficLight(p)]++;
-      return acc;
-    },
+    (acc, p) => { acc[getTrafficLight(p)]++; return acc; },
     { green: 0, yellow: 0, red: 0 } as Record<TrafficLight, number>
   );
-
   return (
     <div className="flex gap-3 flex-wrap">
       {(["green", "yellow", "red"] as TrafficLight[]).map((light) => {
         const { label, badge } = LIGHT_CONFIG[light];
         return (
-          <div
-            key={light}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${badge}`}
-          >
+          <div key={light} className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${badge}`}>
             <TrafficDot light={light} />
             {counts[light]} {label}
           </div>
@@ -110,7 +137,7 @@ function SummaryChips({ players }: { players: Player[] }) {
 
 // ── Player card ───────────────────────────────────────────────────────────
 
-function PlayerCard({ player }: { player: Player }) {
+function PlayerCard({ player, check }: { player: Player; check: VibeCheckRow | null }) {
   const light = getTrafficLight(player);
   const { label, badge } = LIGHT_CONFIG[light];
 
@@ -119,13 +146,12 @@ function PlayerCard({ player }: { player: Player }) {
       {/* Row 1: identity + status */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          {/* Jersey bubble */}
           <div className="w-10 h-10 rounded-xl bg-gray-700 flex items-center justify-center font-bold text-white text-sm font-mono shrink-0">
             {player.jersey_number}
           </div>
           <div>
             <p className="text-white font-semibold leading-tight">{player.name}</p>
-            <p className="text-gray-500 text-xs font-mono">{player.position}</p>
+            <p className="text-gray-500 text-xs font-mono">{player.position}{player.class_year ? ` · ${player.class_year}` : ""}</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
@@ -137,7 +163,7 @@ function PlayerCard({ player }: { player: Player }) {
         </div>
       </div>
 
-      {/* Row 2: metrics */}
+      {/* Row 2: vibe + load */}
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-gray-700/40 rounded-xl px-3 py-2">
           <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-0.5">Vibe Score</p>
@@ -160,6 +186,29 @@ function PlayerCard({ player }: { player: Player }) {
         <p className="text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider">Readiness</p>
         <ReadinessBar player={player} />
       </div>
+
+      {/* Row 4: latest vibe check breakdown */}
+      {check ? (
+        <div className="border-t border-gray-700 pt-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between mb-0.5">
+            <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Latest Vibe Check</p>
+            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-600">
+              <Clock size={9} />
+              {timeAgo(check.submitted_at)}
+            </span>
+          </div>
+          <MetricBar icon={Moon}     label="Sleep"    value={check.sleep_hours} max={10} color="text-blue-400" />
+          <MetricBar icon={Activity} label="Soreness" value={check.soreness}               color="text-yellow-400" invert />
+          <MetricBar icon={Brain}    label="Stress"   value={check.stress}                 color="text-purple-400" invert />
+          <MetricBar icon={Zap}      label="Energy"   value={check.mood_energy}             color="text-green-400" />
+        </div>
+      ) : (
+        <div className="border-t border-gray-700 pt-3">
+          <p className="text-[10px] font-mono text-gray-600 uppercase tracking-wider text-center">
+            No vibe check submitted
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -171,23 +220,26 @@ type FilterOption = (typeof FILTER_OPTIONS)[number];
 
 export default function PlayersPage() {
   const { players } = usePlayers();
-  const [query, setQuery] = useState("");
+  const [query,  setQuery]  = useState("");
   const [filter, setFilter] = useState<FilterOption>("All");
+  const [checks, setChecks] = useState<Record<string, VibeCheckRow>>({});
+
+  useEffect(() => {
+    fetch("/api/vibe-checks")
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setChecks(data); })
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
-    return players.filter((p) => {
-      const matchesQuery =
-        !query ||
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.position.toLowerCase().includes(query.toLowerCase());
-      const matchesFilter =
-        filter === "All" ||
-        (filter === "green" || filter === "yellow" || filter === "red"
-          ? getTrafficLight(p) === filter
-          : p.status === filter);
-      return matchesQuery && matchesFilter;
-    }).sort((a, b) => computeReadiness(a) - computeReadiness(b)); // worst first
-  }, [query, filter]);
+    return players
+      .filter((p) => {
+        const matchesQuery  = !query || p.name.toLowerCase().includes(query.toLowerCase()) || p.position.toLowerCase().includes(query.toLowerCase());
+        const matchesFilter = filter === "All" || (["green","yellow","red"].includes(filter) ? getTrafficLight(p) === filter : p.status === filter);
+        return matchesQuery && matchesFilter;
+      })
+      .sort((a, b) => computeReadiness(a) - computeReadiness(b));
+  }, [query, filter, players]);
 
   return (
     <DashboardLayout>
@@ -215,7 +267,6 @@ export default function PlayersPage() {
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        {/* Search */}
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
@@ -226,7 +277,6 @@ export default function PlayersPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        {/* Filter pills */}
         <div className="flex gap-2 flex-wrap">
           {FILTER_OPTIONS.map((f) => (
             <button
@@ -244,7 +294,7 @@ export default function PlayersPage() {
         </div>
       </div>
 
-      {/* Cards grid */}
+      {/* Cards */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-500 font-mono text-xs">
           NO PLAYERS MATCH FILTER
@@ -252,7 +302,7 @@ export default function PlayersPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((p) => (
-            <PlayerCard key={p.id} player={p} />
+            <PlayerCard key={p.id} player={p} check={checks[p.id] ?? null} />
           ))}
         </div>
       )}
