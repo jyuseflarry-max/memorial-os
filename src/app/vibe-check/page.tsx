@@ -94,11 +94,12 @@ export default function VibeCheckPage() {
     moodEnergy: 3,
   });
   const [submittedScore, setSubmittedScore] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const step = STEPS[stepIndex];
   const surveyStep = stepIndex - 1; // 0-indexed survey progress (step 1-4 = survey)
 
-  function next() {
+  async function next() {
     if (step === "mood") {
       const score = computeVibeScore(
         form.sleepHours,
@@ -107,6 +108,23 @@ export default function VibeCheckPage() {
         form.moodEnergy
       );
       setSubmittedScore(score);
+      setSubmitting(true);
+      try {
+        await fetch("/api/vibe-checks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            player_id:   form.playerId,
+            sleep_hours: form.sleepHours,
+            soreness:    form.soreness,
+            stress:      form.stress,
+            mood_energy: form.moodEnergy,
+            vibe_score:  score,
+          }),
+        });
+      } finally {
+        setSubmitting(false);
+      }
     }
     setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
   }
@@ -308,14 +326,15 @@ export default function VibeCheckPage() {
               <ChevronLeft size={18} />
             </button>
             <button
+              disabled={submitting}
               style={{ touchAction: "manipulation" }}
               onClick={() => {
                 console.log("Button Tapped: Next/Submit");
                 next();
               }}
-              className="flex-1 flex items-center justify-center gap-2 min-h-[56px] rounded-2xl bg-mustang-red text-white font-semibold text-base transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 min-h-[56px] rounded-2xl bg-mustang-red disabled:opacity-50 text-white font-semibold text-base transition-colors"
             >
-              {step === "mood" ? "Submit" : "Next"} <ChevronRight size={18} />
+              {submitting ? "Saving…" : step === "mood" ? "Submit" : "Next"} <ChevronRight size={18} />
             </button>
           </div>
         )}
