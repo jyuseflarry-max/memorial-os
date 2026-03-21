@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import TeamReadinessCard from "@/components/TeamReadinessCard";
 import {
   ClipboardList,
-  Activity,
   Zap,
   Clock,
   TrendingUp,
@@ -85,74 +85,6 @@ function PracticeCard() {
   );
 }
 
-// ── Team Readiness (Vibe Check) chart placeholder ─────────────────────────
-
-function VibeCheckCard() {
-  const players = [
-    { name: "J. Wallace", readiness: 92 },
-    { name: "D. Okafor", readiness: 78 },
-    { name: "M. Torres", readiness: 85 },
-    { name: "C. Brown", readiness: 61 },
-    { name: "R. Singh", readiness: 95 },
-    { name: "T. Park", readiness: 70 },
-  ];
-
-  const barColor = (v: number) => {
-    if (v >= 85) return "bg-green-500";
-    if (v >= 70) return "bg-yellow-400";
-    return "bg-red-500";
-  };
-
-  const avg = Math.round(
-    players.reduce((s, p) => s + p.readiness, 0) / players.length
-  );
-
-  return (
-    <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Activity size={20} className="text-mustang-red" />
-          <h2 className="text-white font-semibold text-lg">
-            Team Readiness&nbsp;
-            <span className="text-gray-400 font-normal text-sm">
-              — Vibe Check
-            </span>
-          </h2>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-white font-mono">{avg}%</p>
-          <p className="text-gray-400 text-xs">Squad Avg</p>
-        </div>
-      </div>
-
-      {/* Bar chart */}
-      <ul className="flex flex-col gap-3">
-        {players.map((p) => (
-          <li key={p.name} className="flex items-center gap-3">
-            <span className="text-gray-400 text-xs w-20 shrink-0 font-mono">
-              {p.name}
-            </span>
-            <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${barColor(p.readiness)}`}
-                style={{ width: `${p.readiness}%` }}
-              />
-            </div>
-            <span className="text-gray-300 text-xs w-8 text-right font-mono">
-              {p.readiness}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <p className="text-gray-600 text-xs text-center font-mono border-t border-gray-700 pt-4">
-        PLACEHOLDER — live readiness data will stream from player check-in API
-      </p>
-    </section>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function CommandCenterPage() {
@@ -179,7 +111,7 @@ export default function CommandCenterPage() {
       {/* Two-column grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <PracticeCard />
-        <VibeCheckCard />
+        <TeamReadinessCard />
       </div>
     </DashboardLayout>
   );
