@@ -29,7 +29,6 @@ const NAV_GROUPS = [
     icon: Users,
     items: [
       { label: "Player Bio-Stats",  href: "/players",      icon: Users,     staff: false },
-      { label: "Team Readiness",    href: "/readiness",    icon: Activity,  staff: false },
       { label: "Manage Roster",     href: "/admin/roster", icon: UserCog,   staff: true  },
     ],
   },
@@ -41,6 +40,7 @@ const NAV_GROUPS = [
       { label: "Practice Calendar", href: "/calendar",    icon: Calendar,     staff: false },
       { label: "Session Planner",   href: "/planner",     icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
+      { label: "Team Readiness",    href: "/readiness",   icon: Activity,     staff: false },
     ],
   },
 ];
