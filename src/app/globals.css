@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ── Mustang Brand Palette ──────────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Identity colours */
+  --color-mustang-red:       #ED1C24;
+  --color-mustang-red-dark:  #C01920;   /* hover / pressed state */
+  --color-mustang-grey:      #A7A9AC;
+  --color-mustang-dark-grey: #58595B;
+  --color-mustang-black:     #000000;
+  --color-mustang-white:     #FFFFFF;
+
+  /* Surface scale — dark-mode-first */
+  --color-surface-0:  #000000;   /* page background  */
+  --color-surface-1:  #0d0d0d;   /* card background  */
+  --color-surface-2:  #1a1a1a;   /* elevated surface */
+  --color-surface-3:  #262626;   /* borders / dividers */
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Global Defaults ────────────────────────────────────────────────────── */
+
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-mustang-black);
+  color: var(--color-mustang-white);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

@@ -30,7 +30,7 @@ function PracticeCard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ClipboardList size={20} className="text-orange-400" />
+          <ClipboardList size={20} className="text-mustang-red" />
           <h2 className="text-white font-semibold text-lg">Today&apos;s Practice</h2>
         </div>
         <span className="text-gray-400 text-xs font-mono flex items-center gap-1">
@@ -49,7 +49,7 @@ function PracticeCard() {
             key={label}
             className="flex items-center gap-1.5 bg-gray-700/60 border border-gray-600 rounded-full px-3 py-1 text-xs text-gray-300"
           >
-            <Icon size={12} className="text-orange-400" />
+            <Icon size={12} className="text-mustang-red" />
             {label}
           </div>
         ))}
@@ -112,7 +112,7 @@ function VibeCheckCard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity size={20} className="text-orange-400" />
+          <Activity size={20} className="text-mustang-red" />
           <h2 className="text-white font-semibold text-lg">
             Team Readiness&nbsp;
             <span className="text-gray-400 font-normal text-sm">

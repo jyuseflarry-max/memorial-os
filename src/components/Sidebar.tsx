@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -29,14 +30,19 @@ export default function Sidebar() {
     <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0">
       {/* Logo / Wordmark */}
       <div className="flex items-center gap-3 mb-10 px-2">
-        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm">
-          M
-        </div>
+        <Image
+          src="/mustang-logo.png"
+          alt="Memorial Mustangs"
+          width={36}
+          height={36}
+          className="shrink-0"
+          priority
+        />
         <div>
           <p className="text-white font-semibold text-sm leading-tight tracking-wide">
             Memorial
           </p>
-          <p className="text-orange-400 text-xs font-mono uppercase tracking-widest">
+          <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">
             Basketball OS
           </p>
         </div>
@@ -52,13 +58,13 @@ export default function Sidebar() {
               href={href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? "bg-orange-500/15 text-orange-400"
+                  ? "bg-mustang-red/15 text-mustang-red"
                   : "text-gray-400 hover:bg-gray-800 hover:text-white"
               }`}
             >
               <Icon
                 size={18}
-                className={active ? "text-orange-400" : "text-gray-500"}
+                className={active ? "text-mustang-red" : "text-gray-500"}
               />
               {label}
             </Link>
@@ -79,13 +85,13 @@ export default function Sidebar() {
               href={href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? "bg-orange-500/15 text-orange-400"
+                  ? "bg-mustang-red/15 text-mustang-red"
                   : "text-gray-400 hover:bg-gray-800 hover:text-white"
               }`}
             >
               <UserCog
                 size={18}
-                className={active ? "text-orange-400" : "text-gray-500"}
+                className={active ? "text-mustang-red" : "text-gray-500"}
               />
               Manage Roster
             </Link>

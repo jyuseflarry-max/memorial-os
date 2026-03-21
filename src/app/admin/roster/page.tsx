@@ -147,12 +147,12 @@ function BulkImportModal({ onImport, onClose, loading }: {
           placeholder={BULK_PLACEHOLDER}
           value={text}
           onChange={(e) => { setText(e.target.value); setResult(null); }}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 font-mono focus:outline-none focus:border-orange-500 transition-colors resize-none"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 font-mono focus:outline-none focus:border-mustang-red transition-colors resize-none"
         />
 
         {/* Preview count */}
         <div className="flex items-center justify-between text-xs font-mono">
-          <span className={preview.length > 0 ? "text-orange-400" : "text-gray-600"}>
+          <span className={preview.length > 0 ? "text-mustang-red" : "text-gray-600"}>
             {preview.length > 0
               ? `${preview.length} player${preview.length === 1 ? "" : "s"} ready to import`
               : "Paste names above"}
@@ -195,7 +195,7 @@ function BulkImportModal({ onImport, onClose, loading }: {
             type="button"
             disabled={preview.length === 0 || loading}
             onClick={handleSubmit}
-            className="flex-1 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+            className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
           >
             {loading ? "Importing…" : `Import ${preview.length > 0 ? preview.length : ""} Players`}
           </button>
@@ -281,7 +281,7 @@ export default function RosterPage() {
           <button
             type="button"
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+            className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
           >
             <UserPlus size={16} />
             Add Player

@@ -18,7 +18,7 @@ interface Props {
 }
 
 const inputCls =
-  "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors";
+  "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
 const labelCls =
   "block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider";
 
@@ -162,7 +162,7 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors"
+              className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold transition-colors"
             >
               {isEdit ? "Save Changes" : "Add Player"}
             </button>

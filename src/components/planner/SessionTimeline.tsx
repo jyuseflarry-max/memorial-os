@@ -56,7 +56,7 @@ export default function SessionTimeline({
       onDrop={handleDrop}
       className={`flex flex-col gap-2 min-h-[200px] rounded-2xl border-2 border-dashed transition-colors p-1 ${
         isDragOver
-          ? "border-orange-500 bg-orange-500/5"
+          ? "border-mustang-red bg-mustang-red/5"
           : drills.length === 0
           ? "border-gray-700"
           : "border-transparent"

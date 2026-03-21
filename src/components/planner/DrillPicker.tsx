@@ -44,7 +44,7 @@ export default function DrillPicker({ onAdd }: Props) {
             placeholder="Search drills…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
           />
         </div>
       </div>
@@ -71,7 +71,7 @@ export default function DrillPicker({ onAdd }: Props) {
             <button
               type="button"
               onClick={() => onAdd(drill.id)}
-              className="w-7 h-7 rounded-lg bg-orange-500/0 hover:bg-orange-500 border border-orange-500/30 hover:border-orange-500 text-orange-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
+              className="w-7 h-7 rounded-lg bg-mustang-red/0 hover:bg-mustang-red border border-mustang-red/30 hover:border-mustang-red text-mustang-red hover:text-white flex items-center justify-center transition-colors shrink-0"
             >
               <Plus size={14} />
             </button>

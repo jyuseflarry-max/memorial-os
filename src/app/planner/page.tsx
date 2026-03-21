@@ -86,7 +86,7 @@ export default function PlannerPage() {
         {/* Date + Start Time */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
-            <CalendarDays size={15} className="text-orange-400 shrink-0" />
+            <CalendarDays size={15} className="text-mustang-red shrink-0" />
             <input
               type="date"
               value={session.date}
@@ -95,7 +95,7 @@ export default function PlannerPage() {
             />
           </div>
           <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
-            <Clock size={15} className="text-orange-400 shrink-0" />
+            <Clock size={15} className="text-mustang-red shrink-0" />
             <input
               type="time"
               value={session.startTime}

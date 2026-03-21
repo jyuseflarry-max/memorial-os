@@ -118,7 +118,7 @@ export default function CoachScript({ session }: Props) {
                       {[1,2,3,4,5].map((n) => (
                         <span
                           key={n}
-                          className={`w-1.5 h-1.5 rounded-full ${n <= row.drill.intensity ? "bg-orange-400" : "bg-gray-600 print:bg-gray-200"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${n <= row.drill.intensity ? "bg-mustang-red" : "bg-gray-600 print:bg-gray-200"}`}
                         />
                       ))}
                     </div>
@@ -139,12 +139,12 @@ export default function CoachScript({ session }: Props) {
           <tfoot>
             <tr className="border-t border-gray-700 print:border-gray-300">
               <td colSpan={4} />
-              <td className="px-4 py-3 text-orange-400 font-bold font-mono text-xs print:text-black">
+              <td className="px-4 py-3 text-mustang-red font-bold font-mono text-xs print:text-black">
                 {mins} min
               </td>
               <td />
               <td />
-              <td className="px-4 py-3 text-orange-400 font-bold font-mono text-xs print:text-black">
+              <td className="px-4 py-3 text-mustang-red font-bold font-mono text-xs print:text-black">
                 ~{shots}
               </td>
             </tr>

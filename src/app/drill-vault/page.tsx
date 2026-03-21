@@ -17,7 +17,7 @@ function IntensityPips({ level }: { level: number }) {
         <span
           key={n}
           className={`w-2 h-2 rounded-full ${
-            n <= level ? "bg-orange-400" : "bg-gray-600"
+            n <= level ? "bg-mustang-red" : "bg-gray-600"
           }`}
         />
       ))}
@@ -78,7 +78,7 @@ export default function DrillVaultPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
         >
           <Plus size={16} />
           New Drill
@@ -99,7 +99,7 @@ export default function DrillVaultPage() {
         <input
           type="text"
           placeholder="Search by name, category, or sub-category…"
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -160,7 +160,7 @@ export default function DrillVaultPage() {
                       href={drill.video_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-orange-400 hover:text-orange-300 transition-colors text-xs"
+                      className="flex items-center gap-1 text-mustang-red hover:text-orange-300 transition-colors text-xs"
                     >
                       <ExternalLink size={13} /> View
                     </a>

@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Memorial Basketball OS",
-  description: "Mission Control for the Memorial basketball program",
+  description: "Mission Control for the Memorial Mustangs basketball program",
+  icons: { icon: "/mustang-logo.png", apple: "/mustang-logo.png" },
 };
 
 export default function RootLayout({

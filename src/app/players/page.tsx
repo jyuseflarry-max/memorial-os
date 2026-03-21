@@ -201,7 +201,7 @@ export default function PlayersPage() {
         </div>
         <Link
           href="/vibe-check"
-          className="flex items-center gap-2 text-sm font-medium text-orange-400 border border-orange-400/30 bg-orange-400/5 hover:bg-orange-400/10 px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 text-sm font-medium text-mustang-red border border-mustang-red/30 bg-mustang-red/5 hover:bg-mustang-red/10 px-4 py-2 rounded-lg transition-colors"
         >
           <ExternalLink size={14} />
           Vibe Check Link
@@ -221,7 +221,7 @@ export default function PlayersPage() {
           <input
             type="text"
             placeholder="Search players…"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -234,7 +234,7 @@ export default function PlayersPage() {
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                 filter === f
-                  ? "bg-orange-500 border-orange-500 text-white"
+                  ? "bg-mustang-red border-mustang-red text-white"
                   : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
               }`}
             >

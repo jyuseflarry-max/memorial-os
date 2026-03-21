@@ -111,7 +111,7 @@ export default function MissionProfile({ drills }: Props) {
       </div>
 
       {/* ── Projected Shot Volume ── */}
-      <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
+      <div className="bg-mustang-red/10 border border-mustang-red/20 rounded-xl px-4 py-3 flex items-center justify-between">
         <div>
           <p className="text-orange-300 text-xs font-mono uppercase tracking-wider mb-0.5">
             Projected Shot Volume
@@ -121,7 +121,7 @@ export default function MissionProfile({ drills }: Props) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold font-mono text-orange-400">{shots}</p>
+          <p className="text-3xl font-bold font-mono text-mustang-red">{shots}</p>
           <p className="text-orange-300 text-[10px] font-mono">SHOTS</p>
         </div>
       </div>

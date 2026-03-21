@@ -22,7 +22,7 @@ export default function ShotProjection({ drills }: Props) {
     <div className="bg-gray-800 border border-gray-700 rounded-2xl p-5 flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <BarChart2 size={18} className="text-orange-400" />
+        <BarChart2 size={18} className="text-mustang-red" />
         <h3 className="text-white font-semibold text-sm">Shot Volume Projection</h3>
       </div>
 
@@ -33,7 +33,7 @@ export default function ShotProjection({ drills }: Props) {
             Drill
           </label>
           <select
-            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
             value={drillId}
             onChange={(e) => setDrillId(e.target.value)}
           >
@@ -52,7 +52,7 @@ export default function ShotProjection({ drills }: Props) {
             type="number"
             min={1}
             max={120}
-            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
             value={minutes}
             onChange={(e) => setMinutes(Math.max(1, parseInt(e.target.value) || 1))}
           />
@@ -86,13 +86,13 @@ export default function ShotProjection({ drills }: Props) {
               key={label}
               className={`rounded-xl px-4 py-3 flex flex-col gap-0.5 ${
                 highlight
-                  ? "bg-orange-500/10 border border-orange-500/30"
+                  ? "bg-mustang-red/10 border border-mustang-red/30"
                   : "bg-gray-700/40 border border-gray-700"
               }`}
             >
               <p
                 className={`text-2xl font-bold font-mono ${
-                  highlight ? "text-orange-400" : "text-white"
+                  highlight ? "text-mustang-red" : "text-white"
                 }`}
               >
                 {value}

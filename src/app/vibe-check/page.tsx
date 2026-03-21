@@ -31,7 +31,7 @@ function ProgressBar({ step }: { step: number }) {
         <div
           key={i}
           className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-            i < filled ? "bg-orange-400" : "bg-gray-700"
+            i < filled ? "bg-mustang-red" : "bg-gray-700"
           }`}
         />
       ))}
@@ -65,7 +65,7 @@ function ScaleButtons({
             }}
             className={`flex-1 rounded-2xl text-xl font-bold min-h-[56px] transition-colors duration-150 ${
               value === n
-                ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30"
+                ? "bg-mustang-red text-white shadow-lg shadow-mustang-red/30"
                 : "bg-gray-800 text-gray-400 border border-gray-700"
             }`}
           >
@@ -121,7 +121,7 @@ export default function VibeCheckPage() {
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
       {/* Wordmark */}
       <div className="flex items-center gap-2 mb-8">
-        <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs">
+        <div className="w-7 h-7 rounded-full bg-mustang-red flex items-center justify-center text-white font-bold text-xs">
           M
         </div>
         <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
@@ -152,7 +152,7 @@ export default function VibeCheckPage() {
                 Select your name
               </label>
               <select
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3.5 text-white text-base focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3.5 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
                 value={form.playerId}
                 onChange={(e) => setForm((f) => ({ ...f, playerId: e.target.value }))}
               >
@@ -172,7 +172,7 @@ export default function VibeCheckPage() {
                 console.log("Button Tapped: Let's go");
                 next();
               }}
-              className="flex items-center justify-center gap-2 w-full min-h-[56px] rounded-2xl bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors"
+              className="flex items-center justify-center gap-2 w-full min-h-[56px] rounded-2xl bg-mustang-red disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors"
             >
               Let&apos;s go <ChevronRight size={18} />
             </button>
@@ -183,7 +183,7 @@ export default function VibeCheckPage() {
         {step === "sleep" && (
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
-              <Moon size={28} className="text-orange-400 shrink-0" />
+              <Moon size={28} className="text-mustang-red shrink-0" />
               <h2 className="text-white text-2xl font-bold leading-tight">
                 How many hours did you sleep?
               </h2>
@@ -201,7 +201,7 @@ export default function VibeCheckPage() {
                 step={0.5}
                 value={form.sleepHours}
                 onChange={(e) => setForm((f) => ({ ...f, sleepHours: parseFloat(e.target.value) }))}
-                className="w-full accent-orange-500 h-2"
+                className="w-full accent-mustang-red h-2"
               />
               <div className="flex justify-between text-xs text-gray-500 font-mono">
                 <span>3 hrs</span>
@@ -215,7 +215,7 @@ export default function VibeCheckPage() {
         {step === "soreness" && (
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
-              <Zap size={28} className="text-orange-400 shrink-0" />
+              <Zap size={28} className="text-mustang-red shrink-0" />
               <h2 className="text-white text-2xl font-bold leading-tight">
                 Muscle soreness level?
               </h2>
@@ -233,7 +233,7 @@ export default function VibeCheckPage() {
         {step === "stress" && (
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
-              <Brain size={28} className="text-orange-400 shrink-0" />
+              <Brain size={28} className="text-mustang-red shrink-0" />
               <h2 className="text-white text-2xl font-bold leading-tight">
                 Stress level right now?
               </h2>
@@ -251,7 +251,7 @@ export default function VibeCheckPage() {
         {step === "mood" && (
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
-              <Smile size={28} className="text-orange-400 shrink-0" />
+              <Smile size={28} className="text-mustang-red shrink-0" />
               <h2 className="text-white text-2xl font-bold leading-tight">
                 Mood and energy today?
               </h2>
@@ -312,7 +312,7 @@ export default function VibeCheckPage() {
                 console.log("Button Tapped: Next/Submit");
                 next();
               }}
-              className="flex-1 flex items-center justify-center gap-2 min-h-[56px] rounded-2xl bg-orange-500 text-white font-semibold text-base transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 min-h-[56px] rounded-2xl bg-mustang-red text-white font-semibold text-base transition-colors"
             >
               {step === "mood" ? "Submit" : "Next"} <ChevronRight size={18} />
             </button>
