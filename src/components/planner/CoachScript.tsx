@@ -1,11 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { Printer } from "lucide-react";
 import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalShots } from "@/types/session";
 import { DrillCategory } from "@/types/drill";
 
-// ── Category colours (screen) ─────────────────────────────────────────────
+// ── Category colours ──────────────────────────────────────────────────────
 
 const CAT_COLOR: Record<DrillCategory, string> = {
   [DrillCategory.Defense]:        "text-blue-400   print:text-blue-700",
@@ -32,23 +30,50 @@ function buildRows(session: Session): ScriptRow[] {
   });
 }
 
+// ── Small helpers ─────────────────────────────────────────────────────────
+
+function SignatureLine({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col gap-1 flex-1 min-w-0">
+      <div className="border-b border-gray-400" style={{ height: "22px" }} />
+      <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+function NotesLines({ count = 3 }: { count?: number }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="border-b border-gray-300" style={{ height: "18px" }} />
+      ))}
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────
 
-interface Props {
-  session: Session;
-}
+interface Props { session: Session }
 
 export default function CoachScript({ session }: Props) {
   if (session.drills.length === 0) return null;
 
-  const rows   = buildRows(session);
-  const mins   = totalDuration(session.drills);
-  const shots  = Math.round(totalShots(session.drills));
+  const rows      = buildRows(session);
+  const mins      = totalDuration(session.drills);
+  const shots     = Math.round(totalShots(session.drills));
+  const startLabel = formatTime12(parseTime(session.startTime));
 
   const dateLabel = new Date(session.date + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
-  const startLabel = formatTime12(parseTime(session.startTime));
+  const generatedOn = new Date().toLocaleDateString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+  });
+
+  // intensity breakdown for summary bar
+  const avgIntensity = session.drills.length
+    ? (session.drills.reduce((s, d) => s + d.drill.intensity, 0) / session.drills.length).toFixed(1)
+    : "—";
 
   return (
     <section
@@ -56,8 +81,8 @@ export default function CoachScript({ session }: Props) {
       className="mt-6 bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden
                  print:border-0 print:rounded-none print:bg-white print:mt-0 print:shadow-none"
     >
-      {/* ── Screen header ───────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 print:hidden">
+      {/* ── Screen-only label ──────────────────────────────────────────── */}
+      <div className="flex items-center px-6 py-4 border-b border-gray-700 print:hidden">
         <div>
           <p className="text-white font-bold text-base">Coach&apos;s Script</p>
           <p className="text-gray-400 text-xs font-mono">
@@ -66,47 +91,77 @@ export default function CoachScript({ session }: Props) {
         </div>
       </div>
 
-      {/* ── Print-only branded header ────────────────────────────────── */}
-      <div className="hidden print:flex items-start justify-between pb-4 mb-4 border-b-2 border-gray-300">
-        {/* Left: logo + school name */}
+      {/* ════════════════════════════════════════════════════════════════
+          PRINT-ONLY DOCUMENT — everything below is hidden on screen
+      ════════════════════════════════════════════════════════════════ */}
+
+      {/* ── Red accent bar ─────────────────────────────────────────────── */}
+      <div
+        className="hidden print:block w-full mb-0"
+        style={{ backgroundColor: "#ED1C24", height: "10px" }}
+      />
+
+      {/* ── Main header ────────────────────────────────────────────────── */}
+      <div className="hidden print:flex items-center justify-between px-0 pt-4 pb-3 border-b-2 border-black">
+        {/* Left: logo + identity */}
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={52} height={52} />
+          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={60} height={60} />
           <div>
-            <p className="font-bold text-black text-lg leading-tight">Memorial High School</p>
-            <p className="text-gray-500 text-xs tracking-wide">Mustangs Basketball</p>
+            <p className="font-black text-black text-xl leading-tight tracking-tight">
+              MEMORIAL HIGH SCHOOL
+            </p>
+            <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">
+              Mustangs Basketball · 2025–26 Season
+            </p>
           </div>
         </div>
 
-        {/* Right: title + date */}
+        {/* Right: document type + date */}
         <div className="text-right">
-          <p className="text-2xl font-black tracking-tight" style={{ color: "#ED1C24" }}>
+          <p className="font-black text-3xl tracking-tight leading-none" style={{ color: "#ED1C24" }}>
             PRACTICE PLAN
           </p>
-          <p className="text-black font-semibold text-sm mt-0.5">{dateLabel}</p>
-          <p className="text-gray-500 text-xs font-mono">
-            Start {startLabel} · {mins} min total · ~{shots} projected shots
+          <p className="text-black font-bold text-sm mt-1">{dateLabel}</p>
+          <p className="text-gray-500 text-[11px] font-mono mt-0.5">
+            Start {startLabel} · {mins} min · ~{shots} shots · Avg intensity {avgIntensity}/5
           </p>
         </div>
       </div>
 
-      {/* ── Table ───────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto px-0 print:px-0">
+      {/* ── Session focus bar ──────────────────────────────────────────── */}
+      <div className="hidden print:grid grid-cols-3 gap-4 py-3 border-b border-gray-300 text-xs">
+        {[
+          { label: "Session Focus", hint: "(e.g. Half-Court Offense)" },
+          { label: "Emphasis",      hint: "(e.g. Ball Movement)"       },
+          { label: "Practice Phase",hint: "(e.g. Pre-Season Block 3)"  },
+        ].map(({ label, hint }) => (
+          <div key={label} className="flex flex-col gap-1">
+            <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wide">
+              {label} <span className="normal-case text-gray-400">{hint}</span>
+            </span>
+            <div className="border-b border-gray-400" style={{ height: "18px" }} />
+          </div>
+        ))}
+      </div>
+
+      {/* ── Drill table ────────────────────────────────────────────────── */}
+      <div className="overflow-x-auto print:overflow-visible">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="border-b border-gray-700 print:border-gray-400">
+            <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
               {[
-                { label: "Time Block",    w: "w-[130px]" },
-                { label: "Drill / Notes", w: "" },
-                { label: "Category",      w: "w-[110px]" },
-                { label: "Density",       w: "w-[80px]"  },
-                { label: "Proj. Reps",    w: "w-[90px]"  },
-                { label: "Coach Notes",   w: "w-[160px] print:w-[200px]" },
+                { label: "Time Block",  w: "w-[130px]" },
+                { label: "Drill",       w: ""           },
+                { label: "Category",    w: "w-[105px]"  },
+                { label: "Density",     w: "w-[75px]"   },
+                { label: "Proj. Reps",  w: "w-[80px]"   },
+                { label: "Coach Notes", w: "w-[180px]"  },
               ].map(({ label, w }) => (
                 <th
                   key={label}
-                  className={`${w} px-4 py-2.5 text-left text-[10px] font-mono uppercase tracking-wider
-                              text-gray-500 print:text-gray-600 print:border-b print:border-gray-400`}
+                  className={`${w} px-4 py-2 text-left text-[10px] font-mono uppercase tracking-wider
+                              text-gray-500 print:text-gray-700 print:border-b print:border-gray-400`}
                 >
                   {label}
                 </th>
@@ -122,7 +177,7 @@ export default function CoachScript({ session }: Props) {
                 <tr
                   key={row.instanceId}
                   className={`border-b border-gray-700/50 last:border-0 print:border-gray-200
-                              ${i % 2 === 0 ? "print:bg-gray-50" : "print:bg-white"}
+                              ${i % 2 === 0 ? "print:bg-white" : "print:bg-gray-50"}
                               hover:bg-gray-700/20 print:hover:bg-transparent`}
                 >
                   {/* Time block */}
@@ -135,13 +190,11 @@ export default function CoachScript({ session }: Props) {
                     </span>
                   </td>
 
-                  {/* Drill name + sub-category */}
+                  {/* Drill name */}
                   <td className="px-4 py-3">
                     <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
                     {row.drill.sub_category && (
-                      <p className="text-gray-500 print:text-gray-500 text-[10px] font-mono">
-                        {row.drill.sub_category}
-                      </p>
+                      <p className="text-gray-500 text-[10px] font-mono">{row.drill.sub_category}</p>
                     )}
                   </td>
 
@@ -150,26 +203,21 @@ export default function CoachScript({ session }: Props) {
                     {row.drill.category}
                   </td>
 
-                  {/* Shot density */}
+                  {/* Density */}
                   <td className="px-4 py-3 text-gray-300 print:text-black font-mono text-xs">
                     {isRest ? <span className="text-gray-500">—</span> : `${row.drill.shot_density}/min`}
                   </td>
 
-                  {/* Projected reps */}
+                  {/* Proj. reps */}
                   <td className="px-4 py-3 font-mono text-xs">
-                    {isRest ? (
-                      <span className="text-gray-500">—</span>
-                    ) : (
-                      <span className="text-white print:text-black font-bold">~{projReps}</span>
-                    )}
+                    {isRest
+                      ? <span className="text-gray-500">—</span>
+                      : <span className="text-white print:text-black font-bold">~{projReps}</span>}
                   </td>
 
                   {/* Notes box */}
                   <td className="px-4 py-3">
-                    <div
-                      className="hidden print:block rounded border border-gray-400"
-                      style={{ height: "42px" }}
-                    />
+                    <div className="hidden print:block rounded border border-gray-400" style={{ height: "40px" }} />
                     <div className="print:hidden h-8 rounded border border-gray-600 bg-gray-900/40" />
                   </td>
                 </tr>
@@ -177,18 +225,18 @@ export default function CoachScript({ session }: Props) {
             })}
           </tbody>
 
-          {/* Totals footer */}
+          {/* Totals */}
           <tfoot>
-            <tr className="border-t-2 border-gray-600 print:border-gray-400">
-              <td colSpan={2} className="px-4 py-2.5 text-gray-500 print:text-gray-600 text-xs font-mono">
-                TOTALS
+            <tr className="border-t-2 border-gray-600 print:border-black">
+              <td colSpan={2} className="px-4 py-2 text-gray-500 print:text-gray-700 text-xs font-mono font-bold">
+                SESSION TOTALS
               </td>
               <td />
               <td />
-              <td className="px-4 py-2.5 font-bold font-mono text-xs text-mustang-red print:text-black">
+              <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
                 ~{shots} shots
               </td>
-              <td className="px-4 py-2.5 font-bold font-mono text-xs text-mustang-red print:text-black">
+              <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
                 {mins} min
               </td>
             </tr>
@@ -196,10 +244,29 @@ export default function CoachScript({ session }: Props) {
         </table>
       </div>
 
-      {/* ── Print footer ─────────────────────────────────────────────── */}
-      <div className="hidden print:flex items-center justify-between mt-4 pt-3 border-t border-gray-300 text-[9px] font-mono text-gray-400">
-        <span>Memorial Basketball OS · Confidential — Staff Use Only</span>
-        <span>Generated {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+      {/* ── Post-practice notes ────────────────────────────────────────── */}
+      <div className="hidden print:block pt-4 pb-3 border-t border-gray-300 mt-2">
+        <p className="text-[10px] font-mono font-bold text-gray-700 uppercase tracking-widest mb-2">
+          Post-Practice Notes
+        </p>
+        <NotesLines count={4} />
+      </div>
+
+      {/* ── Signature lines ────────────────────────────────────────────── */}
+      <div className="hidden print:flex items-end gap-6 pt-2 pb-4 border-t border-gray-300">
+        <SignatureLine label="Head Coach" />
+        <SignatureLine label="Assistant Coach" />
+        <SignatureLine label="Assistant Coach" />
+        <SignatureLine label="Athletic Trainer" />
+      </div>
+
+      {/* ── Footer bar ─────────────────────────────────────────────────── */}
+      <div
+        className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
+        style={{ backgroundColor: "#ED1C24" }}
+      >
+        <span>MEMORIAL MUSTANGS BASKETBALL · STAFF CONFIDENTIAL</span>
+        <span>Generated {generatedOn} · Memorial Basketball OS</span>
       </div>
     </section>
   );
