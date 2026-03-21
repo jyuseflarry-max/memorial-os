@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Clock, Droplets, Zap } from "lucide-react";
+import { CalendarDays, Clock, Droplets, FileText, Zap } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillPicker from "@/components/planner/DrillPicker";
 import SessionTimeline from "@/components/planner/SessionTimeline";
@@ -83,8 +83,8 @@ export default function PlannerPage() {
           </p>
         </div>
 
-        {/* Date + Start Time */}
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Date */}
           <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
             <CalendarDays size={15} className="text-mustang-red shrink-0" />
             <input
@@ -94,6 +94,7 @@ export default function PlannerPage() {
               className="bg-transparent text-white text-sm focus:outline-none font-mono"
             />
           </div>
+          {/* Start Time */}
           <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
             <Clock size={15} className="text-mustang-red shrink-0" />
             <input
@@ -103,6 +104,17 @@ export default function PlannerPage() {
               className="bg-transparent text-white text-sm focus:outline-none font-mono"
             />
           </div>
+          {/* Generate Script */}
+          {session.drills.length > 0 && (
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-xl"
+            >
+              <FileText size={15} />
+              Generate Script
+            </button>
+          )}
         </div>
       </div>
 

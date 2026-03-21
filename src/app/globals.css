@@ -33,3 +33,19 @@ body {
   color: var(--color-mustang-white);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* ── Print — Mission Script layout ─────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.55in 0.65in;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
