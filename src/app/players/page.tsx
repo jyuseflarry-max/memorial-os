@@ -78,6 +78,7 @@ function MetricBar({
   max = 5,
   color,
   invert = false,
+  avg,
 }: {
   icon: React.ElementType;
   label: string;
@@ -85,16 +86,31 @@ function MetricBar({
   max?: number;
   color: string;
   invert?: boolean;
+  avg?: number;
 }) {
   // For soreness/stress, higher = worse, so we invert visually
   const displayValue = invert ? max + 1 - value : value;
   const pct = (displayValue / max) * 100;
+  const avgPct = avg !== undefined ? ((invert ? max + 1 - avg : avg) / max) * 100 : null;
+
   return (
     <div className="flex items-center gap-2">
       <Icon size={11} className={`shrink-0 ${color}`} />
       <span className="text-[10px] font-mono text-gray-500 w-14 shrink-0">{label}</span>
-      <div className="flex-1 bg-gray-700 rounded-full h-1 overflow-hidden">
-        <div className={`h-full rounded-full ${color.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
+      {/* Track with avg marker — needs position:relative and overflow:visible so marker can poke out */}
+      <div className="flex-1 relative" style={{ height: "12px" }}>
+        {/* Background track */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 bg-gray-700 rounded-full h-1 overflow-hidden">
+          <div className={`h-full rounded-full ${color.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
+        </div>
+        {/* Average marker — white tick taller than the bar */}
+        {avgPct !== null && (
+          <div
+            className="absolute top-0 bottom-0 w-px bg-white/70 rounded-full"
+            style={{ left: `calc(${avgPct}% - 0.5px)` }}
+            title={`Avg: ${avg?.toFixed(1)}`}
+          />
+        )}
       </div>
       <span className="text-[10px] font-mono text-gray-400 w-5 text-right">{value}</span>
     </div>
@@ -135,9 +151,30 @@ function SummaryChips({ players }: { players: Player[] }) {
   );
 }
 
+// ── Average helper ────────────────────────────────────────────────────────
+
+interface VibeAvgs {
+  sleep_hours: number;
+  soreness: number;
+  stress: number;
+  mood_energy: number;
+}
+
+function computeAvgs(rows: VibeCheckRow[]): VibeAvgs | null {
+  if (rows.length < 2) return null; // need at least 2 entries to show an avg line
+  const n = rows.length;
+  return {
+    sleep_hours: rows.reduce((s, r) => s + r.sleep_hours, 0) / n,
+    soreness:    rows.reduce((s, r) => s + r.soreness,    0) / n,
+    stress:      rows.reduce((s, r) => s + r.stress,      0) / n,
+    mood_energy: rows.reduce((s, r) => s + r.mood_energy, 0) / n,
+  };
+}
+
 // ── Player card ───────────────────────────────────────────────────────────
 
-function PlayerCard({ player, check }: { player: Player; check: VibeCheckRow | null }) {
+function PlayerCard({ player, check, history }: { player: Player; check: VibeCheckRow | null; history: VibeCheckRow[] }) {
+  const avgs = computeAvgs(history);
   const light = getTrafficLight(player);
   const { label, badge } = LIGHT_CONFIG[light];
 
@@ -197,10 +234,10 @@ function PlayerCard({ player, check }: { player: Player; check: VibeCheckRow | n
               {timeAgo(check.submitted_at)}
             </span>
           </div>
-          <MetricBar icon={Moon}     label="Sleep"    value={check.sleep_hours} max={10} color="text-blue-400" />
-          <MetricBar icon={Activity} label="Soreness" value={check.soreness}               color="text-yellow-400" invert />
-          <MetricBar icon={Brain}    label="Stress"   value={check.stress}                 color="text-purple-400" invert />
-          <MetricBar icon={Zap}      label="Energy"   value={check.mood_energy}             color="text-green-400" />
+          <MetricBar icon={Moon}     label="Sleep"    value={check.sleep_hours} max={10} color="text-blue-400"   avg={avgs?.sleep_hours} />
+          <MetricBar icon={Activity} label="Soreness" value={check.soreness}               color="text-yellow-400" invert avg={avgs?.soreness} />
+          <MetricBar icon={Brain}    label="Stress"   value={check.stress}                 color="text-purple-400" invert avg={avgs?.stress} />
+          <MetricBar icon={Zap}      label="Energy"   value={check.mood_energy}             color="text-green-400" avg={avgs?.mood_energy} />
         </div>
       ) : (
         <div className="border-t border-gray-700 pt-3">
@@ -220,14 +257,19 @@ type FilterOption = (typeof FILTER_OPTIONS)[number];
 
 export default function PlayersPage() {
   const { players } = usePlayers();
-  const [query,  setQuery]  = useState("");
-  const [filter, setFilter] = useState<FilterOption>("All");
-  const [checks, setChecks] = useState<Record<string, VibeCheckRow>>({});
+  const [query,   setQuery]   = useState("");
+  const [filter,  setFilter]  = useState<FilterOption>("All");
+  const [checks,  setChecks]  = useState<Record<string, VibeCheckRow>>({});
+  const [history, setHistory] = useState<Record<string, VibeCheckRow[]>>({});
 
   useEffect(() => {
     fetch("/api/vibe-checks")
       .then((r) => r.json())
       .then((data) => { if (!data.error) setChecks(data); })
+      .catch(() => {});
+    fetch("/api/vibe-checks/history")
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setHistory(data); })
       .catch(() => {});
   }, []);
 
@@ -302,7 +344,7 @@ export default function PlayersPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((p) => (
-            <PlayerCard key={p.id} player={p} check={checks[p.id] ?? null} />
+            <PlayerCard key={p.id} player={p} check={checks[p.id] ?? null} history={history[p.id] ?? []} />
           ))}
         </div>
       )}
