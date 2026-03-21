@@ -121,8 +121,9 @@ export default function VibeCheckPage() {
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
       {/* Wordmark */}
       <div className="flex items-center gap-2 mb-8">
-        <div className="w-7 h-7 rounded-full bg-mustang-red flex items-center justify-center text-white font-bold text-xs">
-          M
+        <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
         </div>
         <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
           Vibe Check
