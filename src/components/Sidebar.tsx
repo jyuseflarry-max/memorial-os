@@ -11,11 +11,13 @@ import {
   CalendarDays,
   Calendar,
   UserCog,
+  Activity,
   Wifi,
   WifiOff,
   Loader2,
   ChevronDown,
   Dumbbell,
+  Lock,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 
@@ -26,20 +28,24 @@ const NAV_GROUPS = [
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Command Center",    href: "/",            icon: RadioTower   },
-      { label: "Practice Calendar", href: "/calendar",    icon: Calendar     },
-      { label: "Session Planner",   href: "/planner",     icon: CalendarDays },
-      { label: "Drill Vault",       href: "/drill-vault", icon: Layers       },
-      { label: "Player Bio-Stats",  href: "/players",     icon: Users        },
+      { label: "Command Center",    href: "/",            icon: RadioTower,   staff: false },
+      { label: "Practice Calendar", href: "/calendar",    icon: Calendar,     staff: false },
+      { label: "Session Planner",   href: "/planner",     icon: CalendarDays, staff: false },
+      { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
+    ],
+  },
+  {
+    label: "Players",
+    icon: Users,
+    items: [
+      { label: "Player Bio-Stats",  href: "/players",    icon: Users,     staff: false },
+      { label: "Team Readiness",    href: "/readiness",  icon: Activity,  staff: false },
+      { label: "Manage Roster",     href: "/admin/roster", icon: UserCog, staff: true  },
     ],
   },
 ];
 
-const STAFF_ITEMS = [
-  { label: "Manage Roster", href: "/admin/roster", icon: UserCog },
-];
-
-// ── Collapsible nav group ────────────────────────────────────────────────
+// ── Collapsible nav group ─────────────────────────────────────────────────
 
 function NavGroup({
   label,
@@ -49,11 +55,11 @@ function NavGroup({
 }: {
   label: string;
   icon: React.ElementType;
-  items: { label: string; href: string; icon: React.ElementType }[];
+  items: { label: string; href: string; icon: React.ElementType; staff: boolean }[];
   pathname: string;
 }) {
   const hasActive = items.some((i) => i.href === pathname);
-  const [open, setOpen] = useState(true); // open by default
+  const [open, setOpen] = useState(true);
 
   return (
     <div>
@@ -76,7 +82,7 @@ function NavGroup({
       {/* Items */}
       {open && (
         <div className="mt-0.5 ml-2 pl-3 border-l border-gray-800 flex flex-col gap-0.5">
-          {items.map(({ label, href, icon: Icon }) => {
+          {items.map(({ label, href, icon: Icon, staff }) => {
             const active = pathname === href;
             return (
               <Link
@@ -89,7 +95,13 @@ function NavGroup({
                 }`}
               >
                 <Icon size={16} className={active ? "text-mustang-red" : "text-gray-500"} />
-                {label}
+                <span className="flex-1">{label}</span>
+                {staff && (
+                  <span className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-full">
+                    <Lock size={8} />
+                    Staff
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -130,30 +142,6 @@ export default function Sidebar() {
           />
         ))}
       </nav>
-
-      {/* Staff Only */}
-      <div className="mt-4 pt-4 border-t border-gray-800">
-        <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest px-3 mb-1">
-          Staff Only
-        </p>
-        {STAFF_ITEMS.map(({ label, href, icon: Icon }) => {
-          const active = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? "bg-mustang-red/15 text-mustang-red"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
-              }`}
-            >
-              <Icon size={18} className={active ? "text-mustang-red" : "text-gray-500"} />
-              {label}
-            </Link>
-          );
-        })}
-      </div>
 
       {/* Footer — live DB status */}
       <div className="mt-auto px-2 pt-6 border-t border-gray-800 flex flex-col gap-2">
