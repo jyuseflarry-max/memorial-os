@@ -13,7 +13,7 @@ type FormData = NewPlayerData;
 interface Props {
   /** When provided, the form is in edit mode and pre-fills from this player. */
   player?: Player;
-  onSave: (data: FormData) => void;
+  onSave: (data: FormData) => Promise<void>;
   onClose: () => void;
 }
 
@@ -24,6 +24,9 @@ const labelCls =
 
 export default function PlayerForm({ player, onSave, onClose }: Props) {
   const isEdit = Boolean(player);
+
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState<FormData>({
     name:          player?.name          ?? "",
@@ -38,10 +41,18 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave(form);
-    onClose();
+    setSubmitError(null);
+    setSaving(true);
+    try {
+      await onSave(form);
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Save failed. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -151,6 +162,13 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
             </div>
           )}
 
+          {/* Inline error */}
+          {submitError && (
+            <p className="text-mustang-red text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+              {submitError}
+            </p>
+          )}
+
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
@@ -162,9 +180,10 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold transition-colors"
+              disabled={saving}
+              className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
             >
-              {isEdit ? "Save Changes" : "Add Player"}
+              {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Player"}
             </button>
           </div>
         </form>

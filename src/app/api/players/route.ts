@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return Response.json(data, { status: 201 });
   } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && (err as Record<string, unknown>).code === "23505") {
+      return Response.json({ error: "That jersey number is already taken. Choose a different number." }, { status: 409 });
+    }
     const message = err instanceof Error ? err.message : "Unknown error";
     return Response.json({ error: message }, { status: 500 });
   }
