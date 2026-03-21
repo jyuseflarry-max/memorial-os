@@ -30,14 +30,15 @@ export default function Sidebar() {
     <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0">
       {/* Logo / Wordmark */}
       <div className="flex items-center gap-3 mb-10 px-2">
-        <Image
-          src="/mustang-logo.png"
-          alt="Memorial Mustangs"
-          width={36}
-          height={36}
-          className="shrink-0"
-          priority
-        />
+        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+          <Image
+            src="/mustang-logo.png"
+            alt="Memorial Mustangs"
+            width={32}
+            height={32}
+            priority
+          />
+        </div>
         <div>
           <p className="text-white font-semibold text-sm leading-tight tracking-wide">
             Memorial
