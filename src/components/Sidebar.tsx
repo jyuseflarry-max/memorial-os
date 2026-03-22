@@ -11,6 +11,7 @@ import {
   UsersRound,
   CalendarDays,
   UserCog,
+  BarChart3,
   Wifi,
   WifiOff,
   Loader2,
@@ -43,6 +44,7 @@ const NAV_GROUPS = [
       { label: "Command Center",    href: "/",            icon: RadioTower,   staff: false },
       { label: "Planner",            href: "/planner",     icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
+      { label: "Reports",           href: "/reports",     icon: BarChart3,    staff: false },
     ],
   },
 ];
