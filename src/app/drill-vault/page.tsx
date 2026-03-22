@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, ExternalLink, Video, Pencil } from "lucide-react";
+import { Plus, Search, ExternalLink, Video, Pencil, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
 import { useDrills } from "@/hooks/useDrills";
 import { Drill, DrillCategory } from "@/types/drill";
+
+// ── Types ─────────────────────────────────────────────────────────────────
+
+type SortKey = "name" | "category" | "sub_category" | "shot_type" | "shot_density" | "intensity";
+type SortDir = "asc" | "desc";
 
 // ── Intensity pip display ─────────────────────────────────────────────────
 
@@ -14,10 +19,7 @@ function IntensityPips({ level }: { level: number }) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
-        <span
-          key={n}
-          className={`w-2 h-2 rounded-full ${n <= level ? "bg-mustang-red" : "bg-gray-600"}`}
-        />
+        <span key={n} className={`w-2 h-2 rounded-full ${n <= level ? "bg-mustang-red" : "bg-gray-600"}`} />
       ))}
     </div>
   );
@@ -35,10 +37,31 @@ const CAT_COLORS: Record<string, string> = {
 
 function CategoryBadge({ cat }: { cat: string }) {
   const cls = CAT_COLORS[cat] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20";
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cls}`}>{cat}</span>;
+}
+
+// ── Sortable column header ────────────────────────────────────────────────
+
+function SortHeader({
+  label, sortKey, current, dir, onSort,
+}: {
+  label: string; sortKey: SortKey; current: SortKey; dir: SortDir; onSort: (k: SortKey) => void;
+}) {
+  const active = current === sortKey;
+  const Icon = active ? (dir === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
-      {cat}
-    </span>
+    <th className="px-4 py-3 text-left">
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`flex items-center gap-1 text-xs font-mono uppercase tracking-wider transition-colors ${
+          active ? "text-mustang-red" : "text-gray-500 hover:text-gray-300"
+        }`}
+      >
+        {label}
+        <Icon size={11} />
+      </button>
+    </th>
   );
 }
 
@@ -46,21 +69,14 @@ function CategoryBadge({ cat }: { cat: string }) {
 
 export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
-  const [query, setQuery]           = useState("");
-  const [editing, setEditing]       = useState<Drill | null>(null);
+  const [query, setQuery]             = useState("");
+  const [filterCat, setFilterCat]     = useState("All");
+  const [sortKey, setSortKey]         = useState<SortKey>("name");
+  const [sortDir, setSortDir]         = useState<SortDir>("asc");
+  const [editing, setEditing]         = useState<Drill | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return drills.filter(
-      (d) =>
-        d.name.toLowerCase().includes(q) ||
-        d.sub_category.toLowerCase().includes(q) ||
-        d.category.toLowerCase().includes(q)
-    );
-  }, [drills, query]);
-
-  // All unique categories/sub-categories currently in the vault (for datalist suggestions)
+  // Unique lists for filter dropdowns and datalist suggestions
   const categories = useMemo(
     () => Array.from(new Set(drills.map((d) => d.category))).sort(),
     [drills]
@@ -70,6 +86,34 @@ export default function DrillVaultPage() {
     [drills]
   );
 
+  function handleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
+
+  const displayed = useMemo(() => {
+    const q = query.toLowerCase();
+    return drills
+      .filter((d) => {
+        const matchesSearch =
+          !q ||
+          d.name.toLowerCase().includes(q) ||
+          d.sub_category.toLowerCase().includes(q) ||
+          d.category.toLowerCase().includes(q);
+        const matchesCat = filterCat === "All" || d.category === filterCat;
+        return matchesSearch && matchesCat;
+      })
+      .sort((a, b) => {
+        let va: string | number = a[sortKey] ?? "";
+        let vb: string | number = b[sortKey] ?? "";
+        if (typeof va === "string") va = va.toLowerCase();
+        if (typeof vb === "string") vb = vb.toLowerCase();
+        if (va < vb) return sortDir === "asc" ? -1 : 1;
+        if (va > vb) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+  }, [drills, query, filterCat, sortKey, sortDir]);
+
   return (
     <DashboardLayout>
       {/* Page header */}
@@ -77,7 +121,7 @@ export default function DrillVaultPage() {
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Drill Vault</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {loading ? "LOADING…" : `${drills.length} DRILLS INDEXED`}
+            {loading ? "LOADING…" : `${displayed.length} OF ${drills.length} DRILLS`}
           </p>
         </div>
         <button
@@ -94,91 +138,86 @@ export default function DrillVaultPage() {
         <ShotProjection drills={drills} />
       </div>
 
-      {/* Search bar */}
-      <div className="relative mb-4">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-        <input
-          type="text"
-          placeholder="Search by name, category, or sub-category…"
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+      {/* Search + Category filter */}
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search drills…"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        <select
+          value={filterCat}
+          onChange={(e) => setFilterCat(e.target.value)}
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+        >
+          <option value="All">All Categories</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       {/* Table */}
       <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-700 text-left">
-              {["Drill Name", "Category", "Sub-Category", "Shot Type", "Density", "Intensity", "Video", ""].map((h, i) => (
-                <th key={i} className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider">
-                  {h}
-                </th>
-              ))}
+            <tr className="border-b border-gray-700">
+              <SortHeader label="Drill Name"   sortKey="name"         current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortHeader label="Category"     sortKey="category"     current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortHeader label="Sub-Category" sortKey="sub_category" current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortHeader label="Shot Type"    sortKey="shot_type"    current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortHeader label="Density"      sortKey="shot_density" current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortHeader label="Intensity"    sortKey="intensity"    current={sortKey} dir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider text-left">Video</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
-                  LOADING…
-                </td>
+                <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">LOADING…</td>
               </tr>
             )}
-            {!loading && filtered.length === 0 && (
+            {!loading && displayed.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
-                  {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH QUERY"}
+                  {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH FILTERS"}
                 </td>
               </tr>
             )}
-            {filtered.map((drill, i) => (
+            {displayed.map((drill, i) => (
               <tr
                 key={drill.id}
                 className={`border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors ${
-                  i === filtered.length - 1 ? "border-0" : ""
+                  i === displayed.length - 1 ? "border-0" : ""
                 }`}
               >
                 <td className="px-4 py-3 text-white font-medium">{drill.name}</td>
-                <td className="px-4 py-3">
-                  <CategoryBadge cat={drill.category} />
-                </td>
+                <td className="px-4 py-3"><CategoryBadge cat={drill.category} /></td>
                 <td className="px-4 py-3 text-gray-400">{drill.sub_category}</td>
                 <td className="px-4 py-3">
-                  <span className="text-xs font-mono text-gray-300 bg-gray-700 px-2 py-0.5 rounded">
-                    {drill.shot_type}
-                  </span>
+                  <span className="text-xs font-mono text-gray-300 bg-gray-700 px-2 py-0.5 rounded">{drill.shot_type}</span>
                 </td>
                 <td className="px-4 py-3 text-gray-300 font-mono">
-                  {Number(drill.shot_density).toFixed(1)}
-                  <span className="text-gray-600 text-xs"> /min</span>
+                  {Number(drill.shot_density).toFixed(1)}<span className="text-gray-600 text-xs"> /min</span>
                 </td>
-                <td className="px-4 py-3">
-                  <IntensityPips level={drill.intensity} />
-                </td>
+                <td className="px-4 py-3"><IntensityPips level={drill.intensity} /></td>
                 <td className="px-4 py-3">
                   {drill.video_url ? (
-                    <a
-                      href={drill.video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-mustang-red hover:text-orange-300 transition-colors text-xs"
-                    >
+                    <a href={drill.video_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-mustang-red hover:text-orange-300 transition-colors text-xs">
                       <ExternalLink size={13} /> View
                     </a>
                   ) : (
-                    <span className="text-gray-600 flex items-center gap-1 text-xs">
-                      <Video size={13} /> —
-                    </span>
+                    <span className="text-gray-600 flex items-center gap-1 text-xs"><Video size={13} /> —</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    onClick={() => setEditing(drill)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors"
-                    title="Edit drill"
-                  >
+                  <button onClick={() => setEditing(drill)}
+                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors" title="Edit drill">
                     <Pencil size={14} />
                   </button>
                 </td>
@@ -188,7 +227,6 @@ export default function DrillVaultPage() {
         </table>
       </div>
 
-      {/* New drill form */}
       {showNewForm && (
         <DrillForm
           categories={categories}
@@ -197,8 +235,6 @@ export default function DrillVaultPage() {
           onClose={() => setShowNewForm(false)}
         />
       )}
-
-      {/* Edit drill form */}
       {editing && (
         <DrillForm
           initialDrill={editing}
