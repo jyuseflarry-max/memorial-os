@@ -66,12 +66,12 @@ const PRESETS: { id: Preset; label: string }[] = [
 // ── Category row component ────────────────────────────────────────────────
 
 function CategoryRowDisplay({
-  row, colorIdx, maxMinutes,
+  row, colorIdx,
 }: {
-  row: CategoryRow; colorIdx: number; maxMinutes: number;
+  row: CategoryRow; colorIdx: number;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const barPct   = maxMinutes > 0 ? (row.minutes / maxMinutes) * 100 : 0;
+  const barPct   = row.percentage;  // bar width = actual % of total time
   const barColor = BAR_COLORS[colorIdx % BAR_COLORS.length];
   const subColor = BAR_COLORS_LIGHT[colorIdx % BAR_COLORS_LIGHT.length];
 
@@ -117,7 +117,7 @@ function CategoryRowDisplay({
       {expanded && (
         <div className="bg-gray-800/30 border-t border-gray-700/30">
           {row.sub_categories.map((sub) => {
-            const subBarPct = row.minutes > 0 ? (sub.minutes / row.minutes) * 100 : 0;
+            const subBarPct = sub.percentage; // bar width = % of total time, same scale as parent
             return (
               <div key={sub.sub_category} className="flex items-center gap-4 px-4 py-2.5 border-b border-gray-700/20 last:border-0">
                 {/* Indent spacer */}
@@ -199,10 +199,6 @@ export default function ReportsPage() {
       .catch(() => setError("Failed to load report"))
       .finally(() => setLoading(false));
   }, [activeTeam, from, to]);
-
-  const maxMinutes = report
-    ? Math.max(...report.categories.map((c) => c.minutes), 1)
-    : 1;
 
   return (
     <DashboardLayout>
@@ -325,14 +321,13 @@ export default function ReportsPage() {
             key={row.category}
             row={row}
             colorIdx={idx}
-            maxMinutes={maxMinutes}
           />
         ))}
       </div>
 
       {report && report.categories.length > 0 && (
         <p className="text-[10px] font-mono text-gray-600 mt-3 text-right">
-          Click a category row to expand sub-categories · Sub-category bars are relative to the parent category
+          Click a category row to expand sub-categories · All bars show % of total practice time
         </p>
       )}
     </DashboardLayout>
