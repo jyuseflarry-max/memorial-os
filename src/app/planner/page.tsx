@@ -224,39 +224,42 @@ function PlannerInner() {
         </div>
       )}
 
-      {/* ── Main 3-column grid ───────────────────────────────────── */}
+      {/* ── Main layout ──────────────────────────────────────────── */}
       {!loadingDate && (
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-4 print:hidden" style={{ minHeight: "420px" }}>
-          {/* Left — Drill Picker */}
-          <DrillPicker drills={vaultDrills} onAdd={addDrill} />
+        <div className="flex flex-col gap-4 print:hidden">
+          {/* Drill Picker + Timeline side by side (lg+), stacked on mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr] gap-4" style={{ minHeight: "420px" }}>
+            {/* Left — Drill Picker */}
+            <DrillPicker drills={vaultDrills} onAdd={addDrill} />
 
-          {/* Center — Timeline */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-1">
-              <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">Practice Timeline</p>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-600 text-[10px] font-mono hidden sm:inline">QUICK ADD</span>
-                <button type="button" onClick={() => addQuickAction("qa-water-break")}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
-                  <Droplets size={12} /> Water Break
-                </button>
-                <button type="button" onClick={() => addQuickAction("qa-transition")}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
-                  <Zap size={12} /> Transition
-                </button>
+            {/* Center — Timeline */}
+            <div className="flex flex-col gap-2 min-w-0">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">Practice Timeline</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-600 text-[10px] font-mono hidden sm:inline">QUICK ADD</span>
+                  <button type="button" onClick={() => addQuickAction("qa-water-break")}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
+                    <Droplets size={12} /> Water Break
+                  </button>
+                  <button type="button" onClick={() => addQuickAction("qa-transition")}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
+                    <Zap size={12} /> Transition
+                  </button>
+                </div>
               </div>
+              <SessionTimeline
+                drills={session.drills}
+                onRemove={removeDrill}
+                onDurationChange={updateDuration}
+                onReorder={reorderDrills}
+                onDropDrill={addDrill}
+                onGroupsClick={(id) => setGroupingDrillId(id)}
+              />
             </div>
-            <SessionTimeline
-              drills={session.drills}
-              onRemove={removeDrill}
-              onDurationChange={updateDuration}
-              onReorder={reorderDrills}
-              onDropDrill={addDrill}
-              onGroupsClick={(id) => setGroupingDrillId(id)}
-            />
           </div>
 
-          {/* Right — Mission Profile */}
+          {/* Live Analytics — full width below on all screens */}
           <div className="flex flex-col gap-2">
             <p className="text-gray-400 text-xs font-mono uppercase tracking-wider px-1">Live Analytics</p>
             <MissionProfile drills={session.drills} />
