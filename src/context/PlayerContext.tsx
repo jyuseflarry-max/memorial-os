@@ -12,6 +12,7 @@ export type NewPlayerData = {
   class_year: string;
   status: PlayerStatus;
   titan_load: number;
+  team_id?: string | null;
 };
 
 interface PlayerContextValue {

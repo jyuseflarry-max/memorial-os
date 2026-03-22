@@ -9,6 +9,7 @@ import SessionTimeline from "@/components/planner/SessionTimeline";
 import MissionProfile from "@/components/planner/MissionProfile";
 import CoachScript from "@/components/planner/CoachScript";
 import { useDrills } from "@/hooks/useDrills";
+import { useTeam } from "@/context/TeamContext";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { Session, SessionDrill, totalDuration, totalShots } from "@/types/session";
 
@@ -21,6 +22,7 @@ function PlannerInner() {
   const initialDate  = searchParams.get("date") ?? TODAY;
 
   const { drills: vaultDrills } = useDrills();
+  const { activeTeam } = useTeam();
   const [session, setSession] = useState<Session>({ date: initialDate, startTime: "15:00", drills: [] });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [loadingDate, setLoadingDate] = useState(false);
@@ -30,7 +32,8 @@ function PlannerInner() {
   const loadDate = useCallback(async (date: string) => {
     setLoadingDate(true);
     try {
-      const res = await fetch(`/api/sessions/${date}`);
+      const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
+      const res = await fetch(`/api/sessions/${date}${teamParam}`);
       const data = await res.json();
       if (data && !data.error && data.drills) {
         setSession({ date, startTime: data.start_time, drills: data.drills });
@@ -106,7 +109,7 @@ function PlannerInner() {
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: session.date, start_time: session.startTime, drills: session.drills }),
+        body: JSON.stringify({ date: session.date, start_time: session.startTime, drills: session.drills, team_id: activeTeam?.id ?? null }),
       });
       if (!res.ok) throw new Error("Save failed");
       setSaveStatus("saved");

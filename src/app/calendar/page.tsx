@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, CalendarDays, Dumbbell } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useTeam } from "@/context/TeamContext";
 
 interface SavedSession {
   id: string;
@@ -28,18 +29,21 @@ function formatDisplayDate(iso: string): string {
 export default function CalendarPage() {
   const router   = useRouter();
   const today    = isoToday();
+  const { activeTeam } = useTeam();
   const [year,  setYear]    = useState(() => new Date().getFullYear());
   const [month, setMonth]   = useState(() => new Date().getMonth()); // 0-indexed
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    fetch("/api/sessions")
+    setLoading(true);
+    const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
+    fetch(`/api/sessions${teamParam}`)
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setSessions(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [activeTeam]);
 
   // Build a set of dates that have saved sessions
   const sessionDates = new Set(sessions.map((s) => s.date));

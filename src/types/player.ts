@@ -45,6 +45,8 @@ export interface Player {
   titan_load: number;
   /** Composite 1-5 from latest Vibe Check survey */
   latest_vibe_score: number;
+  /** FK to teams.id */
+  team_id?: string | null;
 }
 
 export interface VibeCheckSubmission {

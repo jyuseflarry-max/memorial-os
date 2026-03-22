@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Player, PlayerStatus } from "@/types/player";
 import { NewPlayerData } from "@/context/PlayerContext";
+import { useTeam } from "@/context/TeamContext";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const CLASS_YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
@@ -24,6 +25,7 @@ const labelCls =
 
 export default function PlayerForm({ player, onSave, onClose }: Props) {
   const isEdit = Boolean(player);
+  const { teams, activeTeam } = useTeam();
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -35,6 +37,7 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
     class_year:    player?.class_year    ?? "Freshman",
     status:        player?.status        ?? PlayerStatus.Active,
     titan_load:    player?.titan_load    ?? 0,
+    team_id:       player?.team_id       ?? activeTeam?.id ?? null,
   });
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
@@ -147,6 +150,23 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
               </select>
             </div>
           </div>
+
+          {/* Team */}
+          {teams.length > 0 && (
+            <div>
+              <label className={labelCls}>Team</label>
+              <select
+                className={inputCls}
+                value={form.team_id ?? ""}
+                onChange={(e) => set("team_id", e.target.value || null)}
+              >
+                <option value="">— Unassigned —</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Titan Load — only visible in edit mode */}
           {isEdit && (

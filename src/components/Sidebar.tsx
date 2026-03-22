@@ -20,6 +20,7 @@ import {
   Lock,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
+import { useTeam } from "@/context/TeamContext";
 
 // ── Nav structure ─────────────────────────────────────────────────────────
 
@@ -28,8 +29,9 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Player Bio-Stats",  href: "/players",      icon: Users,     staff: false },
-      { label: "Manage Roster",     href: "/admin/roster", icon: UserCog,   staff: true  },
+      { label: "Player Bio-Stats",  href: "/players",       icon: Users,     staff: false },
+      { label: "Manage Roster",     href: "/admin/roster",  icon: UserCog,   staff: true  },
+      { label: "Manage Teams",      href: "/admin/teams",   icon: Users,     staff: true  },
     ],
   },
   {
@@ -116,6 +118,7 @@ function NavGroup({
 export default function Sidebar() {
   const pathname = usePathname();
   const { dbConnected, dbError, loading } = usePlayers();
+  const { teams, activeTeam, setActiveTeam } = useTeam();
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0 print:hidden">
@@ -129,6 +132,29 @@ export default function Sidebar() {
           <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">Basketball OS</p>
         </div>
       </div>
+
+      {/* Team switcher */}
+      {teams.length > 0 && (
+        <div className="mb-6 px-1">
+          <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1.5 px-1">Active Team</p>
+          <div className="flex flex-col gap-1">
+            {teams.map((team) => (
+              <button
+                key={team.id}
+                type="button"
+                onClick={() => setActiveTeam(team)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  activeTeam?.id === team.id
+                    ? "bg-mustang-red text-white"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                {team.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Collapsible nav groups */}
       <nav className="flex flex-col gap-3">
