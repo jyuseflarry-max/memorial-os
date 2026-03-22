@@ -144,7 +144,7 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
-          <h1 className="text-white text-2xl font-bold tracking-tight">Practice Calendar</h1>
+          <h1 className="text-white text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
             {loading ? "LOADING…" : `${visibleSessions.length} SAVED PLANS`}
           </p>

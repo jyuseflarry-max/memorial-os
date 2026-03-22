@@ -40,8 +40,8 @@ const NAV_GROUPS = [
     icon: Dumbbell,
     items: [
       { label: "Command Center",    href: "/",            icon: RadioTower,   staff: false },
-      { label: "Practice Calendar", href: "/calendar",    icon: Calendar,     staff: false },
-      { label: "Practice Planner",  href: "/planner",     icon: CalendarDays, staff: false },
+      { label: "Calendar",           href: "/calendar",    icon: Calendar,     staff: false },
+      { label: "Planner",            href: "/planner",     icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
     ],
   },

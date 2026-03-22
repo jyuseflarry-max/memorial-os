@@ -168,7 +168,7 @@ function PlannerInner() {
       {/* ── Page header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 print:hidden">
         <div>
-          <h1 className="text-white text-2xl font-bold tracking-tight">Practice Planner</h1>
+          <h1 className="text-white text-2xl font-bold tracking-tight">Planner</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
             {activeTeam ? `${activeTeam.name.toUpperCase()} · ` : ""}
             {session.drills.length > 0
