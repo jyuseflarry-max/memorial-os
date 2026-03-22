@@ -17,7 +17,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(node -e \"const sharp = require\\(''sharp''\\); sharp\\(''public/mustang-logo.png''\\).metadata\\(\\).then\\(m => console.log\\(m.width, m.height, m.format\\)\\);\")",
-      "Bash(node -e \"const sharp = require\\(''sharp''\\); sharp\\(''src/app/icon.png''\\).metadata\\(\\).then\\(m => console.log\\(m.width, m.height\\)\\);\")"
+      "Bash(node -e \"const sharp = require\\(''sharp''\\); sharp\\(''src/app/icon.png''\\).metadata\\(\\).then\\(m => console.log\\(m.width, m.height\\)\\);\")",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -7,6 +7,7 @@ import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
+import { useSettings } from "@/context/SettingsContext";
 import { Drill, DrillCategory } from "@/types/drill";
 
 interface DrillUsage { last_used: string; use_count: number; }
@@ -77,6 +78,7 @@ function SortHeader({
 export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
   const { activeTeam } = useTeam();
+  const { settings } = useSettings();
   const [query, setQuery]             = useState("");
   const [filterCat, setFilterCat]     = useState("All");
   const [sortKey, setSortKey]         = useState<SortKey>("name");
@@ -86,12 +88,14 @@ export default function DrillVaultPage() {
   const [usage, setUsage] = useState<Record<string, DrillUsage>>({});
 
   useEffect(() => {
-    const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
-    fetch(`/api/drills/usage${teamParam}`)
+    const params = new URLSearchParams();
+    if (activeTeam) params.set("team_id", activeTeam.id);
+    if (settings.season_start) params.set("season_start", settings.season_start);
+    fetch(`/api/drills/usage?${params}`)
       .then((r) => r.json())
       .then((data) => { if (!data.error) setUsage(data); })
       .catch(() => {});
-  }, [activeTeam]);
+  }, [activeTeam, settings.season_start]);
 
   // Unique lists for filter dropdowns and datalist suggestions
   const categories = useMemo(

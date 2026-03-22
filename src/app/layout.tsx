@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PlayerProvider } from "@/context/PlayerContext";
 import { TeamProvider } from "@/context/TeamContext";
+import { SettingsProvider } from "@/context/SettingsContext";
+import PrintOrientationStyle from "@/components/PrintOrientationStyle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,9 +33,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col overflow-x-hidden">
-        <TeamProvider>
-          <PlayerProvider>{children}</PlayerProvider>
-        </TeamProvider>
+        <SettingsProvider>
+          <PrintOrientationStyle />
+          <TeamProvider>
+            <PlayerProvider>{children}</PlayerProvider>
+          </TeamProvider>
+        </SettingsProvider>
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
+import { useSettings } from "@/context/SettingsContext";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { Session, SessionDrill, totalDuration, totalShots } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
@@ -27,6 +28,7 @@ function PlannerInner() {
   const { drills: vaultDrills } = useDrills();
   const { activeTeam, teams, setActiveTeam } = useTeam();
   const { players } = useTeamPlayers();
+  const { settings } = useSettings();
   const [groupingDrillId, setGroupingDrillId] = useState<string | null>(null);
 
   // If the URL specifies a team_id (e.g. clicking from the calendar), switch to that team
@@ -37,7 +39,7 @@ function PlannerInner() {
     if (target && activeTeam?.id !== target.id) setActiveTeam(target);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlTeamId, teams]);
-  const [session, setSession] = useState<Session>({ date: initialDate, startTime: "15:00", drills: [] });
+  const [session, setSession] = useState<Session>({ date: initialDate, startTime: settings.default_start_time, drills: [] });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [loadingDate, setLoadingDate] = useState(false);
 
@@ -53,7 +55,7 @@ function PlannerInner() {
         setSession({ date, startTime: data.start_time, drills: data.drills });
         setSaveStatus("saved");
       } else {
-        setSession({ date, startTime: "15:00", drills: [] });
+        setSession({ date, startTime: settings.default_start_time, drills: [] });
         setSaveStatus("idle");
       }
     } catch {

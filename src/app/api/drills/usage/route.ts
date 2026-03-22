@@ -7,14 +7,16 @@ import { getSupabaseServer } from "@/lib/supabase/server";
  */
 export async function GET(request: NextRequest) {
   try {
-    const teamId   = request.nextUrl.searchParams.get("team_id");
-    const supabase = getSupabaseServer();
+    const teamId      = request.nextUrl.searchParams.get("team_id");
+    const seasonStart = request.nextUrl.searchParams.get("season_start");
+    const supabase    = getSupabaseServer();
 
     let query = supabase
       .from("session_drills")
       .select("drill_id, date");
 
-    if (teamId) query = query.eq("team_id", teamId);
+    if (teamId)      query = query.eq("team_id", teamId);
+    if (seasonStart) query = query.gte("date", seasonStart);
 
     const { data, error } = await query;
     if (error) throw error;

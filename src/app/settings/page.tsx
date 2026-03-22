@@ -1,0 +1,229 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Save, CheckCircle2, Loader2, Upload, X } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { useSettings } from "@/context/SettingsContext";
+
+type SaveStatus = "idle" | "saving" | "saved";
+
+export default function SettingsPage() {
+  const { settings, loading, save } = useSettings();
+  const [form, setForm] = useState(settings);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Sync form when settings load from server
+  useEffect(() => {
+    if (!loading) setForm(settings);
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function patch<K extends keyof typeof form>(key: K, value: typeof form[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleSave() {
+    setStatus("saving");
+    await save({
+      program_name:       form.program_name,
+      logo_url:           form.logo_url,
+      season_start:       form.season_start || null,
+      print_orientation:  form.print_orientation,
+      default_start_time: form.default_start_time,
+    });
+    setStatus("saved");
+    setTimeout(() => setStatus("idle"), 2500);
+  }
+
+  // Logo file → base64 (store as data URL for simplicity; swap for S3/Supabase Storage upload later)
+  function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      setLogoPreview(url);
+      patch("logo_url", url);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearLogo() {
+    setLogoPreview(null);
+    patch("logo_url", null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={24} className="text-mustang-red animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const displayLogo = logoPreview ?? form.logo_url;
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-white text-2xl font-bold tracking-tight">Program Settings</h1>
+            <p className="text-gray-400 text-sm mt-0.5 font-mono">CONFIGURE YOUR PROGRAM</p>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={status === "saving"}
+            className={`flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors ${
+              status === "saved"
+                ? "bg-green-600/20 border border-green-600/40 text-green-400"
+                : status === "saving"
+                ? "bg-gray-700 border border-gray-600 text-gray-400 cursor-not-allowed opacity-60"
+                : "bg-mustang-red hover:bg-mustang-red-dark text-white"
+            }`}
+          >
+            {status === "saving" ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : status === "saved" ? (
+              <CheckCircle2 size={15} />
+            ) : (
+              <Save size={15} />
+            )}
+            {status === "saved" ? "Saved!" : status === "saving" ? "Saving…" : "Save Settings"}
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {/* Program Identity */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
+            <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
+              Program Identity
+            </h2>
+
+            {/* Program Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Program Name</label>
+              <input
+                type="text"
+                value={form.program_name}
+                onChange={(e) => patch("program_name", e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+                placeholder="Memorial Basketball OS"
+              />
+              <p className="text-[10px] font-mono text-gray-600">Shown in the sidebar header and printed plans.</p>
+            </div>
+
+            {/* Logo */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Program Logo</label>
+              <div className="flex items-center gap-4">
+                {displayLogo ? (
+                  <div className="relative w-16 h-16 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={displayLogo} alt="Program logo" className="w-full h-full object-contain" />
+                    <button
+                      onClick={clearLogo}
+                      className="absolute top-0.5 right-0.5 bg-red-500 rounded-full p-0.5 text-white"
+                      title="Remove logo"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-gray-700 border-2 border-dashed border-gray-600 flex items-center justify-center shrink-0">
+                    <Upload size={18} className="text-gray-500" />
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-700 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-colors"
+                  >
+                    {displayLogo ? "Change Logo" : "Upload Logo"}
+                  </button>
+                  <p className="text-[10px] font-mono text-gray-600">PNG or SVG recommended. Stored as base64.</p>
+                </div>
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoFile}
+              />
+            </div>
+          </section>
+
+          {/* Data & Reporting */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
+            <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
+              Data & Reporting
+            </h2>
+
+            {/* Season Start */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Season Start Date</label>
+              <input
+                type="date"
+                value={form.season_start ?? ""}
+                onChange={(e) => patch("season_start", e.target.value || null)}
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit"
+              />
+              <p className="text-[10px] font-mono text-gray-600">
+                Drill usage (Last Used, use count) and reports will only include data on or after this date.
+                Leave blank to show all historical data.
+              </p>
+            </div>
+
+            {/* Print Orientation */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Print Orientation</label>
+              <div className="flex gap-3">
+                {(["portrait", "landscape"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => patch("print_orientation", opt)}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${
+                      form.print_orientation === opt
+                        ? "bg-mustang-red border-mustang-red text-white"
+                        : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] font-mono text-gray-600">Applied to the practice plan print stylesheet.</p>
+            </div>
+          </section>
+
+          {/* Practice Defaults */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
+            <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
+              Practice Defaults
+            </h2>
+
+            {/* Default Start Time */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Default Practice Start Time</label>
+              <input
+                type="time"
+                value={form.default_start_time}
+                onChange={(e) => patch("default_start_time", e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit"
+              />
+              <p className="text-[10px] font-mono text-gray-600">Pre-filled start time when creating a new practice plan.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

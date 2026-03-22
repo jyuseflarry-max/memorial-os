@@ -18,9 +18,11 @@ import {
   ChevronDown,
   Dumbbell,
   Lock,
+  Settings,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
+import { useSettings } from "@/context/SettingsContext";
 
 // ── Nav structure ─────────────────────────────────────────────────────────
 
@@ -120,6 +122,7 @@ export default function Sidebar() {
   const router   = useRouter();
   const { dbConnected, dbError, loading } = usePlayers();
   const { teams, activeTeam, setActiveTeam } = useTeam();
+  const { settings } = useSettings();
 
   function handleTeamSelect(team: typeof teams[number]) {
     setActiveTeam(team);
@@ -131,11 +134,16 @@ export default function Sidebar() {
       {/* Logo / Wordmark */}
       <div className="flex items-center gap-3 mb-8 px-2">
         <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          <Image src="/mustang-logo.png" alt="Memorial Mustangs" width={32} height={32} priority />
+          {settings.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={settings.logo_url} alt="Program logo" className="w-full h-full object-contain" />
+          ) : (
+            <Image src="/mustang-logo.png" alt="Memorial Mustangs" width={32} height={32} priority />
+          )}
         </div>
         <div>
-          <p className="text-white font-semibold text-sm leading-tight tracking-wide">Memorial</p>
-          <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">Basketball OS</p>
+          <p className="text-white font-semibold text-sm leading-tight tracking-wide">{settings.program_name.split(" ")[0]}</p>
+          <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">{settings.program_name.split(" ").slice(1).join(" ") || "Basketball OS"}</p>
         </div>
       </div>
 
@@ -175,8 +183,23 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      {/* Settings link */}
+      <div className="mt-auto px-1 pb-3">
+        <Link
+          href="/settings"
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            pathname === "/settings"
+              ? "bg-mustang-red/15 text-mustang-red"
+              : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+          }`}
+        >
+          <Settings size={14} className={pathname === "/settings" ? "text-mustang-red" : "text-gray-600"} />
+          Settings
+        </Link>
+      </div>
+
       {/* Footer — live DB status */}
-      <div className="mt-auto px-2 pt-6 border-t border-gray-800 flex flex-col gap-2">
+      <div className="px-2 pt-4 border-t border-gray-800 flex flex-col gap-2">
         {loading && !dbConnected ? (
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500">
             <Loader2 size={10} className="animate-spin" /> CONNECTING…
