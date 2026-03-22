@@ -8,6 +8,7 @@ import {
   RadioTower,
   Layers,
   Users,
+  UsersRound,
   CalendarDays,
   UserCog,
   Wifi,
@@ -29,9 +30,10 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Player Vibe",        href: "/players",       icon: Users,     staff: false },
-      { label: "Manage Roster",     href: "/admin/roster",  icon: UserCog,   staff: true  },
-      { label: "Manage Teams",      href: "/admin/teams",   icon: Users,     staff: true  },
+      { label: "Player Vibe",        href: "/players",        icon: Users,     staff: false },
+      { label: "Player Groups",     href: "/player-groups",  icon: UsersRound, staff: false },
+      { label: "Manage Roster",     href: "/admin/roster",   icon: UserCog,   staff: true  },
+      { label: "Manage Teams",      href: "/admin/teams",    icon: Users,     staff: true  },
     ],
   },
   {
