@@ -6,14 +6,17 @@ import { getSupabaseServer } from "@/lib/supabase/server";
  * Returns the most recent vibe_check row per player as
  * { [player_id]: VibeCheckRow }
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseServer();
+    const seasonStart = request.nextUrl.searchParams.get("season_start");
+    const supabase    = getSupabaseServer();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("vibe_checks")
       .select("*")
       .order("submitted_at", { ascending: false });
+
+    if (seasonStart) query = query.gte("submitted_at", seasonStart);
 
     if (error) throw error;
 

@@ -1,18 +1,22 @@
+import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 /**
- * GET /api/vibe-checks/history
+ * GET /api/vibe-checks/history?season_start=YYYY-MM-DD
  * Returns ALL vibe_check rows grouped by player_id:
  * { [player_id]: VibeCheckRow[] }  (newest first per player)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseServer();
+    const seasonStart = request.nextUrl.searchParams.get("season_start");
+    const supabase    = getSupabaseServer();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("vibe_checks")
       .select("*")
       .order("submitted_at", { ascending: false });
+
+    if (seasonStart) query = query.gte("submitted_at", seasonStart);
 
     if (error) throw error;
 
