@@ -312,7 +312,7 @@ export default function RosterPage() {
       )}
 
       {/* Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">

@@ -179,8 +179,8 @@ export default function DrillVaultPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="border-b border-gray-700">
               <SortHeader label="Drill Name"   sortKey="name"         current={sortKey} dir={sortDir} onSort={handleSort} />
