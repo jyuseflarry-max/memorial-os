@@ -205,17 +205,15 @@ function PlannerInner() {
             <SaveIcon size={15} className={saveStatus === "saving" ? "animate-spin" : ""} />
             {saveBtn.label}
           </button>
-          {/* Generate Script */}
-          {session.drills.length > 0 && (
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors text-gray-300 hover:text-white text-sm font-medium px-4 py-2.5 rounded-xl"
-            >
-              <FileText size={15} />
-              Generate Script
-            </button>
-          )}
+          {/* Print / Generate Script */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors text-gray-300 hover:text-white text-sm font-medium px-4 py-2.5 rounded-xl"
+          >
+            <FileText size={15} />
+            Print Plan
+          </button>
         </div>
       </div>
 
