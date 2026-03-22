@@ -48,6 +48,7 @@ export default function CalendarPage() {
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [loading, setLoading]   = useState(true);
   const [filterTeamId, setFilterTeamId] = useState<string | null>(null); // null = All
+  const [dayPopover, setDayPopover] = useState<{ iso: string; sessions: SavedSession[] } | null>(null);
 
   // Assign a stable color index per team
   const teamColorMap = useMemo(() => {
@@ -112,7 +113,22 @@ export default function CalendarPage() {
 
   function openDay(day: number) {
     const date = cellDate(day);
-    router.push(`/planner?date=${date}`);
+    const daySessions = sessionsByDate[date] ?? [];
+    if (daySessions.length === 1) {
+      const s = daySessions[0];
+      const teamParam = s.team_id ? `&team_id=${s.team_id}` : "";
+      router.push(`/planner?date=${date}${teamParam}`);
+    } else if (daySessions.length > 1) {
+      setDayPopover({ iso: date, sessions: daySessions });
+    } else {
+      router.push(`/planner?date=${date}`);
+    }
+  }
+
+  function openSession(s: SavedSession) {
+    const teamParam = s.team_id ? `&team_id=${s.team_id}` : "";
+    router.push(`/planner?date=${s.date}${teamParam}`);
+    setDayPopover(null);
   }
 
   // Sessions this month (sidebar)
@@ -280,7 +296,7 @@ export default function CalendarPage() {
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => router.push(`/planner?date=${s.date}`)}
+                  onClick={() => openSession(s)}
                   className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left"
                 >
                   <div className={`w-8 h-8 rounded-lg ${color.bg} border ${color.border} flex items-center justify-center shrink-0`}>
@@ -304,6 +320,51 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Day popover (multiple teams on same day) ──────────────── */}
+      {dayPopover && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setDayPopover(null)}
+        >
+          <div
+            className="bg-gray-800 border border-gray-700 rounded-2xl p-4 min-w-[240px] shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-white font-semibold text-sm mb-3">{formatDisplayDate(dayPopover.iso)}</p>
+            <p className="text-gray-500 text-xs font-mono mb-3">MULTIPLE PLANS — SELECT ONE:</p>
+            <div className="flex flex-col gap-2">
+              {dayPopover.sessions.map((s) => {
+                const color = colorFor(s.team_id);
+                const teamName = teams.find((t) => t.id === s.team_id)?.name ?? "Unknown Team";
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => openSession(s)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${color.border} ${color.bg} hover:opacity-90 transition-opacity text-left`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
+                    <div>
+                      <p className={`text-sm font-semibold ${color.text}`}>{teamName}</p>
+                      <p className="text-gray-500 text-xs font-mono">
+                        {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setDayPopover(null)}
+              className="mt-3 w-full text-gray-500 text-xs font-mono hover:text-gray-300 transition-colors"
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

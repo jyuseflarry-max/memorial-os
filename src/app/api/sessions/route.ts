@@ -37,6 +37,28 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // ── Write normalized session_drills rows ─────────────────────────────
+    // Skip quick-action pseudo-drills (ids start with "qa-")
+    const sessionId = data.id as string;
+    const drillRows = (drills as Array<{ instanceId: string; drill: { id: string }; duration: number }>)
+      .filter((sd) => !sd.drill.id.startsWith("qa-"))
+      .map((sd, idx) => ({
+        session_id: sessionId,
+        drill_id:   sd.drill.id,
+        date,
+        team_id:    team_id ?? null,
+        duration:   sd.duration,
+        position:   idx,
+      }));
+
+    // Delete old rows for this session then re-insert
+    await supabase.from("session_drills").delete().eq("session_id", sessionId);
+    if (drillRows.length > 0) {
+      const { error: sdErr } = await supabase.from("session_drills").insert(drillRows);
+      if (sdErr) console.error("session_drills insert error:", sdErr.message);
+    }
+
     return Response.json(data, { status: 201 });
   } catch (err: unknown) {
     return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });

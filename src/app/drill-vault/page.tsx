@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Search, ExternalLink, Video, Pencil, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
 import { useDrills } from "@/hooks/useDrills";
+import { useTeam } from "@/context/TeamContext";
 import { Drill, DrillCategory } from "@/types/drill";
+
+interface DrillUsage { last_used: string; use_count: number; }
+
+function formatShortDate(iso: string): string {
+  return new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -69,12 +76,22 @@ function SortHeader({
 
 export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
+  const { activeTeam } = useTeam();
   const [query, setQuery]             = useState("");
   const [filterCat, setFilterCat]     = useState("All");
   const [sortKey, setSortKey]         = useState<SortKey>("name");
   const [sortDir, setSortDir]         = useState<SortDir>("asc");
   const [editing, setEditing]         = useState<Drill | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [usage, setUsage] = useState<Record<string, DrillUsage>>({});
+
+  useEffect(() => {
+    const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
+    fetch(`/api/drills/usage${teamParam}`)
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setUsage(data); })
+      .catch(() => {});
+  }, [activeTeam]);
 
   // Unique lists for filter dropdowns and datalist suggestions
   const categories = useMemo(
@@ -122,6 +139,7 @@ export default function DrillVaultPage() {
           <h1 className="text-white text-2xl font-bold tracking-tight">Drill Vault</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
             {loading ? "LOADING…" : `${displayed.length} OF ${drills.length} DRILLS`}
+            {activeTeam && <span className="text-gray-600"> · {activeTeam.name.toUpperCase()}</span>}
           </p>
         </div>
         <button
@@ -171,6 +189,7 @@ export default function DrillVaultPage() {
               <SortHeader label="Shot Type"    sortKey="shot_type"    current={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Density"      sortKey="shot_density" current={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Intensity"    sortKey="intensity"    current={sortKey} dir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider text-left hidden lg:table-cell">Last Used</th>
               <th className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider text-left">Video</th>
               <th className="px-4 py-3" />
             </tr>
@@ -178,17 +197,19 @@ export default function DrillVaultPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">LOADING…</td>
+                <td colSpan={9} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">LOADING…</td>
               </tr>
             )}
             {!loading && displayed.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={9} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
                   {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH FILTERS"}
                 </td>
               </tr>
             )}
-            {displayed.map((drill, i) => (
+            {displayed.map((drill, i) => {
+              const u = usage[drill.id];
+              return (
               <tr
                 key={drill.id}
                 className={`border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors ${
@@ -205,6 +226,16 @@ export default function DrillVaultPage() {
                   {Number(drill.shot_density).toFixed(1)}<span className="text-gray-600 text-xs"> /min</span>
                 </td>
                 <td className="px-4 py-3"><IntensityPips level={drill.intensity} /></td>
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  {u ? (
+                    <div>
+                      <p className="text-gray-300 text-xs font-mono">{formatShortDate(u.last_used)}</p>
+                      <p className="text-gray-600 text-[10px] font-mono">{u.use_count}× used</p>
+                    </div>
+                  ) : (
+                    <span className="text-gray-600 text-xs font-mono">Never</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   {drill.video_url ? (
                     <a href={drill.video_url} target="_blank" rel="noopener noreferrer"
@@ -222,7 +253,8 @@ export default function DrillVaultPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

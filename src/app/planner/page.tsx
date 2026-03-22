@@ -22,7 +22,16 @@ function PlannerInner() {
   const initialDate  = searchParams.get("date") ?? TODAY;
 
   const { drills: vaultDrills } = useDrills();
-  const { activeTeam } = useTeam();
+  const { activeTeam, teams, setActiveTeam } = useTeam();
+
+  // If the URL specifies a team_id (e.g. clicking from the calendar), switch to that team
+  const urlTeamId = searchParams.get("team_id");
+  useEffect(() => {
+    if (!urlTeamId || !teams.length) return;
+    const target = teams.find((t) => t.id === urlTeamId);
+    if (target && activeTeam?.id !== target.id) setActiveTeam(target);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTeamId, teams]);
   const [session, setSession] = useState<Session>({ date: initialDate, startTime: "15:00", drills: [] });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [loadingDate, setLoadingDate] = useState(false);
