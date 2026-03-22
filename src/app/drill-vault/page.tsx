@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, ExternalLink, Video } from "lucide-react";
+import { Plus, Search, ExternalLink, Video, Pencil } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
@@ -25,7 +25,7 @@ function IntensityPips({ level }: { level: number }) {
 
 // ── Category badge ────────────────────────────────────────────────────────
 
-const CAT_COLORS: Record<DrillCategory, string> = {
+const CAT_COLORS: Record<string, string> = {
   [DrillCategory.Defense]:        "text-blue-400   bg-blue-400/10   border-blue-400/20",
   [DrillCategory.Offense]:        "text-green-400  bg-green-400/10  border-green-400/20",
   [DrillCategory.RestTransition]: "text-sky-400    bg-sky-400/10    border-sky-400/20",
@@ -33,9 +33,10 @@ const CAT_COLORS: Record<DrillCategory, string> = {
   [DrillCategory.SpecialTeams]:   "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
-function CategoryBadge({ cat }: { cat: DrillCategory }) {
+function CategoryBadge({ cat }: { cat: string }) {
+  const cls = CAT_COLORS[cat] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20";
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CAT_COLORS[cat] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20"}`}>
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
       {cat}
     </span>
   );
@@ -44,9 +45,10 @@ function CategoryBadge({ cat }: { cat: DrillCategory }) {
 // ── Main page ─────────────────────────────────────────────────────────────
 
 export default function DrillVaultPage() {
-  const { drills, loading, addToCache } = useDrills();
-  const [query, setQuery]       = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
+  const [query, setQuery]           = useState("");
+  const [editing, setEditing]       = useState<Drill | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -57,6 +59,12 @@ export default function DrillVaultPage() {
         d.category.toLowerCase().includes(q)
     );
   }, [drills, query]);
+
+  // All unique categories currently in the vault (for datalist suggestions)
+  const categories = useMemo(
+    () => Array.from(new Set(drills.map((d) => d.category))).sort(),
+    [drills]
+  );
 
   return (
     <DashboardLayout>
@@ -69,7 +77,7 @@ export default function DrillVaultPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => setShowNewForm(true)}
           className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
         >
           <Plus size={16} />
@@ -99,8 +107,8 @@ export default function DrillVaultPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">
-              {["Drill Name", "Category", "Sub-Category", "Shot Type", "Density", "Intensity", "Video"].map((h) => (
-                <th key={h} className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider">
+              {["Drill Name", "Category", "Sub-Category", "Shot Type", "Density", "Intensity", "Video", ""].map((h, i) => (
+                <th key={i} className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider">
                   {h}
                 </th>
               ))}
@@ -109,14 +117,14 @@ export default function DrillVaultPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
                   LOADING…
                 </td>
               </tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={8} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
                   {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH QUERY"}
                 </td>
               </tr>
@@ -124,13 +132,13 @@ export default function DrillVaultPage() {
             {filtered.map((drill, i) => (
               <tr
                 key={drill.id}
-                className={`border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors ${
+                className={`border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors ${
                   i === filtered.length - 1 ? "border-0" : ""
                 }`}
               >
                 <td className="px-4 py-3 text-white font-medium">{drill.name}</td>
                 <td className="px-4 py-3">
-                  <CategoryBadge cat={drill.category as DrillCategory} />
+                  <CategoryBadge cat={drill.category} />
                 </td>
                 <td className="px-4 py-3 text-gray-400">{drill.sub_category}</td>
                 <td className="px-4 py-3">
@@ -161,14 +169,39 @@ export default function DrillVaultPage() {
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => setEditing(drill)}
+                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors"
+                    title="Edit drill"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {showForm && (
-        <DrillForm onSave={(drill: Drill) => addToCache(drill)} onClose={() => setShowForm(false)} />
+      {/* New drill form */}
+      {showNewForm && (
+        <DrillForm
+          categories={categories}
+          onSave={(drill: Drill) => addToCache(drill)}
+          onClose={() => setShowNewForm(false)}
+        />
+      )}
+
+      {/* Edit drill form */}
+      {editing && (
+        <DrillForm
+          initialDrill={editing}
+          categories={categories}
+          onSave={(drill: Drill) => updateInCache(drill)}
+          onDelete={(id: string) => removeFromCache(id)}
+          onClose={() => setEditing(null)}
+        />
       )}
     </DashboardLayout>
   );

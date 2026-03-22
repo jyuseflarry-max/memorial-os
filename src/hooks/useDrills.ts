@@ -16,8 +16,18 @@ export function useDrills() {
   }, []);
 
   function addToCache(drill: Drill) {
-    setDrills((prev) => [drill, ...prev].sort((a, b) => a.name.localeCompare(b.name)));
+    setDrills((prev) => [...prev, drill].sort((a, b) => a.name.localeCompare(b.name)));
   }
 
-  return { drills, loading, addToCache };
+  function updateInCache(drill: Drill) {
+    setDrills((prev) =>
+      prev.map((d) => (d.id === drill.id ? drill : d)).sort((a, b) => a.name.localeCompare(b.name))
+    );
+  }
+
+  function removeFromCache(id: string) {
+    setDrills((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  return { drills, loading, addToCache, updateInCache, removeFromCache };
 }

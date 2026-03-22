@@ -1,30 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
-import { Drill, DrillCategory, ShotType, IntensityLevel } from "@/types/drill";
+import { X, Trash2 } from "lucide-react";
+import { Drill, ShotType, IntensityLevel } from "@/types/drill";
 
 interface Props {
+  initialDrill?: Drill;   // present → edit mode
+  categories: string[];   // all known categories for datalist suggestions
   onSave: (drill: Drill) => void;
+  onDelete?: (id: string) => void;
   onClose: () => void;
 }
 
-const EMPTY_FORM = {
-  name: "",
-  category: DrillCategory.Offense,
-  sub_category: "",
-  shot_density: 2,
-  shot_type: ShotType.ThreePoint,
-  intensity: 3 as IntensityLevel,
-  video_url: "",
-};
+function blankForm(drill?: Drill) {
+  return {
+    name:         drill?.name         ?? "",
+    category:     drill?.category     ?? "Offense",
+    sub_category: drill?.sub_category ?? "",
+    shot_density: drill?.shot_density ?? 2,
+    shot_type:    drill?.shot_type    ?? ShotType.ThreePoint,
+    intensity:    (drill?.intensity   ?? 3) as IntensityLevel,
+    video_url:    drill?.video_url    ?? "",
+  };
+}
 
-export default function DrillForm({ onSave, onClose }: Props) {
-  const [form, setForm]     = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+export default function DrillForm({ initialDrill, categories, onSave, onDelete, onClose }: Props) {
+  const editing = !!initialDrill;
+  const [form, setForm]         = useState(blankForm(initialDrill));
+  const [saving, setSaving]     = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
-  function set<K extends keyof typeof EMPTY_FORM>(key: K, value: (typeof EMPTY_FORM)[K]) {
+  function set<K extends keyof ReturnType<typeof blankForm>>(key: K, value: ReturnType<typeof blankForm>[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -33,8 +40,10 @@ export default function DrillForm({ onSave, onClose }: Props) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/drills", {
-        method: "POST",
+      const url    = editing ? `/api/drills/${initialDrill!.id}` : "/api/drills";
+      const method = editing ? "PATCH" : "POST";
+      const res    = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
@@ -49,9 +58,30 @@ export default function DrillForm({ onSave, onClose }: Props) {
     }
   }
 
+  async function handleDelete() {
+    if (!initialDrill || !onDelete) return;
+    if (!confirm(`Delete "${initialDrill.name}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/drills/${initialDrill.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      onDelete(initialDrill.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const labelCls = "block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider";
-  const inputCls =
-    "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
+  const inputCls = "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
+
+  // Deduplicated suggestions: known categories + anything not already in the list
+  const suggestions = Array.from(new Set([
+    "Offense", "Defense", "Transition", "Special Teams", "Rest/Transition",
+    ...categories,
+  ])).sort();
 
   return (
     <div
@@ -64,10 +94,23 @@ export default function DrillForm({ onSave, onClose }: Props) {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-white font-semibold text-lg">New Drill</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
-            <X size={20} />
-          </button>
+          <h2 className="text-white font-semibold text-lg">{editing ? "Edit Drill" : "New Drill"}</h2>
+          <div className="flex items-center gap-2">
+            {editing && onDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400/60 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Trash2 size={13} />
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            )}
+            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -94,15 +137,21 @@ export default function DrillForm({ onSave, onClose }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Category</label>
-              <select
+              {/* Free-text input with datalist so coaches can add new categories */}
+              <input
+                required
+                type="text"
+                list="drill-categories"
+                placeholder="e.g. Offense"
                 className={inputCls}
                 value={form.category}
-                onChange={(e) => set("category", e.target.value as DrillCategory)}
-              >
-                {Object.values(DrillCategory).map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                onChange={(e) => set("category", e.target.value)}
+              />
+              <datalist id="drill-categories">
+                {suggestions.map((c) => (
+                  <option key={c} value={c} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label className={labelCls}>Sub-Category</label>
@@ -193,7 +242,7 @@ export default function DrillForm({ onSave, onClose }: Props) {
               disabled={saving}
               className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
             >
-              {saving ? "Saving…" : "Save Drill"}
+              {saving ? "Saving…" : editing ? "Save Changes" : "Save Drill"}
             </button>
           </div>
         </form>
