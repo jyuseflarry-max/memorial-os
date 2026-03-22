@@ -212,7 +212,7 @@ function PlannerInner() {
             className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors text-gray-300 hover:text-white text-sm font-medium px-4 py-2.5 rounded-xl"
           >
             <FileText size={15} />
-            Print Plan
+            Print
           </button>
         </div>
       </div>
