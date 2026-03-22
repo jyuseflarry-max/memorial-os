@@ -282,7 +282,7 @@ export default function PlayersPage() {
         const matchesFilter = filter === "All" || (["green","yellow","red"].includes(filter) ? getTrafficLight(p) === filter : p.status === filter);
         return matchesQuery && matchesFilter;
       })
-      .sort((a, b) => computeReadiness(a) - computeReadiness(b));
+      .sort((a, b) => a.jersey_number - b.jersey_number);
   }, [query, filter, players]);
 
   return (
