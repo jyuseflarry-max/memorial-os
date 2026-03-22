@@ -221,6 +221,9 @@ export default function CoachScript({ session, players = [] }: Props) {
                   {/* Category */}
                   <td className={`px-4 py-3 text-xs font-semibold font-mono ${CAT_COLOR[row.drill.category]}`}>
                     {row.drill.category}
+                    {row.drill.sub_category && (
+                      <span className="font-normal text-gray-500 print:text-gray-500"> ({row.drill.sub_category})</span>
+                    )}
                   </td>
 
                   {/* Density */}
