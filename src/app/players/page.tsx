@@ -78,7 +78,6 @@ function MetricBar({
   value,
   max = 5,
   color,
-  invert = false,
   avg,
 }: {
   icon: React.ElementType;
@@ -86,13 +85,10 @@ function MetricBar({
   value: number;
   max?: number;
   color: string;
-  invert?: boolean;
   avg?: number;
 }) {
-  // For soreness/stress, higher = worse, so we invert visually
-  const displayValue = invert ? max + 1 - value : value;
-  const pct = (displayValue / max) * 100;
-  const avgPct = avg !== undefined ? ((invert ? max + 1 - avg : avg) / max) * 100 : null;
+  const pct    = (value / max) * 100;
+  const avgPct = avg !== undefined ? (avg / max) * 100 : null;
 
   return (
     <div className="flex items-center gap-2">
@@ -236,8 +232,8 @@ function PlayerCard({ player, check, history }: { player: Player; check: VibeChe
             </span>
           </div>
           <MetricBar icon={Moon}     label="Sleep"    value={check.sleep_hours} max={10} color="text-blue-400"   avg={avgs?.sleep_hours} />
-          <MetricBar icon={Activity} label="Soreness" value={check.soreness}               color="text-yellow-400" invert avg={avgs?.soreness} />
-          <MetricBar icon={Brain}    label="Stress"   value={check.stress}                 color="text-purple-400" invert avg={avgs?.stress} />
+          <MetricBar icon={Activity} label="Soreness" value={check.soreness}               color="text-yellow-400" avg={avgs?.soreness} />
+          <MetricBar icon={Brain}    label="Stress"   value={check.stress}                 color="text-purple-400" avg={avgs?.stress} />
           <MetricBar icon={Zap}      label="Energy"   value={check.mood_energy}             color="text-green-400" avg={avgs?.mood_energy} />
         </div>
       ) : (
