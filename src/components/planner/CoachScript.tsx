@@ -152,11 +152,10 @@ export default function CoachScript({ session, players = [] }: Props) {
           <thead>
             <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
               {[
-                { label: "Time Block", w: "w-[130px]" },
-                { label: "Drill",      w: ""           },
-                { label: "Category",   w: "w-[105px]"  },
-                { label: "Density",    w: "w-[75px]"   },
-                { label: "Proj. Reps", w: "w-[80px]"   },
+                { label: "Time Block",   w: "w-[130px]" },
+                { label: "Drill",        w: ""           },
+                { label: "Category",     w: "w-[130px]"  },
+                { label: "Proj. Shots",  w: "w-[90px]"   },
               ].map(({ label, w }) => (
                 <th
                   key={label}
@@ -226,12 +225,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                     )}
                   </td>
 
-                  {/* Density */}
-                  <td className="px-4 py-3 text-gray-300 print:text-black font-mono text-xs">
-                    {isRest ? <span className="text-gray-500">—</span> : `${row.drill.shot_density}/min`}
-                  </td>
-
-                  {/* Proj. reps */}
+                  {/* Proj. shots */}
                   <td className="px-4 py-3 font-mono text-xs">
                     {isRest
                       ? <span className="text-gray-500">—</span>
@@ -249,7 +243,6 @@ export default function CoachScript({ session, players = [] }: Props) {
               <td colSpan={2} className="px-4 py-2 text-gray-500 print:text-gray-700 text-xs font-mono font-bold">
                 SESSION TOTALS
               </td>
-              <td />
               <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
                 ~{shots} shots
               </td>
