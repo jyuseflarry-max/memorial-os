@@ -39,17 +39,28 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseServer();
 
-    // Pull session_drills joined with drills in one query
-    let query = supabase
+    // 1. Fetch drills lookup (category + sub_category by id)
+    const { data: drillsData, error: drillsError } = await supabase
+      .from("drills")
+      .select("id, category, sub_category");
+    if (drillsError) throw drillsError;
+
+    const drillMap = new Map<string, { category: string; sub_category: string }>();
+    for (const d of drillsData ?? []) {
+      drillMap.set(d.id, { category: d.category, sub_category: d.sub_category });
+    }
+
+    // 2. Fetch session_drills with date/team filters
+    let sdQuery = supabase
       .from("session_drills")
-      .select("duration, date, drill_id, drills(category, sub_category)")
+      .select("duration, date, drill_id")
       .order("date", { ascending: true });
 
-    if (teamId) query = query.eq("team_id", teamId);
-    if (from)   query = query.gte("date", from);
-    if (to)     query = query.lte("date", to);
+    if (teamId) sdQuery = sdQuery.eq("team_id", teamId);
+    if (from)   sdQuery = sdQuery.gte("date", from);
+    if (to)     sdQuery = sdQuery.lte("date", to);
 
-    const { data, error } = await query;
+    const { data, error } = await sdQuery;
     if (error) throw error;
 
     // Aggregate
@@ -63,7 +74,7 @@ export async function GET(request: NextRequest) {
     const allSessionDates = new Set<string>();
 
     for (const row of data ?? []) {
-      const drill = Array.isArray(row.drills) ? row.drills[0] as { category: string; sub_category: string } | undefined : row.drills as { category: string; sub_category: string } | null;
+      const drill = drillMap.get(row.drill_id as string);
       if (!drill) continue;
 
       const { category, sub_category } = drill;
