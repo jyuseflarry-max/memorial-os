@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   RadioTower,
   Layers,
@@ -117,8 +117,14 @@ function NavGroup({
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router   = useRouter();
   const { dbConnected, dbError, loading } = usePlayers();
   const { teams, activeTeam, setActiveTeam } = useTeam();
+
+  function handleTeamSelect(team: typeof teams[number]) {
+    setActiveTeam(team);
+    if (pathname === "/planner") router.push("/");
+  }
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0 print:hidden">
@@ -142,7 +148,7 @@ export default function Sidebar() {
               <button
                 key={team.id}
                 type="button"
-                onClick={() => setActiveTeam(team)}
+                onClick={() => handleTeamSelect(team)}
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   activeTeam?.id === team.id
                     ? "bg-mustang-red text-white"
