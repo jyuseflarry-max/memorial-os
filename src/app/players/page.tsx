@@ -286,7 +286,7 @@ export default function PlayersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-white text-2xl font-bold tracking-tight">Player Bio-Stats</h1>
+          <h1 className="text-white text-2xl font-bold tracking-tight">Player Vibe</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
             {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {players.length} ATHLETES
           </p>

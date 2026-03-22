@@ -11,7 +11,6 @@ import {
   CalendarDays,
   Calendar,
   UserCog,
-  Activity,
   Wifi,
   WifiOff,
   Loader2,
@@ -31,7 +30,7 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Player Bio-Stats",  href: "/players",       icon: Users,     staff: false },
+      { label: "Player Vibe",        href: "/players",       icon: Users,     staff: false },
       { label: "Manage Roster",     href: "/admin/roster",  icon: UserCog,   staff: true  },
       { label: "Manage Teams",      href: "/admin/teams",   icon: Users,     staff: true  },
     ],
@@ -44,7 +43,6 @@ const NAV_GROUPS = [
       { label: "Practice Calendar", href: "/calendar",    icon: Calendar,     staff: false },
       { label: "Session Planner",   href: "/planner",     icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
-      { label: "Team Readiness",    href: "/readiness",   icon: Activity,     staff: false },
     ],
   },
 ];
