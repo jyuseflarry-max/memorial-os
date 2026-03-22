@@ -41,7 +41,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Command Center",    href: "/",            icon: RadioTower,   staff: false },
       { label: "Practice Calendar", href: "/calendar",    icon: Calendar,     staff: false },
-      { label: "Session Planner",   href: "/planner",     icon: CalendarDays, staff: false },
+      { label: "Practice Planner",  href: "/planner",     icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
     ],
   },

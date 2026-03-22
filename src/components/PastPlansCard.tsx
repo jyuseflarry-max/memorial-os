@@ -222,7 +222,7 @@ export default function PracticeHistoryCard() {
             <div className="flex flex-col items-center gap-2 py-10">
               <CalendarDays size={28} className="text-gray-700" />
               <p className="text-gray-500 text-sm">No practice plans saved yet.</p>
-              <p className="text-gray-600 text-xs font-mono">Create one in the Session Planner.</p>
+              <p className="text-gray-600 text-xs font-mono">Create one in the Practice Planner.</p>
             </div>
           )}
 
