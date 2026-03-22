@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, ChevronUp, ChevronDown, Minus, Plus } from "lucide-react";
+import { X, ChevronUp, ChevronDown, Minus, Plus, Users } from "lucide-react";
 import { SessionDrill } from "@/types/session";
+import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
 
 const CAT_DOT: Record<DrillCategory, string> = {
@@ -19,6 +20,7 @@ interface Props {
   onDurationChange: (instanceId: string, duration: number) => void;
   onReorder: (from: number, to: number) => void;
   onDropDrill: (drillId: string) => void;
+  onGroupsClick: (instanceId: string) => void;
 }
 
 export default function SessionTimeline({
@@ -27,6 +29,7 @@ export default function SessionTimeline({
   onDurationChange,
   onReorder,
   onDropDrill,
+  onGroupsClick,
 }: Props) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -104,7 +107,29 @@ export default function SessionTimeline({
                   ? "Non-Activity · 0 shots"
                   : `${sd.drill.sub_category} · ${sd.drill.shot_type} · ~${shots} shots`}
               </p>
+              {/* Group summary badge */}
+              {sd.groups && sd.groups.length > 0 && (
+                <p className="text-[10px] font-mono text-purple-400 mt-0.5">
+                  {sd.groups.length} groups · {sd.groups.reduce((s: number, g: DrillGroup) => s + g.playerIds.length, 0)} players
+                </p>
+              )}
             </div>
+
+            {/* Groups button */}
+            {!isRest && (
+              <button
+                type="button"
+                title="Assign player groups"
+                onClick={() => onGroupsClick(sd.instanceId)}
+                className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                  sd.groups && sd.groups.length > 0
+                    ? "text-purple-400 bg-purple-400/10 hover:bg-purple-400/20"
+                    : "text-gray-600 hover:text-purple-400 hover:bg-purple-400/10"
+                }`}
+              >
+                <Users size={13} />
+              </button>
+            )}
 
             {/* Duration stepper */}
             <div className="flex items-center gap-1 shrink-0">

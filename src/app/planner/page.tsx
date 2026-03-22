@@ -8,10 +8,13 @@ import DrillPicker from "@/components/planner/DrillPicker";
 import SessionTimeline from "@/components/planner/SessionTimeline";
 import MissionProfile from "@/components/planner/MissionProfile";
 import CoachScript from "@/components/planner/CoachScript";
+import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
+import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { Session, SessionDrill, totalDuration, totalShots } from "@/types/session";
+import { DrillGroup } from "@/types/grouping";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
@@ -23,6 +26,8 @@ function PlannerInner() {
 
   const { drills: vaultDrills } = useDrills();
   const { activeTeam, teams, setActiveTeam } = useTeam();
+  const { players } = useTeamPlayers();
+  const [groupingDrillId, setGroupingDrillId] = useState<string | null>(null);
 
   // If the URL specifies a team_id (e.g. clicking from the calendar), switch to that team
   const urlTeamId = searchParams.get("team_id");
@@ -104,6 +109,10 @@ function PlannerInner() {
 
   function updateDuration(instanceId: string, duration: number) {
     mutate((s) => ({ ...s, drills: s.drills.map((d) => d.instanceId === instanceId ? { ...d, duration } : d) }));
+  }
+
+  function updateGroups(instanceId: string, groups: DrillGroup[]) {
+    mutate((s) => ({ ...s, drills: s.drills.map((d) => d.instanceId === instanceId ? { ...d, groups } : d) }));
   }
 
   function reorderDrills(from: number, to: number) {
@@ -245,6 +254,7 @@ function PlannerInner() {
               onDurationChange={updateDuration}
               onReorder={reorderDrills}
               onDropDrill={addDrill}
+              onGroupsClick={(id) => setGroupingDrillId(id)}
             />
           </div>
 
@@ -258,6 +268,25 @@ function PlannerInner() {
 
       {/* ── Coach's Script ───────────────────────────────────────── */}
       {!loadingDate && <CoachScript session={session} />}
+
+      {/* ── Player Grouping Modal ─────────────────────────────────── */}
+      {groupingDrillId && (() => {
+        const sd = session.drills.find((d) => d.instanceId === groupingDrillId);
+        if (!sd) return null;
+        return (
+          <DrillGroupingModal
+            drillName={sd.drill.name}
+            teamId={activeTeam?.id ?? null}
+            players={players}
+            initialGroups={sd.groups ?? null}
+            onApply={(groups) => {
+              updateGroups(groupingDrillId, groups);
+              setGroupingDrillId(null);
+            }}
+            onClose={() => setGroupingDrillId(null)}
+          />
+        );
+      })()}
     </DashboardLayout>
   );
 }

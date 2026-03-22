@@ -1,10 +1,13 @@
 import { Drill } from "@/types/drill";
+import { DrillGroup } from "@/types/grouping";
 
 export interface SessionDrill {
   /** Unique instance — a drill may appear more than once in a session */
   instanceId: string;
   drill: Drill;
   duration: number; // minutes
+  /** Optional player groups assigned to this drill instance */
+  groups?: DrillGroup[] | null;
 }
 
 export interface Session {
