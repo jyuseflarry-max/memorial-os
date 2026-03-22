@@ -1,6 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import TodayPracticeCard from "@/components/TodayPracticeCard";
 import PastPlansCard from "@/components/PastPlansCard";
+import CalendarWidget from "@/components/CalendarWidget";
 
 // ── Page ──────────────────────────────────────────────────────────────────
 
@@ -24,10 +25,13 @@ export default function CommandCenterPage() {
       </div>
 
       {/* Two-column layout: Today left, Plans right */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <TodayPracticeCard />
         <PastPlansCard />
       </div>
+
+      {/* Calendar — full width below */}
+      <CalendarWidget />
     </DashboardLayout>
   );
 }

@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
 
     if (seasonStart) query = query.gte("submitted_at", seasonStart);
 
+    const { data, error } = await query;
     if (error) throw error;
 
     const grouped: Record<string, typeof data> = {};
