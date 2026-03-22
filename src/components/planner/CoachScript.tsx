@@ -130,22 +130,6 @@ export default function CoachScript({ session, players = [] }: Props) {
         </div>
       </div>
 
-      {/* ── Session focus bar ──────────────────────────────────────────── */}
-      <div className="hidden print:grid grid-cols-3 gap-4 py-3 border-b border-gray-300 text-xs">
-        {[
-          { label: "Session Focus", hint: "(e.g. Half-Court Offense)" },
-          { label: "Emphasis",      hint: "(e.g. Ball Movement)"       },
-          { label: "Practice Phase",hint: "(e.g. Pre-Season Block 3)"  },
-        ].map(({ label, hint }) => (
-          <div key={label} className="flex flex-col gap-1">
-            <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wide">
-              {label} <span className="normal-case text-gray-400">{hint}</span>
-            </span>
-            <div className="border-b border-gray-400" style={{ height: "18px" }} />
-          </div>
-        ))}
-      </div>
-
       {/* ── Drill table ────────────────────────────────────────────────── */}
       <div className="overflow-x-auto print:overflow-visible">
         <table className="w-full text-sm border-collapse">
