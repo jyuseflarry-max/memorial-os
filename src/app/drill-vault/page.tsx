@@ -60,9 +60,13 @@ export default function DrillVaultPage() {
     );
   }, [drills, query]);
 
-  // All unique categories currently in the vault (for datalist suggestions)
+  // All unique categories/sub-categories currently in the vault (for datalist suggestions)
   const categories = useMemo(
     () => Array.from(new Set(drills.map((d) => d.category))).sort(),
+    [drills]
+  );
+  const subCategories = useMemo(
+    () => Array.from(new Set(drills.map((d) => d.sub_category).filter(Boolean))).sort(),
     [drills]
   );
 
@@ -188,6 +192,7 @@ export default function DrillVaultPage() {
       {showNewForm && (
         <DrillForm
           categories={categories}
+          subCategories={subCategories}
           onSave={(drill: Drill) => addToCache(drill)}
           onClose={() => setShowNewForm(false)}
         />
@@ -198,6 +203,7 @@ export default function DrillVaultPage() {
         <DrillForm
           initialDrill={editing}
           categories={categories}
+          subCategories={subCategories}
           onSave={(drill: Drill) => updateInCache(drill)}
           onDelete={(id: string) => removeFromCache(id)}
           onClose={() => setEditing(null)}

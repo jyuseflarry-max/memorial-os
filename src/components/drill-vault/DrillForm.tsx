@@ -5,8 +5,9 @@ import { X, Trash2 } from "lucide-react";
 import { Drill, ShotType, IntensityLevel } from "@/types/drill";
 
 interface Props {
-  initialDrill?: Drill;   // present → edit mode
-  categories: string[];   // all known categories for datalist suggestions
+  initialDrill?: Drill;    // present → edit mode
+  categories: string[];    // all known categories for datalist suggestions
+  subCategories: string[]; // all known sub-categories for datalist suggestions
   onSave: (drill: Drill) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
@@ -24,7 +25,7 @@ function blankForm(drill?: Drill) {
   };
 }
 
-export default function DrillForm({ initialDrill, categories, onSave, onDelete, onClose }: Props) {
+export default function DrillForm({ initialDrill, categories, subCategories, onSave, onDelete, onClose }: Props) {
   const editing = !!initialDrill;
   const [form, setForm]         = useState(blankForm(initialDrill));
   const [saving, setSaving]     = useState(false);
@@ -158,11 +159,17 @@ export default function DrillForm({ initialDrill, categories, onSave, onDelete, 
               <input
                 required
                 type="text"
+                list="drill-sub-categories"
                 placeholder="e.g. Closeouts"
                 className={inputCls}
                 value={form.sub_category}
                 onChange={(e) => set("sub_category", e.target.value)}
               />
+              <datalist id="drill-sub-categories">
+                {subCategories.map((s) => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
             </div>
           </div>
 
