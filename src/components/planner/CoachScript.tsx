@@ -238,22 +238,6 @@ export default function CoachScript({ session, players = [] }: Props) {
         </table>
       </div>
 
-      {/* ── Post-practice notes ────────────────────────────────────────── */}
-      <div className="hidden print:block pt-4 pb-3 border-t border-gray-300 mt-2">
-        <p className="text-[10px] font-mono font-bold text-gray-700 uppercase tracking-widest mb-2">
-          Post-Practice Notes
-        </p>
-        <NotesLines count={4} />
-      </div>
-
-      {/* ── Signature lines ────────────────────────────────────────────── */}
-      <div className="hidden print:flex items-end gap-6 pt-2 pb-4 border-t border-gray-300">
-        <SignatureLine label="Head Coach" />
-        <SignatureLine label="Assistant Coach" />
-        <SignatureLine label="Assistant Coach" />
-        <SignatureLine label="Athletic Trainer" />
-      </div>
-
       {/* ── Footer bar ─────────────────────────────────────────────────── */}
       <div
         className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
