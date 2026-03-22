@@ -265,7 +265,7 @@ function PlannerInner() {
       )}
 
       {/* ── Coach's Script ───────────────────────────────────────── */}
-      {!loadingDate && <CoachScript session={session} />}
+      {!loadingDate && <CoachScript session={session} players={players} />}
 
       {/* ── Player Grouping Modal ─────────────────────────────────── */}
       {groupingDrillId && (() => {

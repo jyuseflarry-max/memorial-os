@@ -2,6 +2,7 @@
 
 import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalShots } from "@/types/session";
 import { DrillCategory } from "@/types/drill";
+import { Player } from "@/types/player";
 
 // ── Category colours ──────────────────────────────────────────────────────
 
@@ -53,9 +54,9 @@ function NotesLines({ count = 3 }: { count?: number }) {
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-interface Props { session: Session }
+interface Props { session: Session; players?: Player[] }
 
-export default function CoachScript({ session }: Props) {
+export default function CoachScript({ session, players = [] }: Props) {
   if (session.drills.length === 0) return null;
 
   const rows      = buildRows(session);
@@ -195,6 +196,26 @@ export default function CoachScript({ session }: Props) {
                     <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
                     {row.drill.sub_category && (
                       <p className="text-gray-500 text-[10px] font-mono">{row.drill.sub_category}</p>
+                    )}
+                    {/* Player groups — print only */}
+                    {row.groups && row.groups.length > 0 && (
+                      <div className="hidden print:block mt-1.5 pt-1.5 border-t border-gray-200 space-y-0.5">
+                        {row.groups.map((g, gi) => {
+                          const names = g.playerIds
+                            .map((id) => {
+                              const p = players.find((pl) => pl.id === id);
+                              return p ? p.name.split(" ").slice(-1)[0] : null;
+                            })
+                            .filter(Boolean)
+                            .join(", ");
+                          return (
+                            <p key={gi} className="text-[9px] font-mono text-gray-700 leading-tight">
+                              <span className="font-bold">{g.name}:</span>{" "}
+                              {names || <em className="font-normal text-gray-400">No players assigned</em>}
+                            </p>
+                          );
+                        })}
+                      </div>
                     )}
                   </td>
 
