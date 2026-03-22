@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ClipboardList, Pencil, Copy, Trash2, X,
   CalendarDays, Printer, Mail, ChevronUp, ChevronDown,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useTeam } from "@/context/TeamContext";
 
@@ -100,6 +101,8 @@ export default function PracticeHistoryCard() {
   const [sortAsc,   setSortAsc]   = useState(false); // newest first by default
   const [copying,   setCopying]   = useState<SavedSession | null>(null);
   const [deleting,  setDeleting]  = useState<string | null>(null);
+  const [page,      setPage]      = useState(1);
+  const [perPage,   setPerPage]   = useState(20);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,9 +117,15 @@ export default function PracticeHistoryCard() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Reset to page 1 whenever team, sort, or perPage changes
+  useEffect(() => { setPage(1); }, [activeTeam, sortAsc, perPage]);
+
   const sorted = [...sessions].sort((a, b) =>
     sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
   );
+
+  const totalPages = perPage === 0 ? 1 : Math.max(1, Math.ceil(sorted.length / perPage));
+  const paginated  = perPage === 0 ? sorted : sorted.slice((page - 1) * perPage, page * perPage);
 
   async function handleDelete(session: SavedSession) {
     if (!confirm(`Delete plan for ${formatDate(session.date)}? This cannot be undone.`)) return;
@@ -168,10 +177,23 @@ export default function PracticeHistoryCard() {
             <ClipboardList size={18} className="text-mustang-red" />
             <h2 className="text-white font-semibold">Practice Plans</h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <span className="text-gray-500 text-xs font-mono hidden sm:inline">
               {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {loading ? "…" : sessions.length} PLANS
             </span>
+
+            {/* Per-page selector */}
+            <select
+              value={perPage}
+              onChange={(e) => setPerPage(Number(e.target.value))}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-xs font-mono text-gray-300 focus:outline-none focus:border-mustang-red transition-colors"
+            >
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={0}>Show all</option>
+            </select>
+
             {/* Date sort toggle */}
             <button
               type="button"
@@ -204,7 +226,7 @@ export default function PracticeHistoryCard() {
             </div>
           )}
 
-          {sorted.map((s) => {
+          {paginated.map((s) => {
             const isToday   = s.date === today;
             const isFuture  = s.date > today;
             return (
@@ -275,6 +297,59 @@ export default function PracticeHistoryCard() {
             );
           })}
         </div>
+
+        {/* Pagination footer */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-700">
+            <span className="text-gray-500 text-xs font-mono">
+              {(page - 1) * perPage + 1}–{Math.min(page * perPage, sorted.length)} of {sorted.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {/* Page number pills — show at most 5 */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((n) => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                .reduce<(number | "…")[]>((acc, n, i, arr) => {
+                  if (i > 0 && n - (arr[i - 1] as number) > 1) acc.push("…");
+                  acc.push(n);
+                  return acc;
+                }, [])
+                .map((item, i) =>
+                  item === "…" ? (
+                    <span key={`ellipsis-${i}`} className="text-gray-600 text-xs px-1">…</span>
+                  ) : (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setPage(item as number)}
+                      className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${
+                        page === item
+                          ? "bg-mustang-red text-white"
+                          : "text-gray-400 hover:text-white hover:bg-gray-700"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+              <button
+                type="button"
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {copying && (
