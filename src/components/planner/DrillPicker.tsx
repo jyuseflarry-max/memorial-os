@@ -3,24 +3,24 @@
 import { useState } from "react";
 import { Search, Plus, GripVertical } from "lucide-react";
 import { Drill, DrillCategory } from "@/types/drill";
-import { MOCK_DRILLS } from "@/lib/mock-drills";
 
 const CAT_BADGE: Record<DrillCategory, string> = {
-  [DrillCategory.Defense]:       "text-blue-400   bg-blue-400/10   border-blue-400/20",
-  [DrillCategory.Offense]:       "text-green-400  bg-green-400/10  border-green-400/20",
-  [DrillCategory.RestTransition]:"text-sky-400    bg-sky-400/10    border-sky-400/20",
-  [DrillCategory.Transition]:  "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-  [DrillCategory.SpecialTeams]:"text-purple-400 bg-purple-400/10 border-purple-400/20",
+  [DrillCategory.Defense]:        "text-blue-400   bg-blue-400/10   border-blue-400/20",
+  [DrillCategory.Offense]:        "text-green-400  bg-green-400/10  border-green-400/20",
+  [DrillCategory.RestTransition]: "text-sky-400    bg-sky-400/10    border-sky-400/20",
+  [DrillCategory.Transition]:     "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+  [DrillCategory.SpecialTeams]:   "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
 interface Props {
+  drills: Drill[];
   onAdd: (drillId: string) => void;
 }
 
-export default function DrillPicker({ onAdd }: Props) {
+export default function DrillPicker({ drills, onAdd }: Props) {
   const [query, setQuery] = useState("");
 
-  const filtered = MOCK_DRILLS.filter(
+  const filtered = drills.filter(
     (d) =>
       d.name.toLowerCase().includes(query.toLowerCase()) ||
       d.category.toLowerCase().includes(query.toLowerCase()) ||
@@ -62,10 +62,10 @@ export default function DrillPicker({ onAdd }: Props) {
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{drill.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border ${CAT_BADGE[drill.category]}`}>
+                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border ${CAT_BADGE[drill.category as DrillCategory] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20"}`}>
                   {drill.category}
                 </span>
-                <span className="text-gray-500 text-[10px] font-mono">{drill.shot_density}/min</span>
+                <span className="text-gray-500 text-[10px] font-mono">{Number(drill.shot_density).toFixed(1)}/min</span>
               </div>
             </div>
             <button
@@ -78,7 +78,9 @@ export default function DrillPicker({ onAdd }: Props) {
           </li>
         ))}
         {filtered.length === 0 && (
-          <li className="text-center py-8 text-gray-600 text-xs font-mono">NO DRILLS MATCH</li>
+          <li className="text-center py-8 text-gray-600 text-xs font-mono">
+            {drills.length === 0 ? "LOADING DRILLS…" : "NO DRILLS MATCH"}
+          </li>
         )}
       </ul>
 

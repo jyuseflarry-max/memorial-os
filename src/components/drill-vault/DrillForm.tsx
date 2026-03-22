@@ -20,16 +20,33 @@ const EMPTY_FORM = {
 };
 
 export default function DrillForm({ onSave, onClose }: Props) {
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm]     = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState<string | null>(null);
 
   function set<K extends keyof typeof EMPTY_FORM>(key: K, value: (typeof EMPTY_FORM)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave({ ...form, id: crypto.randomUUID() });
-    onClose();
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/drills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      onSave(data);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const labelCls = "block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider";
@@ -37,12 +54,10 @@ export default function DrillForm({ onSave, onClose }: Props) {
     "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
 
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Panel */}
       <div
         className="relative w-full max-w-lg bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -50,13 +65,16 @@ export default function DrillForm({ onSave, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white font-semibold text-lg">New Drill</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-white transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
+
+        {error && (
+          <div className="mb-4 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Name */}
@@ -106,7 +124,7 @@ export default function DrillForm({ onSave, onClose }: Props) {
               <input
                 required
                 type="number"
-                min={0.1}
+                min={0}
                 max={20}
                 step={0.1}
                 className={inputCls}
@@ -151,7 +169,7 @@ export default function DrillForm({ onSave, onClose }: Props) {
 
           {/* Video URL */}
           <div>
-            <label className={labelCls}>Video URL</label>
+            <label className={labelCls}>Video URL (optional)</label>
             <input
               type="url"
               placeholder="https://..."
@@ -172,9 +190,10 @@ export default function DrillForm({ onSave, onClose }: Props) {
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold transition-colors"
+              disabled={saving}
+              className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
             >
-              Save Drill
+              {saving ? "Saving…" : "Save Drill"}
             </button>
           </div>
         </form>

@@ -5,7 +5,7 @@ import { Plus, Search, ExternalLink, Video } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
-import { MOCK_DRILLS } from "@/lib/mock-drills";
+import { useDrills } from "@/hooks/useDrills";
 import { Drill, DrillCategory } from "@/types/drill";
 
 // ── Intensity pip display ─────────────────────────────────────────────────
@@ -16,9 +16,7 @@ function IntensityPips({ level }: { level: number }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
-          className={`w-2 h-2 rounded-full ${
-            n <= level ? "bg-mustang-red" : "bg-gray-600"
-          }`}
+          className={`w-2 h-2 rounded-full ${n <= level ? "bg-mustang-red" : "bg-gray-600"}`}
         />
       ))}
     </div>
@@ -28,18 +26,16 @@ function IntensityPips({ level }: { level: number }) {
 // ── Category badge ────────────────────────────────────────────────────────
 
 const CAT_COLORS: Record<DrillCategory, string> = {
-  [DrillCategory.Defense]:       "text-blue-400  bg-blue-400/10  border-blue-400/20",
-  [DrillCategory.Offense]:       "text-green-400 bg-green-400/10 border-green-400/20",
-  [DrillCategory.RestTransition]:"text-sky-400   bg-sky-400/10   border-sky-400/20",
-  [DrillCategory.Transition]: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-  [DrillCategory.SpecialTeams]: "text-purple-400 bg-purple-400/10 border-purple-400/20",
+  [DrillCategory.Defense]:        "text-blue-400   bg-blue-400/10   border-blue-400/20",
+  [DrillCategory.Offense]:        "text-green-400  bg-green-400/10  border-green-400/20",
+  [DrillCategory.RestTransition]: "text-sky-400    bg-sky-400/10    border-sky-400/20",
+  [DrillCategory.Transition]:     "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+  [DrillCategory.SpecialTeams]:   "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
 function CategoryBadge({ cat }: { cat: DrillCategory }) {
   return (
-    <span
-      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CAT_COLORS[cat]}`}
-    >
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CAT_COLORS[cat] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20"}`}>
       {cat}
     </span>
   );
@@ -48,8 +44,8 @@ function CategoryBadge({ cat }: { cat: DrillCategory }) {
 // ── Main page ─────────────────────────────────────────────────────────────
 
 export default function DrillVaultPage() {
-  const [drills, setDrills] = useState<Drill[]>(MOCK_DRILLS);
-  const [query, setQuery] = useState("");
+  const { drills, loading, addToCache } = useDrills();
+  const [query, setQuery]       = useState("");
   const [showForm, setShowForm] = useState(false);
 
   const filtered = useMemo(() => {
@@ -62,10 +58,6 @@ export default function DrillVaultPage() {
     );
   }, [drills, query]);
 
-  function handleSave(drill: Drill) {
-    setDrills((prev) => [drill, ...prev]);
-  }
-
   return (
     <DashboardLayout>
       {/* Page header */}
@@ -73,7 +65,7 @@ export default function DrillVaultPage() {
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Drill Vault</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {drills.length} DRILLS INDEXED
+            {loading ? "LOADING…" : `${drills.length} DRILLS INDEXED`}
           </p>
         </div>
         <button
@@ -92,10 +84,7 @@ export default function DrillVaultPage() {
 
       {/* Search bar */}
       <div className="relative mb-4">
-        <Search
-          size={15}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-        />
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input
           type="text"
           placeholder="Search by name, category, or sub-category…"
@@ -110,23 +99,25 @@ export default function DrillVaultPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">
-              {["Drill Name", "Category", "Sub-Category", "Shot Type", "Density", "Intensity", "Video"].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                )
-              )}
+              {["Drill Name", "Category", "Sub-Category", "Shot Type", "Density", "Intensity", "Video"].map((h) => (
+                <th key={h} className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider">
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {loading && (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
-                  NO DRILLS MATCH QUERY
+                  LOADING…
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
+                  {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH QUERY"}
                 </td>
               </tr>
             )}
@@ -139,7 +130,7 @@ export default function DrillVaultPage() {
               >
                 <td className="px-4 py-3 text-white font-medium">{drill.name}</td>
                 <td className="px-4 py-3">
-                  <CategoryBadge cat={drill.category} />
+                  <CategoryBadge cat={drill.category as DrillCategory} />
                 </td>
                 <td className="px-4 py-3 text-gray-400">{drill.sub_category}</td>
                 <td className="px-4 py-3">
@@ -148,7 +139,7 @@ export default function DrillVaultPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-300 font-mono">
-                  {drill.shot_density.toFixed(1)}
+                  {Number(drill.shot_density).toFixed(1)}
                   <span className="text-gray-600 text-xs"> /min</span>
                 </td>
                 <td className="px-4 py-3">
@@ -176,9 +167,8 @@ export default function DrillVaultPage() {
         </table>
       </div>
 
-      {/* Modal */}
       {showForm && (
-        <DrillForm onSave={handleSave} onClose={() => setShowForm(false)} />
+        <DrillForm onSave={(drill: Drill) => addToCache(drill)} onClose={() => setShowForm(false)} />
       )}
     </DashboardLayout>
   );

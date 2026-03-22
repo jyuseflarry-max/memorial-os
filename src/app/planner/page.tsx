@@ -8,7 +8,7 @@ import DrillPicker from "@/components/planner/DrillPicker";
 import SessionTimeline from "@/components/planner/SessionTimeline";
 import MissionProfile from "@/components/planner/MissionProfile";
 import CoachScript from "@/components/planner/CoachScript";
-import { MOCK_DRILLS } from "@/lib/mock-drills";
+import { useDrills } from "@/hooks/useDrills";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
 import { Session, SessionDrill, totalDuration, totalShots } from "@/types/session";
 
@@ -20,6 +20,7 @@ function PlannerInner() {
   const searchParams = useSearchParams();
   const initialDate  = searchParams.get("date") ?? TODAY;
 
+  const { drills: vaultDrills } = useDrills();
   const [session, setSession] = useState<Session>({ date: initialDate, startTime: "15:00", drills: [] });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [loadingDate, setLoadingDate] = useState(false);
@@ -71,7 +72,7 @@ function PlannerInner() {
   }
 
   function addDrill(drillId: string) {
-    const drill = MOCK_DRILLS.find((d) => d.id === drillId);
+    const drill = vaultDrills.find((d) => d.id === drillId);
     if (!drill) return;
     mutate((s) => ({ ...s, drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: 10 }] }));
   }
@@ -198,7 +199,7 @@ function PlannerInner() {
       {!loadingDate && (
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-4 print:hidden" style={{ minHeight: "420px" }}>
           {/* Left — Drill Picker */}
-          <DrillPicker onAdd={addDrill} />
+          <DrillPicker drills={vaultDrills} onAdd={addDrill} />
 
           {/* Center — Timeline */}
           <div className="flex flex-col gap-2">

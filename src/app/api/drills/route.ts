@@ -1,0 +1,51 @@
+import { NextRequest } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase/server";
+
+/**
+ * GET /api/drills
+ * Returns all drills ordered by name.
+ */
+export async function GET() {
+  try {
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from("drills")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+    return Response.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/drills
+ * Body: { name, category, sub_category, shot_density, shot_type, intensity, video_url }
+ * Returns the inserted drill row.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { name, category, sub_category, shot_density, shot_type, intensity, video_url } = body;
+
+    if (!name || !category) {
+      return Response.json({ error: "name and category are required" }, { status: 400 });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from("drills")
+      .insert({ name, category, sub_category, shot_density, shot_type, intensity, video_url: video_url ?? "" })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return Response.json(data, { status: 201 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
