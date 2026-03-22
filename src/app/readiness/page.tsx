@@ -48,7 +48,7 @@ export default function ReadinessPage() {
   const active = players
     .filter((p) => p.status === PlayerStatus.Active)
     .map((p) => ({ player: p, readiness: Math.round(computeReadiness(p) * 100), light: getTrafficLight(p) }))
-    .sort((a, b) => a.readiness - b.readiness);
+    .sort((a, b) => a.player.jersey_number - b.player.jersey_number);
 
   const avg = active.length
     ? Math.round(active.reduce((s, r) => s + r.readiness, 0) / active.length)
