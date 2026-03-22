@@ -152,12 +152,11 @@ export default function CoachScript({ session, players = [] }: Props) {
           <thead>
             <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
               {[
-                { label: "Time Block",  w: "w-[130px]" },
-                { label: "Drill",       w: ""           },
-                { label: "Category",    w: "w-[105px]"  },
-                { label: "Density",     w: "w-[75px]"   },
-                { label: "Proj. Reps",  w: "w-[80px]"   },
-                { label: "Coach Notes", w: "w-[180px]"  },
+                { label: "Time Block", w: "w-[130px]" },
+                { label: "Drill",      w: ""           },
+                { label: "Category",   w: "w-[105px]"  },
+                { label: "Density",    w: "w-[75px]"   },
+                { label: "Proj. Reps", w: "w-[80px]"   },
               ].map(({ label, w }) => (
                 <th
                   key={label}
@@ -236,11 +235,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                       : <span className="text-white print:text-black font-bold">~{projReps}</span>}
                   </td>
 
-                  {/* Notes box */}
-                  <td className="px-4 py-3">
-                    <div className="hidden print:block rounded border border-gray-400" style={{ height: "40px" }} />
-                    <div className="print:hidden h-8 rounded border border-gray-600 bg-gray-900/40" />
-                  </td>
                 </tr>
               );
             })}
@@ -252,7 +246,6 @@ export default function CoachScript({ session, players = [] }: Props) {
               <td colSpan={2} className="px-4 py-2 text-gray-500 print:text-gray-700 text-xs font-mono font-bold">
                 SESSION TOTALS
               </td>
-              <td />
               <td />
               <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
                 ~{shots} shots
