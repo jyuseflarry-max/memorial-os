@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
 
@@ -9,13 +8,14 @@ import { useTeam } from "@/context/TeamContext";
  * Drop-in replacement for usePlayers() wherever team-scoped data is needed.
  */
 export function useTeamPlayers() {
-  const ctx         = usePlayers();
+  const { players: allPlayers, ...rest } = usePlayers();
   const { activeTeam } = useTeam();
 
-  const players = useMemo(
-    () => activeTeam ? ctx.players.filter((p) => p.team_id === activeTeam.id) : ctx.players,
-    [ctx.players, activeTeam]
-  );
+  // No useMemo — filtering 15-20 players is instant and context changes
+  // need to propagate immediately on every render.
+  const players = activeTeam
+    ? allPlayers.filter((p) => p.team_id === activeTeam.id)
+    : allPlayers;
 
-  return { ...ctx, players };
+  return { ...rest, players };
 }
