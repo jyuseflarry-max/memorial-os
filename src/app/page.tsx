@@ -1,5 +1,4 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import TeamReadinessCard from "@/components/TeamReadinessCard";
 import TodayPracticeCard from "@/components/TodayPracticeCard";
 import PastPlansCard from "@/components/PastPlansCard";
 
@@ -24,10 +23,9 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* Top two-column grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+      {/* Today's practice */}
+      <div className="mb-6">
         <TodayPracticeCard />
-        <TeamReadinessCard />
       </div>
 
       {/* Previous plans — full width */}
