@@ -69,6 +69,8 @@ export function computeReadiness(player: Player): number {
 }
 
 export function getTrafficLight(player: Player): TrafficLight {
+  if (player.status === PlayerStatus.Out) return "red";
+  if (player.status === PlayerStatus.Restricted) return "yellow";
   const r = computeReadiness(player);
   if (r >= 0.65) return "green";
   if (r >= 0.35) return "yellow";
