@@ -203,8 +203,8 @@ function PlayerCard({ player, check, history }: { player: Player; check: VibeChe
         <div className="bg-gray-700/40 rounded-xl px-3 py-2">
           <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-0.5">Vibe Score</p>
           <p className="text-white font-bold font-mono text-lg">
-            {player.latest_vibe_score.toFixed(1)}
-            <span className="text-gray-500 text-xs font-normal"> / 5</span>
+            {check ? check.vibe_score.toFixed(1) : <span className="text-gray-600">—</span>}
+            {check && <span className="text-gray-500 text-xs font-normal"> / 5</span>}
           </p>
         </div>
         <div className="bg-gray-700/40 rounded-xl px-3 py-2">
