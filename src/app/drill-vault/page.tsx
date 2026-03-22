@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Search, ExternalLink, Video, Pencil, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, ExternalLink, Video, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
@@ -247,10 +247,21 @@ export default function DrillVaultPage() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <button onClick={() => setEditing(drill)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors" title="Edit drill">
-                    <Pencil size={14} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setEditing(drill)}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors" title="Edit drill">
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!confirm(`Delete "${drill.name}"? This cannot be undone.`)) return;
+                        removeFromCache(drill.id);
+                        fetch(`/api/drills/${drill.id}`, { method: "DELETE" }).catch(() => {});
+                      }}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors" title="Delete drill">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </td>
               </tr>
               );
