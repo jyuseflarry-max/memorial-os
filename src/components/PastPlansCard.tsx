@@ -2,14 +2,17 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Pencil, Copy, Trash2, X, CalendarDays } from "lucide-react";
+import {
+  ClipboardList, Pencil, Copy, Trash2, X,
+  CalendarDays, Printer, Mail, ChevronUp, ChevronDown,
+} from "lucide-react";
 import { useTeam } from "@/context/TeamContext";
 
 interface SavedSession {
   id: string;
-  date: string;       // YYYY-MM-DD
+  date: string;
   start_time: string;
-  drills: unknown[];
+  drills: Array<{ drill: { name: string }; duration: number }>;
   team_id: string | null;
 }
 
@@ -21,6 +24,25 @@ function formatDate(iso: string): string {
   return new Date(iso + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "short", month: "short", day: "numeric", year: "numeric",
   });
+}
+
+function formatTime12(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+function buildEmailBody(session: SavedSession, teamName: string): string {
+  const lines = [
+    `Practice Plan — ${formatDate(session.date)}`,
+    `Team: ${teamName}`,
+    `Start Time: ${formatTime12(session.start_time)}`,
+    ``,
+    `DRILLS (${session.drills.length}):`,
+    ...session.drills.map((sd, i) => `  ${i + 1}. ${sd.drill.name} — ${sd.duration} min`),
+  ];
+  return encodeURIComponent(lines.join("\n"));
 }
 
 // ── Copy-to-date modal ────────────────────────────────────────────────────
@@ -36,19 +58,11 @@ function CopyModal({
 }) {
   const [date, setDate] = useState("");
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-80 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-80 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <p className="text-white font-semibold">Copy Plan</p>
-          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
-            <X size={16} />
-          </button>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X size={16} /></button>
         </div>
         <p className="text-gray-400 text-xs font-mono mb-1">SOURCE</p>
         <p className="text-gray-300 text-sm mb-4">{formatDate(source.date)} · {source.drills.length} drills</p>
@@ -60,19 +74,12 @@ function CopyModal({
           className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-mustang-red transition-colors mb-4"
         />
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-400 text-sm hover:text-white transition-colors"
-          >
+          <button type="button" onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-400 text-sm hover:text-white transition-colors">
             Cancel
           </button>
-          <button
-            type="button"
-            disabled={!date}
-            onClick={() => { if (date) onConfirm(date); }}
-            className="flex-1 px-4 py-2 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
-          >
+          <button type="button" disabled={!date} onClick={() => { if (date) onConfirm(date); }}
+            className="flex-1 px-4 py-2 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
             Copy
           </button>
         </div>
@@ -83,15 +90,16 @@ function CopyModal({
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function PastPlansCard() {
+export default function PracticeHistoryCard() {
   const router = useRouter();
+  const today  = isoToday();
   const { activeTeam } = useTeam();
-  const today = isoToday();
 
-  const [sessions, setSessions] = useState<SavedSession[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [copying, setCopying]   = useState<SavedSession | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null); // session id being deleted
+  const [sessions,  setSessions]  = useState<SavedSession[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [sortAsc,   setSortAsc]   = useState(false); // newest first by default
+  const [copying,   setCopying]   = useState<SavedSession | null>(null);
+  const [deleting,  setDeleting]  = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,18 +107,16 @@ export default function PastPlansCard() {
       const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
       const res  = await fetch(`/api/sessions${teamParam}`);
       const data = await res.json();
-      if (Array.isArray(data)) {
-        // Past sessions only, most recent first
-        const past = data
-          .filter((s: SavedSession) => s.date < today)
-          .sort((a: SavedSession, b: SavedSession) => b.date.localeCompare(a.date));
-        setSessions(past);
-      }
+      if (Array.isArray(data)) setSessions(data);
     } catch {}
     setLoading(false);
-  }, [activeTeam, today]);
+  }, [activeTeam]);
 
   useEffect(() => { load(); }, [load]);
+
+  const sorted = [...sessions].sort((a, b) =>
+    sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
+  );
 
   async function handleDelete(session: SavedSession) {
     if (!confirm(`Delete plan for ${formatDate(session.date)}? This cannot be undone.`)) return;
@@ -136,10 +142,21 @@ export default function PastPlansCard() {
           team_id:    source.team_id,
         }),
       });
-      // Navigate to the new plan
       const teamParam = source.team_id ? `&team_id=${source.team_id}` : "";
       router.push(`/planner?date=${targetDate}${teamParam}`);
     } catch {}
+  }
+
+  function handlePrint(session: SavedSession) {
+    const teamParam = session.team_id ? `&team_id=${session.team_id}` : "";
+    window.open(`/planner?date=${session.date}${teamParam}&autoprint=1`, "_blank");
+  }
+
+  function handleEmail(session: SavedSession) {
+    const teamName = activeTeam?.name ?? "Team";
+    const subject  = encodeURIComponent(`Practice Plan — ${formatDate(session.date)} — ${teamName}`);
+    const body     = buildEmailBody(session, teamName);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
   return (
@@ -149,80 +166,117 @@ export default function PastPlansCard() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
             <ClipboardList size={18} className="text-mustang-red" />
-            <h2 className="text-white font-semibold">Previous Plans</h2>
+            <h2 className="text-white font-semibold">Practice Plans</h2>
           </div>
-          <span className="text-gray-500 text-xs font-mono">
-            {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {loading ? "…" : sessions.length} PLANS
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-gray-500 text-xs font-mono hidden sm:inline">
+              {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {loading ? "…" : sessions.length} PLANS
+            </span>
+            {/* Date sort toggle */}
+            <button
+              type="button"
+              onClick={() => setSortAsc((v) => !v)}
+              className="flex items-center gap-1 text-xs font-mono text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded-lg px-2.5 py-1.5 transition-colors"
+            >
+              Date {sortAsc ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+          </div>
         </div>
 
+        {/* Column headers */}
+        {!loading && sorted.length > 0 && (
+          <div className="grid grid-cols-[1fr_auto] px-6 py-2 border-b border-gray-700/50">
+            <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Plan</span>
+            <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Actions</span>
+          </div>
+        )}
+
         {/* List */}
-        <div className="divide-y divide-gray-700/50">
+        <div className="divide-y divide-gray-700/30">
           {loading && (
             <p className="text-gray-500 text-xs font-mono text-center py-8">LOADING…</p>
           )}
-          {!loading && sessions.length === 0 && (
+          {!loading && sorted.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-10">
               <CalendarDays size={28} className="text-gray-700" />
-              <p className="text-gray-500 text-sm">No previous plans saved.</p>
-              <p className="text-gray-600 text-xs font-mono">Plans you save will appear here.</p>
+              <p className="text-gray-500 text-sm">No practice plans saved yet.</p>
+              <p className="text-gray-600 text-xs font-mono">Create one in the Session Planner.</p>
             </div>
           )}
-          {sessions.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-center gap-3 px-6 py-3 hover:bg-gray-700/20 transition-colors"
-            >
-              {/* Date + meta */}
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium">{formatDate(s.date)}</p>
-                <p className="text-gray-500 text-xs font-mono">
-                  {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}
-                </p>
+
+          {sorted.map((s) => {
+            const isToday   = s.date === today;
+            const isFuture  = s.date > today;
+            return (
+              <div
+                key={s.id}
+                className={`flex items-center gap-3 px-6 py-3 transition-colors ${
+                  isToday ? "bg-mustang-red/5" : "hover:bg-gray-700/20"
+                }`}
+              >
+                {/* Date badge */}
+                <div className="w-1.5 self-stretch rounded-full shrink-0 mt-0.5" style={{
+                  backgroundColor: isToday ? "rgb(220 38 38)" : isFuture ? "rgb(96 165 250 / 0.6)" : "rgb(75 85 99)",
+                }} />
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-white text-sm font-medium">{formatDate(s.date)}</p>
+                    {isToday && (
+                      <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
+                    )}
+                    {isFuture && (
+                      <span className="text-[9px] font-mono text-blue-400 bg-blue-400/10 border border-blue-400/20 px-1.5 py-0.5 rounded-full">UPCOMING</span>
+                    )}
+                  </div>
+                  <p className="text-gray-500 text-xs font-mono">
+                    {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {formatTime12(s.start_time)}
+                  </p>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button type="button" title="Edit in Planner"
+                    onClick={() => {
+                      const tp = s.team_id ? `&team_id=${s.team_id}` : "";
+                      router.push(`/planner?date=${s.date}${tp}`);
+                    }}
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                    <Pencil size={14} />
+                  </button>
+
+                  <button type="button" title="Copy to another date"
+                    onClick={() => setCopying(s)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                    <Copy size={14} />
+                  </button>
+
+                  <button type="button" title="Print / Save as PDF"
+                    onClick={() => handlePrint(s)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                    <Printer size={14} />
+                  </button>
+
+                  <button type="button" title="Email plan"
+                    onClick={() => handleEmail(s)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                    <Mail size={14} />
+                  </button>
+
+                  <button type="button" title="Delete plan"
+                    disabled={deleting === s.id}
+                    onClick={() => handleDelete(s)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1 shrink-0">
-                {/* Edit */}
-                <button
-                  type="button"
-                  title="Edit in Planner"
-                  onClick={() => {
-                    const teamParam = s.team_id ? `&team_id=${s.team_id}` : "";
-                    router.push(`/planner?date=${s.date}${teamParam}`);
-                  }}
-                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                >
-                  <Pencil size={14} />
-                </button>
-
-                {/* Copy */}
-                <button
-                  type="button"
-                  title="Copy to another date"
-                  onClick={() => setCopying(s)}
-                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                >
-                  <Copy size={14} />
-                </button>
-
-                {/* Delete */}
-                <button
-                  type="button"
-                  title="Delete plan"
-                  disabled={deleting === s.id}
-                  onClick={() => handleDelete(s)}
-                  className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
-      {/* Copy modal */}
       {copying && (
         <CopyModal
           source={copying}

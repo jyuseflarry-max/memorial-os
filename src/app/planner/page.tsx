@@ -62,6 +62,14 @@ function PlannerInner() {
   // Reload when the date OR active team changes
   useEffect(() => { loadDate(session.date); }, [activeTeam]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-print when opened with ?autoprint=1 (e.g. from Practice Plans list)
+  const autoPrint = searchParams.get("autoprint") === "1";
+  useEffect(() => {
+    if (!autoPrint || loadingDate) return;
+    const t = setTimeout(() => window.print(), 300);
+    return () => clearTimeout(t);
+  }, [autoPrint, loadingDate]);
+
   // ── Date change — warn about unsaved changes ──────────────────────────────
 
   function handleDateChange(newDate: string) {
