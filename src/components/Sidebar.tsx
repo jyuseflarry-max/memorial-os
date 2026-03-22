@@ -90,13 +90,13 @@ function NavGroup({
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   active
                     ? "bg-mustang-red/15 text-mustang-red"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
                 }`}
               >
-                <Icon size={16} className={active ? "text-mustang-red" : "text-gray-500"} />
+                <Icon size={14} className={active ? "text-mustang-red" : "text-gray-500"} />
                 <span className="flex-1">{label}</span>
                 {staff && (
                   <span className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-full">
@@ -143,7 +143,7 @@ export default function Sidebar() {
                 key={team.id}
                 type="button"
                 onClick={() => setActiveTeam(team)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   activeTeam?.id === team.id
                     ? "bg-mustang-red text-white"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
