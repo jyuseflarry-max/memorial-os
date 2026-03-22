@@ -1,17 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, CalendarDays, Dumbbell } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
+import { Team } from "@/types/team";
 
 interface SavedSession {
   id: string;
   date: string;        // YYYY-MM-DD
   start_time: string;
   drills: unknown[];
+  team_id: string | null;
 }
+
+// Color palette — one per team (index-based, wraps if >6 teams)
+const TEAM_COLORS = [
+  { dot: "bg-mustang-red",   text: "text-mustang-red",   border: "border-mustang-red/30",   bg: "bg-mustang-red/10"   },
+  { dot: "bg-sky-400",       text: "text-sky-400",       border: "border-sky-400/30",       bg: "bg-sky-400/10"       },
+  { dot: "bg-emerald-400",   text: "text-emerald-400",   border: "border-emerald-400/30",   bg: "bg-emerald-400/10"   },
+  { dot: "bg-amber-400",     text: "text-amber-400",     border: "border-amber-400/30",     bg: "bg-amber-400/10"     },
+  { dot: "bg-purple-400",    text: "text-purple-400",    border: "border-purple-400/30",    bg: "bg-purple-400/10"    },
+  { dot: "bg-pink-400",      text: "text-pink-400",      border: "border-pink-400/30",      bg: "bg-pink-400/10"      },
+];
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS   = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -29,34 +41,60 @@ function formatDisplayDate(iso: string): string {
 export default function CalendarPage() {
   const router   = useRouter();
   const today    = isoToday();
-  const { activeTeam } = useTeam();
+  const { teams } = useTeam();
+
   const [year,  setYear]    = useState(() => new Date().getFullYear());
   const [month, setMonth]   = useState(() => new Date().getMonth()); // 0-indexed
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [loading, setLoading]   = useState(true);
+  const [filterTeamId, setFilterTeamId] = useState<string | null>(null); // null = All
 
+  // Assign a stable color index per team
+  const teamColorMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    teams.forEach((t, i) => { map[t.id] = i % TEAM_COLORS.length; });
+    return map;
+  }, [teams]);
+
+  function colorFor(teamId: string | null) {
+    if (!teamId) return TEAM_COLORS[0];
+    const idx = teamColorMap[teamId] ?? 0;
+    return TEAM_COLORS[idx];
+  }
+
+  // Fetch ALL sessions (no team filter on API)
   useEffect(() => {
     setLoading(true);
-    const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
-    fetch(`/api/sessions${teamParam}`)
+    fetch("/api/sessions")
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setSessions(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [activeTeam]);
+  }, []);
 
-  // Build a set of dates that have saved sessions
-  const sessionDates = new Set(sessions.map((s) => s.date));
-  const sessionMap   = Object.fromEntries(sessions.map((s) => [s.date, s]));
+  // Apply filter for display
+  const visibleSessions = useMemo(
+    () => filterTeamId ? sessions.filter((s) => s.team_id === filterTeamId) : sessions,
+    [sessions, filterTeamId]
+  );
+
+  // Group visible sessions by date
+  const sessionsByDate = useMemo(() => {
+    const map: Record<string, SavedSession[]> = {};
+    visibleSessions.forEach((s) => {
+      if (!map[s.date]) map[s.date] = [];
+      map[s.date].push(s);
+    });
+    return map;
+  }, [visibleSessions]);
 
   // Calendar grid
-  const firstDay  = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay   = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  // Pad to complete last week
   while (cells.length % 7 !== 0) cells.push(null);
 
   function prevMonth() {
@@ -73,11 +111,12 @@ export default function CalendarPage() {
   }
 
   function openDay(day: number) {
-    router.push(`/planner?date=${cellDate(day)}`);
+    const date = cellDate(day);
+    router.push(`/planner?date=${date}`);
   }
 
-  // Sessions this month (for the sidebar list)
-  const monthSessions = sessions
+  // Sessions this month (sidebar)
+  const monthSessions = visibleSessions
     .filter((s) => {
       const [y, m] = s.date.split("-").map(Number);
       return y === year && m === month + 1;
@@ -87,11 +126,11 @@ export default function CalendarPage() {
   return (
     <DashboardLayout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Practice Calendar</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {loading ? "LOADING…" : `${sessions.length} SAVED PLANS`}
+            {loading ? "LOADING…" : `${visibleSessions.length} SAVED PLANS`}
           </p>
         </div>
         <button
@@ -102,6 +141,40 @@ export default function CalendarPage() {
           <CalendarDays size={15} />
           New Plan
         </button>
+      </div>
+
+      {/* Team filter buttons */}
+      <div className="flex gap-2 flex-wrap mb-5">
+        <button
+          type="button"
+          onClick={() => setFilterTeamId(null)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+            filterTeamId === null
+              ? "bg-gray-200 border-gray-200 text-gray-900"
+              : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
+          }`}
+        >
+          All Teams
+        </button>
+        {teams.map((team) => {
+          const color = colorFor(team.id);
+          const isActive = filterTeamId === team.id;
+          return (
+            <button
+              key={team.id}
+              type="button"
+              onClick={() => setFilterTeamId(team.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                isActive
+                  ? `${color.bg} ${color.border} ${color.text}`
+                  : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${color.dot}`} />
+              {team.name}
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
@@ -135,10 +208,10 @@ export default function CalendarPage() {
           <div className="grid grid-cols-7">
             {cells.map((day, idx) => {
               if (!day) return <div key={`empty-${idx}`} className="aspect-square border-b border-r border-gray-700/40 last:border-r-0" />;
-              const iso     = cellDate(day);
-              const isToday = iso === today;
-              const hasPlan = sessionDates.has(iso);
-              const drillCount = hasPlan ? (sessionMap[iso]?.drills?.length ?? 0) : 0;
+              const iso      = cellDate(day);
+              const isToday  = iso === today;
+              const daySessions = sessionsByDate[iso] ?? [];
+              const hasPlan  = daySessions.length > 0;
 
               return (
                 <button
@@ -154,10 +227,13 @@ export default function CalendarPage() {
                     ${isToday ? "text-mustang-red" : hasPlan ? "text-white" : "text-gray-500"}`}>
                     {day}
                   </span>
+                  {/* One dot per team that has a session on this day */}
                   {hasPlan && (
                     <div className="flex items-center gap-0.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-mustang-red" />
-                      <span className="text-[9px] font-mono text-gray-500">{drillCount}</span>
+                      {daySessions.map((s) => {
+                        const color = colorFor(s.team_id);
+                        return <div key={s.id} className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />;
+                      })}
                     </div>
                   )}
                   {isToday && !hasPlan && (
@@ -169,13 +245,16 @@ export default function CalendarPage() {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-4 px-6 py-3 border-t border-gray-700">
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500">
-              <div className="w-2 h-2 rounded-full bg-mustang-red" /> Saved plan
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500">
-              <div className="w-2 h-2 rounded-full bg-mustang-red/30" /> Today
-            </div>
+          <div className="flex items-center gap-4 px-6 py-3 border-t border-gray-700 flex-wrap">
+            {teams.map((team) => {
+              const color = colorFor(team.id);
+              return (
+                <div key={team.id} className="flex items-center gap-1.5 text-[10px] font-mono text-gray-400">
+                  <div className={`w-2 h-2 rounded-full ${color.dot}`} />
+                  {team.name}
+                </div>
+              );
+            })}
             <p className="text-[10px] font-mono text-gray-600 ml-auto">Click any day to open planner</p>
           </div>
         </div>
@@ -194,29 +273,34 @@ export default function CalendarPage() {
             {!loading && monthSessions.length === 0 && (
               <p className="text-gray-600 text-xs font-mono text-center py-8">NO PLANS THIS MONTH</p>
             )}
-            {monthSessions.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => router.push(`/planner?date=${s.date}`)}
-                className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left"
-              >
-                <div className="w-8 h-8 rounded-lg bg-mustang-red/10 border border-mustang-red/20 flex items-center justify-center shrink-0">
-                  <Dumbbell size={14} className="text-mustang-red" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium">{formatDisplayDate(s.date)}</p>
-                  <p className="text-gray-500 text-xs font-mono">
-                    {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}
-                  </p>
-                </div>
-                {s.date === today && (
-                  <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">
-                    TODAY
-                  </span>
-                )}
-              </button>
-            ))}
+            {monthSessions.map((s) => {
+              const color = colorFor(s.team_id);
+              const teamName = teams.find((t) => t.id === s.team_id)?.name;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => router.push(`/planner?date=${s.date}`)}
+                  className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left"
+                >
+                  <div className={`w-8 h-8 rounded-lg ${color.bg} border ${color.border} flex items-center justify-center shrink-0`}>
+                    <Dumbbell size={14} className={color.text} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium">{formatDisplayDate(s.date)}</p>
+                    <p className="text-gray-500 text-xs font-mono">
+                      {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}
+                      {teamName ? ` · ${teamName}` : ""}
+                    </p>
+                  </div>
+                  {s.date === today && (
+                    <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">
+                      TODAY
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

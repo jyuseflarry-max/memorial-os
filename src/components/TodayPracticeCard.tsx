@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Clock, Zap, TrendingUp, ShieldCheck, ArrowRight } from "lucide-react";
 import { SessionDrill, parseTime, formatTime12, totalDuration } from "@/types/session";
+import { useTeam } from "@/context/TeamContext";
 
 interface SavedSession {
   date: string;
@@ -27,16 +28,20 @@ function isoToday(): string {
 export default function TodayPracticeCard() {
   const router  = useRouter();
   const today   = isoToday();
+  const { activeTeam } = useTeam();
   const [session, setSession] = useState<SavedSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/sessions/${today}`)
+    setLoading(true);
+    setSession(null);
+    const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
+    fetch(`/api/sessions/${today}${teamParam}`)
       .then((r) => r.json())
-      .then((data) => { if (data && !data.error) setSession(data); })
+      .then((data) => { if (data && !data.error && data.drills) setSession(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [today]);
+  }, [today, activeTeam]);
 
   const dateLabel = new Date(today + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "short", month: "short", day: "numeric",
@@ -48,7 +53,10 @@ export default function TodayPracticeCard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ClipboardList size={20} className="text-mustang-red" />
-          <h2 className="text-white font-semibold text-lg">Today&apos;s Practice</h2>
+          <div>
+            <h2 className="text-white font-semibold text-lg">Today&apos;s Practice</h2>
+            {activeTeam && <p className="text-gray-500 text-xs font-mono -mt-0.5">{activeTeam.name.toUpperCase()}</p>}
+          </div>
         </div>
         {session && (
           <span className="text-gray-400 text-xs font-mono flex items-center gap-1">

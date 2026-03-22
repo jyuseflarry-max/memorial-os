@@ -142,6 +142,7 @@ function PlannerInner() {
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Session Planner</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
+            {activeTeam ? `${activeTeam.name.toUpperCase()} · ` : ""}
             {session.drills.length > 0
               ? `${session.drills.length} DRILLS · ${totalMin} MIN · ~${totalShotsNum} SHOTS`
               : loadingDate ? "LOADING…" : "BUILD YOUR PRACTICE PLAN"}
