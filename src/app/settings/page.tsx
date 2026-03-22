@@ -26,14 +26,21 @@ export default function SettingsPage() {
   async function handleSave() {
     setStatus("saving");
     await save({
-      program_name:       form.program_name,
-      logo_url:           form.logo_url,
-      season_start:       form.season_start || null,
-      print_orientation:  form.print_orientation,
-      default_start_time: form.default_start_time,
+      program_name:        form.program_name,
+      logo_url:            form.logo_url,
+      season_start:        form.season_start || null,
+      print_orientation:   form.print_orientation,
+      default_start_time:  form.default_start_time,
+      primary_color:       form.primary_color,
+      primary_color_dark:  form.primary_color_dark,
     });
     setStatus("saved");
     setTimeout(() => setStatus("idle"), 2500);
+  }
+
+  // Sync hex text input → color picker (validate format first)
+  function handleHexInput(key: "primary_color" | "primary_color_dark", raw: string) {
+    patch(key, raw);
   }
 
   // Logo file → base64 (store as data URL for simplicity; swap for S3/Supabase Storage upload later)
@@ -221,6 +228,107 @@ export default function SettingsPage() {
               />
               <p className="text-[10px] font-mono text-gray-600">Pre-filled start time when creating a new practice plan.</p>
             </div>
+          </section>
+
+          {/* Colors */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-6">
+            <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
+              Colors
+            </h2>
+
+            {/* Editable Brand Colors */}
+            <div className="flex flex-col gap-4">
+              <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">Brand (Editable)</p>
+              {(
+                [
+                  { key: "primary_color",      label: "Primary",      desc: "Main accent — buttons, active states, bars" },
+                  { key: "primary_color_dark",  label: "Primary Dark", desc: "Hover / pressed state of primary" },
+                ] as { key: "primary_color" | "primary_color_dark"; label: string; desc: string }[]
+              ).map(({ key, label, desc }) => (
+                <div key={key} className="flex items-center gap-4">
+                  {/* Color swatch / native picker */}
+                  <label
+                    className="w-10 h-10 rounded-lg border-2 border-gray-600 cursor-pointer shrink-0 overflow-hidden"
+                    style={{ backgroundColor: form[key] }}
+                    title="Click to open color picker"
+                  >
+                    <input
+                      type="color"
+                      value={/^#[0-9a-fA-F]{6}$/.test(form[key]) ? form[key] : "#ED1C24"}
+                      onChange={(e) => patch(key, e.target.value)}
+                      className="opacity-0 w-0 h-0"
+                    />
+                  </label>
+                  {/* Hex text input */}
+                  <div className="flex flex-col gap-0.5 flex-1">
+                    <span className="text-white text-sm font-semibold">{label}</span>
+                    <input
+                      type="text"
+                      value={form[key]}
+                      onChange={(e) => handleHexInput(key, e.target.value)}
+                      maxLength={7}
+                      className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-36"
+                      placeholder="#000000"
+                    />
+                    <p className="text-[10px] font-mono text-gray-600">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Reference Palette */}
+            {[
+              {
+                group: "Brand Identity",
+                swatches: [
+                  { label: "Mustang Red",      hex: "#ED1C24" },
+                  { label: "Mustang Red Dark",  hex: "#C01920" },
+                  { label: "Mustang Grey",      hex: "#A7A9AC" },
+                  { label: "Dark Grey",         hex: "#58595B" },
+                  { label: "Black",             hex: "#000000" },
+                  { label: "White",             hex: "#FFFFFF" },
+                ],
+              },
+              {
+                group: "Team Calendar Palette",
+                swatches: [
+                  { label: "Team 1 – Red",     hex: "#ED1C24" },
+                  { label: "Team 2 – Sky",      hex: "#38BDF8" },
+                  { label: "Team 3 – Emerald",  hex: "#34D399" },
+                  { label: "Team 4 – Amber",    hex: "#FBBF24" },
+                  { label: "Team 5 – Purple",   hex: "#C084FC" },
+                  { label: "Team 6 – Pink",     hex: "#F472B6" },
+                  { label: "Team 7 – Orange",   hex: "#FB923C" },
+                  { label: "Team 8 – Teal",     hex: "#2DD4BF" },
+                ],
+              },
+              {
+                group: "UI Surfaces",
+                swatches: [
+                  { label: "Background",        hex: "#000000" },
+                  { label: "Surface 1",         hex: "#0D0D0D" },
+                  { label: "Surface 2",         hex: "#1A1A1A" },
+                  { label: "Surface 3 / Cards", hex: "#262626" },
+                  { label: "Border",            hex: "#374151" },
+                ],
+              },
+            ].map(({ group, swatches }) => (
+              <div key={group} className="flex flex-col gap-3">
+                <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">{group}</p>
+                <div className="flex flex-wrap gap-3">
+                  {swatches.map(({ label, hex }) => (
+                    <div key={hex + label} className="flex flex-col items-center gap-1.5">
+                      <div
+                        className="w-9 h-9 rounded-lg border border-gray-600 shrink-0"
+                        style={{ backgroundColor: hex }}
+                        title={label}
+                      />
+                      <span className="text-[9px] font-mono text-gray-500 text-center leading-tight max-w-[52px]">{hex}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </section>
         </div>
       </div>
