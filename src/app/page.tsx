@@ -23,13 +23,11 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* Today's practice */}
-      <div className="mb-6">
+      {/* Two-column layout: Today left, Plans right */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <TodayPracticeCard />
+        <PastPlansCard />
       </div>
-
-      {/* Previous plans — full width */}
-      <PastPlansCard />
     </DashboardLayout>
   );
 }
