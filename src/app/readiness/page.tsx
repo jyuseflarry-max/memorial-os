@@ -2,7 +2,8 @@
 
 import { Activity } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { usePlayers } from "@/context/PlayerContext";
+import { useTeamPlayers } from "@/hooks/useTeamPlayers";
+import { useTeam } from "@/context/TeamContext";
 import { computeReadiness, PlayerStatus, getTrafficLight, TrafficLight } from "@/types/player";
 import { useEffect, useState } from "react";
 
@@ -33,7 +34,8 @@ function timeAgo(iso: string): string {
 }
 
 export default function ReadinessPage() {
-  const { players, loading } = usePlayers();
+  const { players, loading } = useTeamPlayers();
+  const { activeTeam } = useTeam();
   const [checks, setChecks] = useState<Record<string, VibeCheckRow>>({});
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function ReadinessPage() {
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Team Readiness</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {active.length} ACTIVE PLAYERS · VIBE 60% + LOAD 40%
+            {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {active.length} ACTIVE PLAYERS
           </p>
         </div>
         {/* Squad avg */}

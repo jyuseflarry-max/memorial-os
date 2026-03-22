@@ -1,11 +1,13 @@
 "use client";
 
 import { Activity } from "lucide-react";
-import { usePlayers } from "@/context/PlayerContext";
+import { useTeamPlayers } from "@/hooks/useTeamPlayers";
+import { useTeam } from "@/context/TeamContext";
 import { computeReadiness, PlayerStatus } from "@/types/player";
 
 export default function TeamReadinessCard() {
-  const { players, loading, dbConnected } = usePlayers();
+  const { players, loading, dbConnected } = useTeamPlayers();
+  const { activeTeam } = useTeam();
 
   // Only active players contribute to the readiness snapshot
   const active = players.filter((p) => p.status === PlayerStatus.Active);
@@ -86,7 +88,7 @@ export default function TeamReadinessCard() {
       )}
 
       <p className="text-gray-600 text-xs text-center font-mono border-t border-gray-700 pt-4">
-        {active.length} ACTIVE PLAYERS · READINESS = VIBE 60% + LOAD 40%
+        {activeTeam?.name ?? "ALL"} · {active.length} ACTIVE · READINESS = VIBE 60% + LOAD 40%
       </p>
     </section>
   );

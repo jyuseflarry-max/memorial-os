@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Search, ExternalLink, Moon, Activity, Brain, Zap, Clock } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { usePlayers } from "@/context/PlayerContext";
+import { useTeamPlayers } from "@/hooks/useTeamPlayers";
+import { useTeam } from "@/context/TeamContext";
 import {
   Player,
   PlayerStatus,
@@ -256,7 +257,8 @@ const FILTER_OPTIONS = ["All", "green", "yellow", "red", PlayerStatus.Out, Playe
 type FilterOption = (typeof FILTER_OPTIONS)[number];
 
 export default function PlayersPage() {
-  const { players } = usePlayers();
+  const { players } = useTeamPlayers();
+  const { activeTeam } = useTeam();
   const [query,   setQuery]   = useState("");
   const [filter,  setFilter]  = useState<FilterOption>("All");
   const [checks,  setChecks]  = useState<Record<string, VibeCheckRow>>({});
@@ -290,7 +292,7 @@ export default function PlayersPage() {
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Player Bio-Stats</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {players.length} ATHLETES · READINESS SNAPSHOT
+            {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {players.length} ATHLETES
           </p>
         </div>
         <Link

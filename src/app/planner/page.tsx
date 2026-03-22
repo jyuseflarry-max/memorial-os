@@ -29,7 +29,7 @@ function PlannerInner() {
 
   // ── Load session for a given date ────────────────────────────────────────
 
-  const loadDate = useCallback(async (date: string) => {
+  const loadDate = useCallback(async (date: string) => { // eslint-disable-line react-hooks/exhaustive-deps
     setLoadingDate(true);
     try {
       const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
@@ -50,7 +50,8 @@ function PlannerInner() {
     }
   }, []);
 
-  useEffect(() => { loadDate(initialDate); }, [loadDate, initialDate]);
+  // Reload when the date OR active team changes
+  useEffect(() => { loadDate(session.date); }, [activeTeam]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Date change — warn about unsaved changes ──────────────────────────────
 

@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import PlayerForm from "@/components/admin/PlayerForm";
-import { usePlayers, NewPlayerData } from "@/context/PlayerContext";
+import { NewPlayerData } from "@/context/PlayerContext";
+import { useTeamPlayers } from "@/hooks/useTeamPlayers";
+import { useTeam } from "@/context/TeamContext";
 import { Player, PlayerStatus } from "@/types/player";
 
 // ── Status badge ──────────────────────────────────────────────────────────
@@ -209,7 +211,8 @@ function BulkImportModal({ onImport, onClose, loading }: {
 
 export default function RosterPage() {
   const { players, loading, dbConnected, dbError, addPlayer, updatePlayer, deletePlayer, bulkImport } =
-    usePlayers();
+    useTeamPlayers();
+  const { activeTeam } = useTeam();
 
   const [showAdd, setShowAdd]         = useState(false);
   const [editing, setEditing]         = useState<Player | null>(null);
@@ -255,7 +258,7 @@ export default function RosterPage() {
           <h1 className="text-white text-2xl font-bold tracking-tight">Roster Management</h1>
           <div className="flex items-center gap-3 mt-1">
             <p className="text-gray-400 text-sm font-mono">
-              {players.length} PLAYERS · STAFF ONLY
+              {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {players.length} PLAYERS · STAFF ONLY
             </p>
             {/* DB connection indicator */}
             <div className={`flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-full border ${
