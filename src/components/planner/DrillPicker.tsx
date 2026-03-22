@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, Plus, GripVertical } from "lucide-react";
 import { Drill, DrillCategory } from "@/types/drill";
 
@@ -18,14 +18,38 @@ interface Props {
 }
 
 export default function DrillPicker({ drills, onAdd }: Props) {
-  const [query, setQuery] = useState("");
+  const [query,      setQuery]      = useState("");
+  const [filterCat,  setFilterCat]  = useState("All");
+  const [filterSub,  setFilterSub]  = useState("All");
 
-  const filtered = drills.filter(
-    (d) =>
-      d.name.toLowerCase().includes(query.toLowerCase()) ||
-      d.category.toLowerCase().includes(query.toLowerCase()) ||
-      d.sub_category.toLowerCase().includes(query.toLowerCase())
+  // Unique categories and sub-categories derived from drill list
+  const categories = useMemo(
+    () => Array.from(new Set(drills.map((d) => d.category))).sort(),
+    [drills]
   );
+
+  const subCategories = useMemo(() => {
+    const source = filterCat === "All" ? drills : drills.filter((d) => d.category === filterCat);
+    return Array.from(new Set(source.map((d) => d.sub_category).filter(Boolean))).sort();
+  }, [drills, filterCat]);
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return drills.filter((d) => {
+      const matchesSearch = !q ||
+        d.name.toLowerCase().includes(q) ||
+        d.category.toLowerCase().includes(q) ||
+        d.sub_category.toLowerCase().includes(q);
+      const matchesCat = filterCat === "All" || d.category === filterCat;
+      const matchesSub = filterSub === "All" || d.sub_category === filterSub;
+      return matchesSearch && matchesCat && matchesSub;
+    });
+  }, [drills, query, filterCat, filterSub]);
+
+  function handleCatChange(cat: string) {
+    setFilterCat(cat);
+    setFilterSub("All"); // reset sub when category changes
+  }
 
   function handleDragStart(e: React.DragEvent, drill: Drill) {
     e.dataTransfer.setData("x-drill-id", drill.id);
@@ -35,8 +59,10 @@ export default function DrillPicker({ drills, onAdd }: Props) {
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-2xl flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-gray-700 shrink-0">
-        <p className="text-white font-semibold text-sm mb-3">Drill Vault</p>
+      <div className="px-4 pt-4 pb-3 border-b border-gray-700 shrink-0 flex flex-col gap-2">
+        <p className="text-white font-semibold text-sm">Drill Vault</p>
+
+        {/* Search */}
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
@@ -47,6 +73,30 @@ export default function DrillPicker({ drills, onAdd }: Props) {
             className="w-full bg-gray-700/60 border border-gray-600 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
           />
         </div>
+
+        {/* Category filter */}
+        <select
+          value={filterCat}
+          onChange={(e) => handleCatChange(e.target.value)}
+          className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-mustang-red transition-colors"
+        >
+          <option value="All">All Categories</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+
+        {/* Sub-category filter */}
+        <select
+          value={filterSub}
+          onChange={(e) => setFilterSub(e.target.value)}
+          className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-mustang-red transition-colors"
+        >
+          <option value="All">All Sub-Categories</option>
+          {subCategories.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        <p className="text-gray-600 text-[10px] font-mono text-right">
+          {filtered.length} of {drills.length}
+        </p>
       </div>
 
       {/* List */}
@@ -61,11 +111,13 @@ export default function DrillPicker({ drills, onAdd }: Props) {
             <GripVertical size={14} className="text-gray-600 group-hover:text-gray-400 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{drill.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border ${CAT_BADGE[drill.category as DrillCategory] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20"}`}>
                   {drill.category}
                 </span>
-                <span className="text-gray-500 text-[10px] font-mono">{Number(drill.shot_density).toFixed(1)}/min</span>
+                {drill.sub_category && (
+                  <span className="text-gray-500 text-[10px] font-mono truncate">{drill.sub_category}</span>
+                )}
               </div>
             </div>
             <button
