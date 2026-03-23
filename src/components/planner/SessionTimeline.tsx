@@ -86,7 +86,13 @@ export default function SessionTimeline({
       )}
 
       {/* Drill rows */}
-      {drills.map((sd, i) => {
+      {(() => {
+        let cursor = startMin;
+        return drills.map((sd, i) => {
+        const drillStart = cursor;
+        cursor += sd.duration;
+        const drillEnd   = cursor;
+        const blockLabel = `${formatTime12(drillStart)} – ${formatTime12(drillEnd)}`;
         const isRest     = sd.drill.category === DrillCategory.RestTransition;
         const shots      = Math.round(sd.drill.shot_density * sd.duration);
         const isDragging = dragFromIndex.current === i;
@@ -163,6 +169,8 @@ export default function SessionTimeline({
                   {sd.drill.name}
                 </p>
                 <p className="text-gray-500 text-[10px] font-mono">
+                  <span className="text-gray-400">{blockLabel}</span>
+                  {" · "}
                   {isRest
                     ? "Non-Activity · 0 shots"
                     : `${sd.drill.sub_category || sd.drill.category} · ${sd.drill.shot_type} · ~${shots} shots`}
@@ -251,7 +259,8 @@ export default function SessionTimeline({
             />
           </div>
         );
-      })}
+        });
+      })()}
 
       {/* Footer total */}
       {drills.length > 0 && (
