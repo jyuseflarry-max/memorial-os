@@ -176,7 +176,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                 return (
                   <tr
                     key={row.instanceId}
-                    className={`border-b border-gray-700/50 last:border-0 print:border-gray-200
+                    className={`border-b border-gray-700/50 last:border-0 print:border-gray-200 align-top
                                 ${i % 2 === 0 ? "print:bg-white" : "print:bg-gray-50"}
                                 hover:bg-gray-700/20 print:hover:bg-transparent`}
                   >
