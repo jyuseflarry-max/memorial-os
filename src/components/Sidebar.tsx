@@ -22,6 +22,8 @@ import {
   Swords,
   Gamepad2,
   Crosshair,
+  Flame,
+  Trophy,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
@@ -48,6 +50,13 @@ const NAV_GROUPS = [
       { label: "Planner",           href: "/planner",                 icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault",             icon: Layers,       staff: false },
       { label: "Shot Counter",      href: "/practice/shot-counter",   icon: Crosshair,    staff: false },
+    ],
+  },
+  {
+    label: "Strength",
+    icon: Flame,
+    items: [
+      { label: "Armory",  href: "/admin/strength/maxes", icon: Trophy, staff: true },
     ],
   },
   {
