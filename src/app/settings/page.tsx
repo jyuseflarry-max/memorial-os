@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Save, CheckCircle2, Loader2, Upload, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useSettings } from "@/context/SettingsContext";
+import { seasonOptions, currentSeasonLabel } from "@/types/settings";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -28,6 +29,7 @@ export default function SettingsPage() {
     await save({
       program_name:        form.program_name,
       logo_url:            form.logo_url,
+      current_season:      form.current_season,
       season_start:        form.season_start || null,
       print_orientation:   form.print_orientation,
       default_start_time:  form.default_start_time,
@@ -172,6 +174,26 @@ export default function SettingsPage() {
             <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
               Data & Reporting
             </h2>
+
+            {/* Current Season */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Current Season</label>
+              <select
+                value={form.current_season}
+                onChange={(e) => patch("current_season", e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit appearance-none pr-8"
+                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}
+              >
+                {seasonOptions().map((s) => (
+                  <option key={s} value={s}>
+                    {s}{s === currentSeasonLabel() ? "  ← current" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] font-mono text-gray-600">
+                Labels all data, schedules, and reports for this season. Changing seasons lets you backload historical data or plan ahead.
+              </p>
+            </div>
 
             {/* Season Start */}
             <div className="flex flex-col gap-1.5">
