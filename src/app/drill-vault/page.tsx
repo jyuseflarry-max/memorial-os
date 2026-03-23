@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Search, ExternalLink, Video, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import ShotProjection from "@/components/drill-vault/ShotProjection";
@@ -85,6 +85,7 @@ export default function DrillVaultPage() {
   const [sortDir, setSortDir]         = useState<SortDir>("asc");
   const [editing, setEditing]         = useState<Drill | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [duplicating, setDuplicating] = useState<string | null>(null);
   const [usage, setUsage] = useState<Record<string, DrillUsage>>({});
 
   useEffect(() => {
@@ -134,6 +135,22 @@ export default function DrillVaultPage() {
         return 0;
       });
   }, [drills, query, filterCat, sortKey, sortDir]);
+
+  async function duplicateDrill(drill: Drill) {
+    setDuplicating(drill.id);
+    try {
+      const { id: _id, ...rest } = drill;
+      const res = await fetch("/api/drills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...rest, name: `${drill.name} (Copy)` }),
+      });
+      const data = await res.json();
+      if (data.drill) addToCache(data.drill);
+    } finally {
+      setDuplicating(null);
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -259,6 +276,12 @@ export default function DrillVaultPage() {
                     <button onClick={() => setEditing(drill)}
                       className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors" title="Edit drill">
                       <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => duplicateDrill(drill)}
+                      disabled={duplicating === drill.id}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40" title="Duplicate drill">
+                      <Copy size={14} />
                     </button>
                     <button
                       onClick={() => {
