@@ -56,7 +56,8 @@ const NAV_GROUPS = [
     label: "Strength",
     icon: Flame,
     items: [
-      { label: "Armory",  href: "/admin/strength/maxes", icon: Trophy, staff: true },
+      { label: "Armory",   href: "/admin/strength/maxes",     icon: Trophy,   staff: true },
+      { label: "Designer", href: "/admin/strength/designer",  icon: Dumbbell, staff: true },
     ],
   },
   {
