@@ -47,6 +47,8 @@ export interface Player {
   latest_vibe_score: number;
   /** FK to teams.id */
   team_id?: string | null;
+  /** Contact email — used for future login and notifications */
+  email?: string | null;
 }
 
 export interface VibeCheckSubmission {

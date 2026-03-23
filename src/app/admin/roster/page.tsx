@@ -346,6 +346,9 @@ export default function RosterPage() {
                 </td>
                 <td className="px-4 py-3">
                   <p className="text-white font-medium">{player.name}</p>
+                  {player.email && (
+                    <p className="text-gray-600 text-[10px] font-mono mt-0.5">{player.email}</p>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-gray-400 font-mono text-xs">{player.position}</td>
                 <td className="px-4 py-3 text-gray-400 text-xs">{player.class_year ?? "—"}</td>

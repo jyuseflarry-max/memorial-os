@@ -13,6 +13,7 @@ export type NewPlayerData = {
   status: PlayerStatus;
   titan_load: number;
   team_id?: string | null;
+  email?: string | null;
 };
 
 interface PlayerContextValue {

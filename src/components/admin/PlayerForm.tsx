@@ -38,6 +38,7 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
     status:        player?.status        ?? PlayerStatus.Active,
     titan_load:    player?.titan_load    ?? 0,
     team_id:       player?.team_id       ?? activeTeam?.id ?? null,
+    email:         player?.email         ?? null,
   });
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
@@ -93,6 +94,19 @@ export default function PlayerForm({ player, onSave, onClose }: Props) {
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
             />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className={labelCls}>Email Address</label>
+            <input
+              type="email"
+              placeholder="e.g. player@email.com"
+              className={inputCls}
+              value={form.email ?? ""}
+              onChange={(e) => set("email", e.target.value || null)}
+            />
+            <p className="text-[10px] font-mono text-gray-600 mt-1">Used for future login and notifications. Optional.</p>
           </div>
 
           {/* Jersey + Position */}
