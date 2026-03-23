@@ -53,11 +53,10 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Strength",
-    icon: Flame,
+    label: "Reports",
+    icon: BarChart3,
     items: [
-      { label: "Armory",   href: "/admin/strength/maxes",     icon: Trophy,   staff: true },
-      { label: "Designer", href: "/admin/strength/designer",  icon: Dumbbell, staff: true },
+      { label: "Category Breakdown", href: "/reports", icon: BarChart3, staff: false },
     ],
   },
   {
@@ -68,10 +67,11 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Reports",
-    icon: BarChart3,
+    label: "Strength",
+    icon: Flame,
     items: [
-      { label: "Category Breakdown", href: "/reports",    icon: BarChart3,    staff: false },
+      { label: "Armory",   href: "/admin/strength/maxes",    icon: Trophy,   staff: true },
+      { label: "Designer", href: "/admin/strength/designer", icon: Dumbbell, staff: true },
     ],
   },
 ];
