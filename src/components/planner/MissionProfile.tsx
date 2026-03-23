@@ -29,13 +29,14 @@ function computeProfile(drills: SessionDrill[]) {
     catTime[sd.drill.category] = (catTime[sd.drill.category] ?? 0) + sd.duration;
   }
 
-  // Sub-category map
+  // Sub-category map — skip drills with no sub_category set
   const subCat: Record<
     string,
     { time: number; shots: number; category: DrillCategory }
   > = {};
   for (const sd of drills) {
-    const key = sd.drill.sub_category;
+    const key = sd.drill.sub_category?.trim();
+    if (!key) continue;
     if (!subCat[key]) subCat[key] = { time: 0, shots: 0, category: sd.drill.category };
     subCat[key].time += sd.duration;
     subCat[key].shots += Math.round(sd.drill.shot_density * sd.duration);

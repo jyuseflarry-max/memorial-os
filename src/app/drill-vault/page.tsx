@@ -193,6 +193,7 @@ export default function DrillVaultPage() {
               <SortHeader label="Shot Type"    sortKey="shot_type"    current={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Density"      sortKey="shot_density" current={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Intensity"    sortKey="intensity"    current={sortKey} dir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider text-left">Min</th>
               <th className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider text-left hidden lg:table-cell">Last Used</th>
               <th className="px-4 py-3 text-xs font-mono text-gray-500 uppercase tracking-wider text-left">Video</th>
               <th className="px-4 py-3" />
@@ -201,12 +202,12 @@ export default function DrillVaultPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">LOADING…</td>
+                <td colSpan={10} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">LOADING…</td>
               </tr>
             )}
             {!loading && displayed.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={10} className="px-4 py-10 text-center text-gray-500 font-mono text-xs">
                   {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH FILTERS"}
                 </td>
               </tr>
@@ -230,6 +231,9 @@ export default function DrillVaultPage() {
                   {Number(drill.shot_density).toFixed(1)}<span className="text-gray-600 text-xs"> /min</span>
                 </td>
                 <td className="px-4 py-3"><IntensityPips level={drill.intensity} /></td>
+                <td className="px-4 py-3 text-gray-300 font-mono">
+                  {drill.default_duration ?? 10}<span className="text-gray-600 text-xs">m</span>
+                </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
                   {u ? (
                     <div>

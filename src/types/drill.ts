@@ -33,5 +33,7 @@ export interface Drill {
   shot_type: ShotType;
   /** 1 = recovery, 5 = all-out */
   intensity: IntensityLevel;
+  /** Typical drill duration in minutes — pre-fills the planner timeline */
+  default_duration?: number;
   video_url: string;
 }

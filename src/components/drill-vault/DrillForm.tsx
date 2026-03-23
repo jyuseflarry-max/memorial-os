@@ -15,13 +15,14 @@ interface Props {
 
 function blankForm(drill?: Drill) {
   return {
-    name:         drill?.name         ?? "",
-    category:     drill?.category     ?? "Offense",
-    sub_category: drill?.sub_category ?? "",
-    shot_density: drill?.shot_density ?? 2,
-    shot_type:    drill?.shot_type    ?? ShotType.ThreePoint,
-    intensity:    (drill?.intensity   ?? 3) as IntensityLevel,
-    video_url:    drill?.video_url    ?? "",
+    name:             drill?.name             ?? "",
+    category:         drill?.category         ?? "Offense",
+    sub_category:     drill?.sub_category     ?? "",
+    shot_density:     drill?.shot_density     ?? 2,
+    shot_type:        drill?.shot_type        ?? ShotType.ThreePoint,
+    intensity:        (drill?.intensity       ?? 3) as IntensityLevel,
+    default_duration: drill?.default_duration ?? 10,
+    video_url:        drill?.video_url        ?? "",
   };
 }
 
@@ -155,9 +156,8 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
               </datalist>
             </div>
             <div>
-              <label className={labelCls}>Sub-Category</label>
+              <label className={labelCls}>Sub-Category <span className="text-gray-600 normal-case tracking-normal">(optional)</span></label>
               <input
-                required
                 type="text"
                 list="drill-sub-categories"
                 placeholder="e.g. Closeouts"
@@ -170,6 +170,23 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
                   <option key={s} value={s} />
                 ))}
               </datalist>
+            </div>
+          </div>
+
+          {/* Default Duration + Shot Density + Shot Type */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={labelCls}>Default Min</label>
+              <input
+                required
+                type="number"
+                min={1}
+                max={120}
+                step={1}
+                className={inputCls}
+                value={form.default_duration}
+                onChange={(e) => set("default_duration", parseInt(e.target.value, 10) || 1)}
+              />
             </div>
           </div>
 

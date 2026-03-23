@@ -113,7 +113,7 @@ function PlannerInner() {
   function addDrill(drillId: string) {
     const drill = vaultDrills.find((d) => d.id === drillId);
     if (!drill) return;
-    mutate((s) => ({ ...s, drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: 10 }] }));
+    mutate((s) => ({ ...s, drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: drill.default_duration ?? 10 }] }));
   }
 
   function removeDrill(instanceId: string) {
