@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { X, Trash2 } from "lucide-react";
-import { Drill, ShotType, IntensityLevel } from "@/types/drill";
+import { Drill, ShotType, IntensityLevel, SessionPosition } from "@/types/drill";
 
 interface Props {
-  initialDrill?: Drill;    // present → edit mode
-  categories: string[];    // all known categories for datalist suggestions
-  subCategories: string[]; // all known sub-categories for datalist suggestions
+  initialDrill?: Drill;
+  categories: string[];
+  subCategories: string[];
   onSave: (drill: Drill) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
@@ -22,6 +22,8 @@ function blankForm(drill?: Drill) {
     shot_type:        drill?.shot_type        ?? ShotType.ThreePoint,
     intensity:        (drill?.intensity       ?? 3) as IntensityLevel,
     default_duration: drill?.default_duration ?? 10,
+    session_position: (drill?.session_position ?? "") as SessionPosition | "",
+    coaching_notes:   drill?.coaching_notes   ?? "",
     video_url:        drill?.video_url        ?? "",
   };
 }
@@ -44,10 +46,15 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
     try {
       const url    = editing ? `/api/drills/${initialDrill!.id}` : "/api/drills";
       const method = editing ? "PATCH" : "POST";
-      const res    = await fetch(url, {
+      const payload = {
+        ...form,
+        session_position: form.session_position || null,
+        coaching_notes:   form.coaching_notes   || null,
+      };
+      const res  = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Save failed");
@@ -79,7 +86,6 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
   const labelCls = "block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider";
   const inputCls = "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
 
-  // Deduplicated suggestions: known categories + anything not already in the list
   const suggestions = Array.from(new Set([
     "Offense", "Defense", "Transition", "Special Teams", "Rest/Transition",
     ...categories,
@@ -87,11 +93,11 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-2xl"
+        className="relative w-full max-w-lg bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -139,7 +145,6 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Category</label>
-              {/* Free-text input with datalist so coaches can add new categories */}
               <input
                 required
                 type="text"
@@ -150,13 +155,14 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
                 onChange={(e) => set("category", e.target.value)}
               />
               <datalist id="drill-categories">
-                {suggestions.map((c) => (
-                  <option key={c} value={c} />
-                ))}
+                {suggestions.map((c) => <option key={c} value={c} />)}
               </datalist>
             </div>
             <div>
-              <label className={labelCls}>Sub-Category <span className="text-gray-600 normal-case tracking-normal">(optional)</span></label>
+              <label className={labelCls}>
+                Sub-Category{" "}
+                <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
+              </label>
               <input
                 type="text"
                 list="drill-sub-categories"
@@ -166,15 +172,13 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
                 onChange={(e) => set("sub_category", e.target.value)}
               />
               <datalist id="drill-sub-categories">
-                {subCategories.map((s) => (
-                  <option key={s} value={s} />
-                ))}
+                {subCategories.map((s) => <option key={s} value={s} />)}
               </datalist>
             </div>
           </div>
 
-          {/* Default Duration + Shot Density + Shot Type */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Default Duration + Session Position */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Default Min</label>
               <input
@@ -187,6 +191,22 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
                 value={form.default_duration}
                 onChange={(e) => set("default_duration", parseInt(e.target.value, 10) || 1)}
               />
+            </div>
+            <div>
+              <label className={labelCls}>
+                Practice Position{" "}
+                <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
+              </label>
+              <select
+                className={inputCls}
+                value={form.session_position}
+                onChange={(e) => set("session_position", e.target.value as SessionPosition | "")}
+              >
+                <option value="">— Any —</option>
+                <option value="warmup">Warmup</option>
+                <option value="main">Main Block</option>
+                <option value="finishing">Finishing</option>
+              </select>
             </div>
           </div>
 
@@ -238,6 +258,22 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
                 </button>
               ))}
             </div>
+            <p className="text-gray-600 text-[10px] font-mono mt-1">1 = recovery · 5 = all-out</p>
+          </div>
+
+          {/* Coaching Notes */}
+          <div>
+            <label className={labelCls}>
+              Coaching Notes{" "}
+              <span className="text-gray-600 normal-case tracking-normal">(feeds AI planner)</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder="What does this drill develop? When should it be used? e.g. 'Teaches controlled closeouts with hands up. Best used early in a defensive block to establish footwork before adding live ball.'"
+              className={`${inputCls} resize-none leading-relaxed`}
+              value={form.coaching_notes}
+              onChange={(e) => set("coaching_notes", e.target.value)}
+            />
           </div>
 
           {/* Video URL */}

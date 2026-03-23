@@ -10,6 +10,7 @@ import MissionProfile from "@/components/planner/MissionProfile";
 import CoachScript from "@/components/planner/CoachScript";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
+import AIGeneratorPanel, { GeneratedDrill } from "@/components/planner/AIGeneratorPanel";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
@@ -141,6 +142,15 @@ function PlannerInner() {
     mutate((s) => ({ ...s, startTime }));
   }
 
+  function loadGeneratedPlan(plan: GeneratedDrill[]) {
+    const newDrills: SessionDrill[] = plan.flatMap(({ drill_id, duration }) => {
+      const drill = vaultDrills.find((d) => d.id === drill_id);
+      if (!drill) return [];
+      return [{ instanceId: crypto.randomUUID(), drill, duration }];
+    });
+    mutate((s) => ({ ...s, drills: newDrills }));
+  }
+
   // ── Save ─────────────────────────────────────────────────────────────────
 
   async function saveSession() {
@@ -240,6 +250,13 @@ function PlannerInner() {
       {/* ── Main layout ──────────────────────────────────────────── */}
       {!loadingDate && (
         <div className="flex flex-col gap-4 print:hidden">
+          {/* AI Generator */}
+          <AIGeneratorPanel
+            playerCount={players.length || 10}
+            teamName={activeTeam?.name}
+            onLoadPlan={loadGeneratedPlan}
+          />
+
           {/* Drill Picker + Timeline side by side (lg+), stacked on mobile */}
           <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr] gap-4" style={{ minHeight: "420px" }}>
             {/* Left — Drill Picker */}

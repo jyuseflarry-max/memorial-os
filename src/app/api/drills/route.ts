@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, category, sub_category, shot_density, shot_type, intensity, default_duration, video_url } = body;
+    const { name, category, sub_category, shot_density, shot_type, intensity, default_duration, session_position, coaching_notes, video_url } = body;
 
     if (!name || !category) {
       return Response.json({ error: "name and category are required" }, { status: 400 });
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from("drills")
-      .insert({ name, category, sub_category: sub_category ?? "", shot_density, shot_type, intensity, default_duration: default_duration ?? 10, video_url: video_url ?? "" })
+      .insert({ name, category, sub_category: sub_category ?? "", shot_density, shot_type, intensity, default_duration: default_duration ?? 10, session_position: session_position ?? null, coaching_notes: coaching_notes ?? null, video_url: video_url ?? "" })
       .select()
       .single();
 

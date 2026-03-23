@@ -20,6 +20,7 @@ export enum ShotType {
 }
 
 export type IntensityLevel = 1 | 2 | 3 | 4 | 5;
+export type SessionPosition = "warmup" | "main" | "finishing";
 
 export interface Drill {
   id: string;
@@ -35,5 +36,9 @@ export interface Drill {
   intensity: IntensityLevel;
   /** Typical drill duration in minutes — pre-fills the planner timeline */
   default_duration?: number;
+  /** Where in a practice session this drill belongs */
+  session_position?: SessionPosition | null;
+  /** Coach notes on what this drill develops and when to use it — feeds the AI planner */
+  coaching_notes?: string | null;
   video_url: string;
 }
