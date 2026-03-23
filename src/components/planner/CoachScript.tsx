@@ -181,7 +181,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                                 hover:bg-gray-700/20 print:hover:bg-transparent`}
                   >
                     {/* Time block */}
-                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap align-top">
                       <span className="text-white print:text-black font-semibold">{row.startStr}</span>
                       <span className="text-gray-500 mx-1 print:text-gray-400">–</span>
                       <span className="text-white print:text-black font-semibold">{row.endStr}</span>
@@ -191,7 +191,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                     </td>
 
                     {/* Drill name */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 align-top">
                       <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
                       {/* Player groups — print only */}
                       {row.groups && row.groups.length > 0 && (
@@ -216,7 +216,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                     </td>
 
                     {/* Category */}
-                    <td className={`px-4 py-3 text-xs font-semibold font-mono ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
+                    <td className={`px-4 py-3 text-xs font-semibold font-mono align-top ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
                       {row.drill.category}
                       {row.drill.sub_category && (
                         <span className="font-normal text-gray-500 print:text-gray-500"> ({row.drill.sub_category})</span>
@@ -224,14 +224,14 @@ export default function CoachScript({ session, players = [] }: Props) {
                     </td>
 
                     {/* Proj. shots */}
-                    <td className="px-4 py-3 font-mono text-xs">
+                    <td className="px-4 py-3 font-mono text-xs align-top">
                       {isRest
                         ? <span className="text-gray-500">—</span>
                         : <span className="text-white print:text-black font-bold">~{projReps}</span>}
                     </td>
 
                     {/* Shot counter button — screen only */}
-                    <td className="px-2 py-3 print:hidden">
+                    <td className="px-2 py-3 print:hidden align-top">
                       {!isRest && (
                         <button
                           type="button"
