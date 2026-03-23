@@ -21,7 +21,6 @@ import {
   Settings,
   Swords,
   Gamepad2,
-  Crosshair,
   Flame,
   Trophy,
 } from "lucide-react";
@@ -49,7 +48,6 @@ const NAV_GROUPS = [
       { label: "Command Center",    href: "/",                        icon: RadioTower,   staff: false },
       { label: "Planner",           href: "/planner",                 icon: CalendarDays, staff: false },
       { label: "Drill Vault",       href: "/drill-vault",             icon: Layers,       staff: false },
-      { label: "Shot Counter",      href: "/practice/shot-counter",   icon: Crosshair,    staff: false },
     ],
   },
   {
