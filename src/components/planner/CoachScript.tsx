@@ -118,7 +118,7 @@ export default function CoachScript({ session, players = [] }: Props) {
         {/* ── Red accent bar ───────────────────────────────────────────── */}
         <div
           className="hidden print:block w-full mb-0"
-          style={{ backgroundColor: "#ED1C24", height: "10px" }}
+          style={{ backgroundColor: "var(--color-mustang-red)", height: "10px" }}
         />
 
         {/* ── Main header ─────────────────────────────────────────────── */}
@@ -136,7 +136,7 @@ export default function CoachScript({ session, players = [] }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <p className="font-black text-3xl tracking-tight leading-none" style={{ color: "#ED1C24" }}>
+            <p className="font-black text-3xl tracking-tight leading-none" style={{ color: "var(--color-mustang-red)" }}>
               PRACTICE PLAN
             </p>
             <p className="text-black font-bold text-sm mt-1">{dateLabel}</p>
@@ -272,7 +272,7 @@ export default function CoachScript({ session, players = [] }: Props) {
         {/* ── Footer bar ──────────────────────────────────────────────── */}
         <div
           className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
-          style={{ backgroundColor: "#ED1C24" }}
+          style={{ backgroundColor: "var(--color-mustang-red)" }}
         >
           <span>MEMORIAL MUSTANGS BASKETBALL · STAFF CONFIDENTIAL</span>
           <span>Generated {generatedOn} · Memorial Basketball OS</span>

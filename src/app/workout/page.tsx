@@ -123,8 +123,8 @@ function PRCelebration({
         <h1
           className="text-6xl font-black tracking-tighter mb-3"
           style={{
-            color: "#ED1C24",
-            textShadow: "0 0 30px #ED1C24, 0 0 60px #ED1C24aa, 0 0 120px #ED1C2455",
+            color: "var(--color-mustang-red)",
+            textShadow: "0 0 30px var(--color-mustang-red), 0 0 60px color-mix(in srgb, var(--color-mustang-red) 67%, transparent), 0 0 120px color-mix(in srgb, var(--color-mustang-red) 33%, transparent)",
           }}
         >
           NEW PR!
@@ -364,7 +364,7 @@ export default function WorkoutPortal() {
 
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#ED1C24" }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--color-mustang-red)" }}>
           <Dumbbell size={15} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
@@ -562,7 +562,7 @@ export default function WorkoutPortal() {
             {/* ── Log Max / PR Alert ────────────────────────────────── */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
               <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                <Trophy size={14} style={{ color: "#ED1C24" }} />
+                <Trophy size={14} style={{ color: "var(--color-mustang-red)" }} />
                 Log New Max
               </h3>
 
@@ -578,7 +578,7 @@ export default function WorkoutPortal() {
                           ? "text-white"
                           : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                       }`}
-                      style={prLift === lift ? { backgroundColor: "#ED1C24" } : undefined}
+                      style={prLift === lift ? { backgroundColor: "var(--color-mustang-red)" } : undefined}
                     >
                       {lift === "back_squat"
                         ? "Squat"
@@ -601,7 +601,7 @@ export default function WorkoutPortal() {
                     onKeyDown={(e) => e.key === "Enter" && logMax()}
                     placeholder="Weight (lbs)"
                     className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none"
-                    style={{ "--tw-ring-color": "#ED1C24" } as React.CSSProperties}
+                    style={{ "--tw-ring-color": "var(--color-mustang-red)" } as React.CSSProperties}
                   />
                   {playerMax?.[prLift] != null && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-gray-600 pointer-events-none">
@@ -613,7 +613,7 @@ export default function WorkoutPortal() {
                   onClick={logMax}
                   disabled={prSaving || !prWeight}
                   className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-colors flex items-center gap-1.5"
-                  style={{ backgroundColor: "#ED1C24" }}
+                  style={{ backgroundColor: "var(--color-mustang-red)" }}
                 >
                   {prSaving ? (
                     <RefreshCw size={13} className="animate-spin" />
