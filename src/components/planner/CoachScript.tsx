@@ -31,6 +31,26 @@ function buildRows(session: Session): ScriptRow[] {
   });
 }
 
+// ── Name display ──────────────────────────────────────────────────────────
+// Uses last name only, but "F. LastName" when two or more players on the
+// roster share the same last name (e.g. sisters).
+
+function lastNameOf(fullName: string): string {
+  return fullName.trim().split(" ").slice(-1)[0];
+}
+
+function displayName(player: Player, allPlayers: Player[]): string {
+  const last = lastNameOf(player.name);
+  const hasDuplicate = allPlayers.some(
+    (other) => other.id !== player.id && lastNameOf(other.name) === last
+  );
+  if (hasDuplicate) {
+    const first = player.name.trim().split(" ")[0];
+    return `${first[0]}. ${last}`;
+  }
+  return last;
+}
+
 // ── Small helpers ─────────────────────────────────────────────────────────
 
 function SignatureLine({ label }: { label: string }) {
@@ -186,7 +206,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                           const names = g.playerIds
                             .map((id) => {
                               const p = players.find((pl) => pl.id === id);
-                              return p ? p.name.split(" ").slice(-1)[0] : null;
+                              return p ? displayName(p, players) : null;
                             })
                             .filter(Boolean)
                             .join(", ");
