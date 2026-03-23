@@ -52,7 +52,7 @@ const NAV_GROUPS = [
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game Schedule", href: "/schedules/game", icon: Gamepad2, staff: false },
+      { label: "Game", href: "/schedules/game", icon: Gamepad2, staff: false },
     ],
   },
   {
