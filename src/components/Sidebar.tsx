@@ -21,6 +21,7 @@ import {
   Settings,
   Swords,
   Gamepad2,
+  Crosshair,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
@@ -43,9 +44,10 @@ const NAV_GROUPS = [
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Command Center",    href: "/",            icon: RadioTower,   staff: false },
-      { label: "Planner",            href: "/planner",     icon: CalendarDays, staff: false },
-      { label: "Drill Vault",       href: "/drill-vault", icon: Layers,       staff: false },
+      { label: "Command Center",    href: "/",                        icon: RadioTower,   staff: false },
+      { label: "Planner",           href: "/planner",                 icon: CalendarDays, staff: false },
+      { label: "Drill Vault",       href: "/drill-vault",             icon: Layers,       staff: false },
+      { label: "Shot Counter",      href: "/practice/shot-counter",   icon: Crosshair,    staff: false },
     ],
   },
   {

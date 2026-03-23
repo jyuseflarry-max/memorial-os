@@ -28,6 +28,8 @@ export interface Drill {
   sub_category: string;
   /** Average shots per player per minute at full pace */
   shot_density: number;
+  /** Number of shot counter sessions used to build the shot_density average */
+  shot_sessions?: number;
   shot_type: ShotType;
   /** 1 = recovery, 5 = all-out */
   intensity: IntensityLevel;
