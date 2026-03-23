@@ -5,13 +5,16 @@ import { DrillCategory } from "@/types/drill";
 
 // ── Category styling ──────────────────────────────────────────────────────
 
-const CAT_STYLE: Record<DrillCategory, { bar: string; text: string; dot: string }> = {
+const CAT_STYLE: Record<string, { bar: string; text: string; dot: string }> = {
   [DrillCategory.Defense]:       { bar: "bg-blue-400",   text: "text-blue-400",   dot: "bg-blue-400" },
   [DrillCategory.Offense]:       { bar: "bg-green-400",  text: "text-green-400",  dot: "bg-green-400" },
   [DrillCategory.Transition]:    { bar: "bg-yellow-400", text: "text-yellow-400", dot: "bg-yellow-400" },
   [DrillCategory.SpecialTeams]:  { bar: "bg-purple-400", text: "text-purple-400", dot: "bg-purple-400" },
   [DrillCategory.RestTransition]:{ bar: "bg-sky-400",    text: "text-sky-400",    dot: "bg-sky-400" },
 };
+
+const CAT_FALLBACK = { bar: "bg-gray-400", text: "text-gray-400", dot: "bg-gray-400" };
+function catStyle(cat: string) { return CAT_STYLE[cat] ?? CAT_FALLBACK; }
 
 interface Props {
   drills: SessionDrill[];
@@ -24,16 +27,13 @@ function computeProfile(drills: SessionDrill[]) {
   const shots = Math.round(totalShots(drills));
 
   // Category time map
-  const catTime: Partial<Record<DrillCategory, number>> = {};
+  const catTime: Record<string, number> = {};
   for (const sd of drills) {
     catTime[sd.drill.category] = (catTime[sd.drill.category] ?? 0) + sd.duration;
   }
 
   // Sub-category map — skip drills with no sub_category set
-  const subCat: Record<
-    string,
-    { time: number; shots: number; category: DrillCategory }
-  > = {};
+  const subCat: Record<string, { time: number; shots: number; category: string }> = {};
   for (const sd of drills) {
     const key = sd.drill.sub_category?.trim();
     if (!key) continue;
@@ -61,7 +61,7 @@ export default function MissionProfile({ drills }: Props) {
 
   const { totalTime, shots, catTime, subCat } = computeProfile(drills);
 
-  const sortedCats = (Object.entries(catTime) as [DrillCategory, number][]).sort(
+  const sortedCats = Object.entries(catTime).sort(
     (a, b) => b[1] - a[1]
   );
 
@@ -83,7 +83,7 @@ export default function MissionProfile({ drills }: Props) {
           {sortedCats.map(([cat, minutes]) => (
             <div
               key={cat}
-              className={`h-full transition-all duration-300 ${CAT_STYLE[cat].bar}`}
+              className={`h-full transition-all duration-300 ${catStyle(cat).bar}`}
               style={{ width: `${(minutes / totalTime) * 100}%` }}
             />
           ))}
@@ -96,12 +96,12 @@ export default function MissionProfile({ drills }: Props) {
             return (
               <div key={cat} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${CAT_STYLE[cat].dot}`} />
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${catStyle(cat).dot}`} />
                   <span className="text-gray-300 text-xs">{cat}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 text-xs font-mono">{minutes}m</span>
-                  <span className={`text-xs font-bold font-mono ${CAT_STYLE[cat].text}`}>
+                  <span className={`text-xs font-bold font-mono ${catStyle(cat).text}`}>
                     {pct}%
                   </span>
                 </div>
@@ -136,7 +136,7 @@ export default function MissionProfile({ drills }: Props) {
           <div key={subCatName} className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${CAT_STYLE[data.category].dot}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${catStyle(data.category).dot}`} />
                 <span className="text-gray-300 text-xs">{subCatName}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export default function MissionProfile({ drills }: Props) {
             </div>
             <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${CAT_STYLE[data.category].bar}`}
+                className={`h-full rounded-full ${catStyle(data.category).bar}`}
                 style={{ width: `${(data.time / maxSubTime) * 100}%` }}
               />
             </div>

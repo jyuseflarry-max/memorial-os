@@ -25,7 +25,8 @@ export type SessionPosition = "warmup" | "main" | "finishing";
 export interface Drill {
   id: string;
   name: string;
-  category: DrillCategory;
+  /** Free-text category — DrillCategory values are suggestions, not constraints */
+  category: string;
   sub_category: string;
   /** Average shots per player per minute at full pace */
   shot_density: number;

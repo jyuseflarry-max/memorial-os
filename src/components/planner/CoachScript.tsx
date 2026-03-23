@@ -9,7 +9,7 @@ import ShotCounterModal from "@/components/planner/ShotCounterModal";
 
 // ── Category colours ──────────────────────────────────────────────────────
 
-const CAT_COLOR: Record<DrillCategory, string> = {
+const CAT_COLOR: Record<string, string> = {
   [DrillCategory.Defense]:        "text-blue-400   print:text-blue-700",
   [DrillCategory.Offense]:        "text-green-400  print:text-green-700",
   [DrillCategory.Transition]:     "text-yellow-400 print:text-yellow-700",
@@ -219,7 +219,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                     </td>
 
                     {/* Category */}
-                    <td className={`px-4 py-3 text-xs font-semibold font-mono ${CAT_COLOR[row.drill.category]}`}>
+                    <td className={`px-4 py-3 text-xs font-semibold font-mono ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
                       {row.drill.category}
                       {row.drill.sub_category && (
                         <span className="font-normal text-gray-500 print:text-gray-500"> ({row.drill.sub_category})</span>

@@ -6,7 +6,7 @@ import { SessionDrill } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
 
-const CAT_DOT: Record<DrillCategory, string> = {
+const CAT_DOT: Record<string, string> = {
   [DrillCategory.Defense]:       "bg-blue-400",
   [DrillCategory.Offense]:       "bg-green-400",
   [DrillCategory.Transition]:    "bg-yellow-400",
@@ -94,7 +94,7 @@ export default function SessionTimeline({
               <span className="text-gray-600 text-[10px] font-mono w-4 text-center">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className={`w-2 h-2 rounded-full ${CAT_DOT[sd.drill.category]}`} />
+              <span className={`w-2 h-2 rounded-full ${CAT_DOT[sd.drill.category] ?? "bg-gray-400"}`} />
             </div>
 
             {/* Drill info */}
