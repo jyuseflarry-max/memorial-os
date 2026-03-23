@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const teamId = searchParams.get("team_id");
+    const season = searchParams.get("season");
 
     const supabase = getSupabaseServer();
     let query = supabase
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
       .order("game_time", { ascending: true, nullsFirst: true });
 
     if (teamId) query = query.eq("team_id", teamId);
+    if (season)  query = query.eq("season", season);
 
     const { data, error } = await query;
     if (error) throw error;

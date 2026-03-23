@@ -4,6 +4,7 @@ export type GameType = "non-district" | "district" | "scrimmage" | "tournament" 
 export interface Game {
   id: string;
   team_id: string | null;
+  season: string;            // e.g. "2025-2026"
   game_date: string;         // YYYY-MM-DD
   game_time: string | null;  // HH:MM (24-hr)
   opponent: string;
@@ -36,6 +37,7 @@ export type GameDraft = Omit<Game, "id" | "created_at" | "updated_at">;
 
 export const EMPTY_DRAFT: GameDraft = {
   team_id:        null,
+  season:         "",
   game_date:      "",
   game_time:      null,
   opponent:       "",

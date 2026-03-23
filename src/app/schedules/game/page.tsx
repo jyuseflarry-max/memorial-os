@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
+import { useSettings } from "@/context/SettingsContext";
 import type { Game, LocationType, GameType, GameDraft } from "@/types/game";
 import { LOCATION_LABELS, GAME_TYPE_LABELS, EMPTY_DRAFT } from "@/types/game";
+import { seasonOptions } from "@/types/settings";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -234,18 +236,20 @@ function BoxScoreUpload({
 function GameModal({
   mode,
   teamId,
+  defaultSeason,
   onSave,
   onClose,
 }: {
   mode: ModalMode;
   teamId: string | null;
+  defaultSeason: string;
   onSave: (g: Game) => void;
   onClose: () => void;
 }) {
   const initial: GameDraft =
     mode.type === "edit"
       ? { ...mode.game }
-      : { ...EMPTY_DRAFT, team_id: teamId };
+      : { ...EMPTY_DRAFT, team_id: teamId, season: defaultSeason };
 
   const [draft, setDraft] = useState<GameDraft>(initial);
   const [saving, setSaving] = useState(false);
@@ -325,6 +329,19 @@ function GameModal({
                 placeholder="e.g. EISD Lamar HS"
                 className={inputCls}
               />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Season</label>
+              <select
+                value={draft.season}
+                onChange={(e) => patch("season", e.target.value)}
+                className={inputCls + " appearance-none"}
+              >
+                {seasonOptions().map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -591,16 +608,25 @@ function GameRow({
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function GameSchedulePage() {
-  const { activeTeam } = useTeam();
+  const { activeTeam }  = useTeam();
+  const { settings }    = useSettings();
   const [games,   setGames]   = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 
-  const [modal,        setModal]        = useState<ModalMode | null>(null);
-  const [writeupGame,  setWriteupGame]  = useState<Game | null>(null);
+  // Active season filter — defaults to the program's current season
+  const [activeSeason, setActiveSeason] = useState<string | "all">(settings.current_season);
+
+  // Keep default in sync if settings load after first render
+  useEffect(() => {
+    setActiveSeason(settings.current_season);
+  }, [settings.current_season]);
+
+  const [modal,         setModal]         = useState<ModalMode | null>(null);
+  const [writeupGame,   setWriteupGame]   = useState<Game | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Game | null>(null);
 
-  // Load games
+  // Load ALL games for the team — filter client-side so season switching is instant
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -616,28 +642,42 @@ export default function GameSchedulePage() {
       .finally(() => setLoading(false));
   }, [activeTeam]);
 
-  // Record summary
+  // Seasons that actually have games (for the filter bar)
+  const seasonsWithGames = useMemo(() => {
+    const set = new Set(games.map((g) => g.season).filter(Boolean));
+    // Always include the current season even if empty
+    set.add(settings.current_season);
+    // Sort newest first using seasonOptions order
+    return seasonOptions().filter((s) => set.has(s));
+  }, [games, settings.current_season]);
+
+  // Games visible under the active season filter
+  const visibleGames = useMemo(() =>
+    activeSeason === "all" ? games : games.filter((g) => g.season === activeSeason),
+  [games, activeSeason]);
+
+  // Record summary for visible games
   const { wins, losses, districtW, districtL, upcoming } = useMemo(() => {
     let wins = 0, losses = 0, districtW = 0, districtL = 0, upcoming = 0;
-    for (const g of games) {
+    for (const g of visibleGames) {
       const result = gameResult(g);
       if (result === "upcoming") { upcoming++; continue; }
       if (result === "win") { wins++; if (g.game_type === "district") districtW++; }
       else { losses++; if (g.game_type === "district") districtL++; }
     }
     return { wins, losses, districtW, districtL, upcoming };
-  }, [games]);
+  }, [visibleGames]);
 
-  // Group by month
+  // Group visible games by month
   const byMonth = useMemo(() => {
     const map = new Map<string, Game[]>();
-    for (const g of games) {
+    for (const g of visibleGames) {
       const month = fmtDate(g.game_date).month;
       if (!map.has(month)) map.set(month, []);
       map.get(month)!.push(g);
     }
     return Array.from(map.entries());
-  }, [games]);
+  }, [visibleGames]);
 
   function handleSaved(saved: Game) {
     setGames((prev) => {
@@ -661,11 +701,11 @@ export default function GameSchedulePage() {
   return (
     <DashboardLayout>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
+      <div className="flex items-start justify-between mb-5 flex-wrap gap-4">
         <div>
           <h1 className="text-white text-2xl font-bold tracking-tight">Game Schedule</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {new Date().getFullYear()} SEASON
+            {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {activeSeason === "all" ? "ALL SEASONS" : activeSeason}
           </p>
         </div>
         <button
@@ -677,8 +717,42 @@ export default function GameSchedulePage() {
         </button>
       </div>
 
+      {/* Season filter bar */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        {seasonsWithGames.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setActiveSeason(s)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors font-mono ${
+              activeSeason === s
+                ? "bg-mustang-red border-mustang-red text-white"
+                : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+            }`}
+          >
+            {s}
+            {s === settings.current_season && (
+              <span className="ml-1.5 text-[9px] opacity-60">current</span>
+            )}
+          </button>
+        ))}
+        {games.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setActiveSeason("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors font-mono ${
+              activeSeason === "all"
+                ? "bg-mustang-red border-mustang-red text-white"
+                : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+            }`}
+          >
+            All Seasons
+          </button>
+        )}
+      </div>
+
       {/* Record summary */}
-      {games.length > 0 && (
+      {visibleGames.length > 0 && (
         <div className="flex gap-3 mb-6 flex-wrap">
           <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3">
             <Trophy size={16} className="text-mustang-red" />
@@ -705,7 +779,7 @@ export default function GameSchedulePage() {
       )}
 
       {/* Column headers */}
-      {games.length > 0 && (
+      {visibleGames.length > 0 && (
         <div className="flex items-center gap-3 px-4 py-2 text-[10px] font-mono text-gray-600 uppercase tracking-wider border-b border-gray-700 mb-0">
           <div className="w-24 shrink-0">Date</div>
           <div className="flex-1">Opponent</div>
@@ -733,14 +807,16 @@ export default function GameSchedulePage() {
         {!loading && error && (
           <div className="py-16 text-center text-red-400 font-mono text-xs">{error}</div>
         )}
-        {!loading && !error && games.length === 0 && (
+        {!loading && !error && visibleGames.length === 0 && (
           <div className="py-16 text-center">
-            <p className="text-gray-500 font-mono text-xs mb-3">NO GAMES SCHEDULED</p>
+            <p className="text-gray-500 font-mono text-xs mb-3">
+              {games.length === 0 ? "NO GAMES SCHEDULED" : `NO GAMES FOR ${activeSeason === "all" ? "ANY SEASON" : activeSeason}`}
+            </p>
             <button
               onClick={() => setModal({ type: "add" })}
               className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold transition-colors"
             >
-              <Plus size={13} /> Add Your First Game
+              <Plus size={13} /> Add Game
             </button>
           </div>
         )}
@@ -765,7 +841,7 @@ export default function GameSchedulePage() {
       </div>
 
       {/* Legend */}
-      {games.length > 0 && (
+      {visibleGames.length > 0 && (
         <p className="text-[10px] font-mono text-gray-700 mt-3 text-right">
           Scout · Film · Box · Notes — colored icon = content available · hover row to edit
         </p>
@@ -776,6 +852,7 @@ export default function GameSchedulePage() {
         <GameModal
           mode={modal}
           teamId={activeTeam?.id ?? null}
+          defaultSeason={activeSeason === "all" ? settings.current_season : activeSeason}
           onSave={handleSaved}
           onClose={() => setModal(null)}
         />
