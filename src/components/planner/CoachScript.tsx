@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { Target } from "lucide-react";
 import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalShots } from "@/types/session";
 import { DrillCategory } from "@/types/drill";
 import { Player } from "@/types/player";
+import ShotCounterModal from "@/components/planner/ShotCounterModal";
 
 // ── Category colours ──────────────────────────────────────────────────────
 
@@ -32,8 +35,6 @@ function buildRows(session: Session): ScriptRow[] {
 }
 
 // ── Name display ──────────────────────────────────────────────────────────
-// Uses last name only, but "F. LastName" when two or more players on the
-// roster share the same last name (e.g. sisters).
 
 function lastNameOf(fullName: string): string {
   return fullName.trim().split(" ").slice(-1)[0];
@@ -77,11 +78,13 @@ function NotesLines({ count = 3 }: { count?: number }) {
 interface Props { session: Session; players?: Player[] }
 
 export default function CoachScript({ session, players = [] }: Props) {
+  const [countingDrill, setCountingDrill] = useState<SessionDrill | null>(null);
+
   if (session.drills.length === 0) return null;
 
-  const rows      = buildRows(session);
-  const mins      = totalDuration(session.drills);
-  const shots     = Math.round(totalShots(session.drills));
+  const rows       = buildRows(session);
+  const mins       = totalDuration(session.drills);
+  const shots      = Math.round(totalShots(session.drills));
   const startLabel = formatTime12(parseTime(session.startTime));
 
   const dateLabel = new Date(session.date + "T12:00:00").toLocaleDateString("en-US", {
@@ -91,181 +94,200 @@ export default function CoachScript({ session, players = [] }: Props) {
     month: "short", day: "numeric", year: "numeric",
   });
 
-  // intensity breakdown for summary bar
   const avgIntensity = session.drills.length
     ? (session.drills.reduce((s, d) => s + d.drill.intensity, 0) / session.drills.length).toFixed(1)
     : "—";
 
   return (
-    <section
-      id="coach-script"
-      className="mt-6 bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden
-                 print:border-0 print:rounded-none print:bg-white print:mt-0 print:shadow-none"
-    >
-      {/* ── Screen-only label ──────────────────────────────────────────── */}
-      <div className="flex items-center px-6 py-4 border-b border-gray-700 print:hidden">
-        <div>
-          <p className="text-white font-bold text-base">Coach&apos;s Script</p>
-          <p className="text-gray-400 text-xs font-mono">
-            {dateLabel} · Start {startLabel} · {mins} min · ~{shots} shots
-          </p>
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════════════
-          PRINT-ONLY DOCUMENT — everything below is hidden on screen
-      ════════════════════════════════════════════════════════════════ */}
-
-      {/* ── Red accent bar ─────────────────────────────────────────────── */}
-      <div
-        className="hidden print:block w-full mb-0"
-        style={{ backgroundColor: "#ED1C24", height: "10px" }}
-      />
-
-      {/* ── Main header ────────────────────────────────────────────────── */}
-      <div className="hidden print:flex items-center justify-between px-0 pt-4 pb-3 border-b-2 border-black">
-        {/* Left: logo + identity */}
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={60} height={60} />
+    <>
+      <section
+        id="coach-script"
+        className="mt-6 bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden
+                   print:border-0 print:rounded-none print:bg-white print:mt-0 print:shadow-none"
+      >
+        {/* ── Screen-only label ────────────────────────────────────────── */}
+        <div className="flex items-center px-6 py-4 border-b border-gray-700 print:hidden">
           <div>
-            <p className="font-black text-black text-xl leading-tight tracking-tight">
-              MEMORIAL HIGH SCHOOL
-            </p>
-            <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">
-              Mustangs Basketball · 2025–26 Season
+            <p className="text-white font-bold text-base">Coach&apos;s Script</p>
+            <p className="text-gray-400 text-xs font-mono">
+              {dateLabel} · Start {startLabel} · {mins} min · ~{shots} shots
             </p>
           </div>
         </div>
 
-        {/* Right: document type + date */}
-        <div className="text-right">
-          <p className="font-black text-3xl tracking-tight leading-none" style={{ color: "#ED1C24" }}>
-            PRACTICE PLAN
-          </p>
-          <p className="text-black font-bold text-sm mt-1">{dateLabel}</p>
-          <p className="text-gray-500 text-[11px] font-mono mt-0.5">
-            Start {startLabel} · {mins} min · ~{shots} shots · Avg intensity {avgIntensity}/5
-          </p>
+        {/* ── Red accent bar ───────────────────────────────────────────── */}
+        <div
+          className="hidden print:block w-full mb-0"
+          style={{ backgroundColor: "#ED1C24", height: "10px" }}
+        />
+
+        {/* ── Main header ─────────────────────────────────────────────── */}
+        <div className="hidden print:flex items-center justify-between px-0 pt-4 pb-3 border-b-2 border-black">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mustang-logo.png" alt="Memorial Mustangs" width={60} height={60} />
+            <div>
+              <p className="font-black text-black text-xl leading-tight tracking-tight">
+                MEMORIAL HIGH SCHOOL
+              </p>
+              <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">
+                Mustangs Basketball · 2025–26 Season
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-black text-3xl tracking-tight leading-none" style={{ color: "#ED1C24" }}>
+              PRACTICE PLAN
+            </p>
+            <p className="text-black font-bold text-sm mt-1">{dateLabel}</p>
+            <p className="text-gray-500 text-[11px] font-mono mt-0.5">
+              Start {startLabel} · {mins} min · ~{shots} shots · Avg intensity {avgIntensity}/5
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* ── Drill table ────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto print:overflow-visible">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
-              {[
-                { label: "Time Block",   w: "w-[130px]" },
-                { label: "Drill",        w: ""           },
-                { label: "Category",     w: "w-[130px]"  },
-                { label: "Proj. Shots",  w: "w-[90px]"   },
-              ].map(({ label, w }) => (
-                <th
-                  key={label}
-                  className={`${w} px-4 py-2 text-left text-[10px] font-mono uppercase tracking-wider
-                              text-gray-500 print:text-gray-700 print:border-b print:border-gray-400`}
-                >
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
+        {/* ── Drill table ─────────────────────────────────────────────── */}
+        <div className="overflow-x-auto print:overflow-visible">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
+                {[
+                  { label: "Time Block",  w: "w-[130px]" },
+                  { label: "Drill",       w: ""           },
+                  { label: "Category",    w: "w-[130px]"  },
+                  { label: "Proj. Shots", w: "w-[90px]"   },
+                  { label: "",            w: "w-[48px] print:hidden" },
+                ].map(({ label, w }) => (
+                  <th
+                    key={label || "action"}
+                    className={`${w} px-4 py-2 text-left text-[10px] font-mono uppercase tracking-wider
+                                text-gray-500 print:text-gray-700 print:border-b print:border-gray-400`}
+                  >
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-          <tbody>
-            {rows.map((row, i) => {
-              const projReps = Math.round(row.drill.shot_density * row.duration);
-              const isRest   = row.drill.category === DrillCategory.RestTransition;
-              return (
-                <tr
-                  key={row.instanceId}
-                  className={`border-b border-gray-700/50 last:border-0 print:border-gray-200
-                              ${i % 2 === 0 ? "print:bg-white" : "print:bg-gray-50"}
-                              hover:bg-gray-700/20 print:hover:bg-transparent`}
-                >
-                  {/* Time block */}
-                  <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">
-                    <span className="text-white print:text-black font-semibold">{row.startStr}</span>
-                    <span className="text-gray-500 mx-1 print:text-gray-400">–</span>
-                    <span className="text-white print:text-black font-semibold">{row.endStr}</span>
-                    <span className="block text-gray-500 print:text-gray-400 text-[10px]">
-                      {row.duration} min
-                    </span>
-                  </td>
+            <tbody>
+              {rows.map((row, i) => {
+                const projReps = Math.round(row.drill.shot_density * row.duration);
+                const isRest   = row.drill.category === DrillCategory.RestTransition;
+                return (
+                  <tr
+                    key={row.instanceId}
+                    className={`border-b border-gray-700/50 last:border-0 print:border-gray-200
+                                ${i % 2 === 0 ? "print:bg-white" : "print:bg-gray-50"}
+                                hover:bg-gray-700/20 print:hover:bg-transparent`}
+                  >
+                    {/* Time block */}
+                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">
+                      <span className="text-white print:text-black font-semibold">{row.startStr}</span>
+                      <span className="text-gray-500 mx-1 print:text-gray-400">–</span>
+                      <span className="text-white print:text-black font-semibold">{row.endStr}</span>
+                      <span className="block text-gray-500 print:text-gray-400 text-[10px]">
+                        {row.duration} min
+                      </span>
+                    </td>
 
-                  {/* Drill name */}
-                  <td className="px-4 py-3">
-                    <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
-                    {row.drill.sub_category && (
-                      <p className="text-gray-500 text-[10px] font-mono">{row.drill.sub_category}</p>
-                    )}
-                    {/* Player groups — print only */}
-                    {row.groups && row.groups.length > 0 && (
-                      <div className="hidden print:block mt-1.5 pt-1.5 border-t border-gray-200 space-y-0.5">
-                        {row.groups.map((g, gi) => {
-                          const names = g.playerIds
-                            .map((id) => {
-                              const p = players.find((pl) => pl.id === id);
-                              return p ? displayName(p, players) : null;
-                            })
-                            .filter(Boolean)
-                            .join(", ");
-                          return (
-                            <p key={gi} className="text-[9px] font-mono text-gray-700 leading-tight">
-                              <span className="font-bold">{g.name}:</span>{" "}
-                              {names || <em className="font-normal text-gray-400">No players assigned</em>}
-                            </p>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </td>
+                    {/* Drill name */}
+                    <td className="px-4 py-3">
+                      <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
+                      {row.drill.sub_category && (
+                        <p className="text-gray-500 text-[10px] font-mono">{row.drill.sub_category}</p>
+                      )}
+                      {/* Player groups — print only */}
+                      {row.groups && row.groups.length > 0 && (
+                        <div className="hidden print:block mt-1.5 pt-1.5 border-t border-gray-200 space-y-0.5">
+                          {row.groups.map((g, gi) => {
+                            const names = g.playerIds
+                              .map((id) => {
+                                const p = players.find((pl) => pl.id === id);
+                                return p ? displayName(p, players) : null;
+                              })
+                              .filter(Boolean)
+                              .join(", ");
+                            return (
+                              <p key={gi} className="text-[9px] font-mono text-gray-700 leading-tight">
+                                <span className="font-bold">{g.name}:</span>{" "}
+                                {names || <em className="font-normal text-gray-400">No players assigned</em>}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </td>
 
-                  {/* Category */}
-                  <td className={`px-4 py-3 text-xs font-semibold font-mono ${CAT_COLOR[row.drill.category]}`}>
-                    {row.drill.category}
-                    {row.drill.sub_category && (
-                      <span className="font-normal text-gray-500 print:text-gray-500"> ({row.drill.sub_category})</span>
-                    )}
-                  </td>
+                    {/* Category */}
+                    <td className={`px-4 py-3 text-xs font-semibold font-mono ${CAT_COLOR[row.drill.category]}`}>
+                      {row.drill.category}
+                      {row.drill.sub_category && (
+                        <span className="font-normal text-gray-500 print:text-gray-500"> ({row.drill.sub_category})</span>
+                      )}
+                    </td>
 
-                  {/* Proj. shots */}
-                  <td className="px-4 py-3 font-mono text-xs">
-                    {isRest
-                      ? <span className="text-gray-500">—</span>
-                      : <span className="text-white print:text-black font-bold">~{projReps}</span>}
-                  </td>
+                    {/* Proj. shots */}
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {isRest
+                        ? <span className="text-gray-500">—</span>
+                        : <span className="text-white print:text-black font-bold">~{projReps}</span>}
+                    </td>
 
-                </tr>
-              );
-            })}
-          </tbody>
+                    {/* Shot counter button — screen only */}
+                    <td className="px-2 py-3 print:hidden">
+                      {!isRest && (
+                        <button
+                          type="button"
+                          onClick={() => setCountingDrill(row)}
+                          title="Count shots for this drill"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-white hover:bg-mustang-red/20 hover:border-mustang-red/40 border border-transparent transition-colors"
+                        >
+                          <Target size={15} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
 
-          {/* Totals */}
-          <tfoot>
-            <tr className="border-t-2 border-gray-600 print:border-black">
-              <td colSpan={2} className="px-4 py-2 text-gray-500 print:text-gray-700 text-xs font-mono font-bold">
-                SESSION TOTALS
-              </td>
-              <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
-                ~{shots} shots
-              </td>
-              <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
-                {mins} min
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+            {/* Totals */}
+            <tfoot>
+              <tr className="border-t-2 border-gray-600 print:border-black">
+                <td colSpan={2} className="px-4 py-2 text-gray-500 print:text-gray-700 text-xs font-mono font-bold">
+                  SESSION TOTALS
+                </td>
+                <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
+                  ~{shots} shots
+                </td>
+                <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
+                  {mins} min
+                </td>
+                <td className="print:hidden" />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
 
-      {/* ── Footer bar ─────────────────────────────────────────────────── */}
-      <div
-        className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
-        style={{ backgroundColor: "#ED1C24" }}
-      >
-        <span>MEMORIAL MUSTANGS BASKETBALL · STAFF CONFIDENTIAL</span>
-        <span>Generated {generatedOn} · Memorial Basketball OS</span>
-      </div>
-    </section>
+        {/* ── Footer bar ──────────────────────────────────────────────── */}
+        <div
+          className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
+          style={{ backgroundColor: "#ED1C24" }}
+        >
+          <span>MEMORIAL MUSTANGS BASKETBALL · STAFF CONFIDENTIAL</span>
+          <span>Generated {generatedOn} · Memorial Basketball OS</span>
+        </div>
+      </section>
+
+      {/* ── Shot Counter Modal ────────────────────────────────────────── */}
+      {countingDrill && (
+        <ShotCounterModal
+          drill={countingDrill.drill}
+          defaultPlayerCount={Math.max(players.length, 1)}
+          onClose={() => setCountingDrill(null)}
+          onSaved={() => setCountingDrill(null)}
+        />
+      )}
+    </>
   );
 }
