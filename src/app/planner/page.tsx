@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { CalendarDays, Clock, Droplets, FileText, Save, Zap, CheckCircle2, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -9,6 +9,7 @@ import SessionTimeline from "@/components/planner/SessionTimeline";
 import MissionProfile from "@/components/planner/MissionProfile";
 import CoachScript from "@/components/planner/CoachScript";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
+import DrillForm from "@/components/drill-vault/DrillForm";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
@@ -25,11 +26,21 @@ function PlannerInner() {
   const searchParams = useSearchParams();
   const initialDate  = searchParams.get("date") ?? TODAY;
 
-  const { drills: vaultDrills } = useDrills();
+  const { drills: vaultDrills, addToCache } = useDrills();
   const { activeTeam, teams, setActiveTeam } = useTeam();
   const { players } = useTeamPlayers();
   const { settings } = useSettings();
   const [groupingDrillId, setGroupingDrillId] = useState<string | null>(null);
+  const [showNewDrillForm, setShowNewDrillForm] = useState(false);
+
+  const drillCategories = useMemo(
+    () => Array.from(new Set(vaultDrills.map((d) => d.category))).sort(),
+    [vaultDrills]
+  );
+  const drillSubCategories = useMemo(
+    () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
+    [vaultDrills]
+  );
 
   // If the URL specifies a team_id (e.g. clicking from the calendar), switch to that team
   const urlTeamId = searchParams.get("team_id");
@@ -232,7 +243,7 @@ function PlannerInner() {
           {/* Drill Picker + Timeline side by side (lg+), stacked on mobile */}
           <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr] gap-4" style={{ minHeight: "420px" }}>
             {/* Left — Drill Picker */}
-            <DrillPicker drills={vaultDrills} onAdd={addDrill} />
+            <DrillPicker drills={vaultDrills} onAdd={addDrill} onNewDrill={() => setShowNewDrillForm(true)} />
 
             {/* Center — Timeline */}
             <div className="flex flex-col gap-2 min-w-0">
@@ -271,6 +282,19 @@ function PlannerInner() {
 
       {/* ── Coach's Script ───────────────────────────────────────── */}
       {!loadingDate && <CoachScript session={session} players={players} />}
+
+      {/* ── New Drill Modal ───────────────────────────────────────── */}
+      {showNewDrillForm && (
+        <DrillForm
+          categories={drillCategories}
+          subCategories={drillSubCategories}
+          onSave={(drill) => {
+            addToCache(drill);
+            setShowNewDrillForm(false);
+          }}
+          onClose={() => setShowNewDrillForm(false)}
+        />
+      )}
 
       {/* ── Player Grouping Modal ─────────────────────────────────── */}
       {groupingDrillId && (() => {

@@ -15,9 +15,10 @@ const CAT_BADGE: Record<DrillCategory, string> = {
 interface Props {
   drills: Drill[];
   onAdd: (drillId: string) => void;
+  onNewDrill?: () => void;
 }
 
-export default function DrillPicker({ drills, onAdd }: Props) {
+export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
   const [query,      setQuery]      = useState("");
   const [filterCat,  setFilterCat]  = useState("All");
   const [filterSub,  setFilterSub]  = useState("All");
@@ -60,7 +61,19 @@ export default function DrillPicker({ drills, onAdd }: Props) {
     <div className="bg-gray-800 border border-gray-700 rounded-2xl flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-700 shrink-0 flex flex-col gap-2">
-        <p className="text-white font-semibold text-sm">Drill Vault</p>
+        <div className="flex items-center justify-between">
+          <p className="text-white font-semibold text-sm">Drill Vault</p>
+          {onNewDrill && (
+            <button
+              type="button"
+              onClick={onNewDrill}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-mustang-red/10 hover:bg-mustang-red border border-mustang-red/30 hover:border-mustang-red text-mustang-red hover:text-white text-[11px] font-semibold transition-colors"
+            >
+              <Plus size={11} />
+              New
+            </button>
+          )}
+        </div>
 
         {/* Search */}
         <div className="relative">
