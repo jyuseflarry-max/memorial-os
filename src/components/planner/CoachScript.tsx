@@ -193,9 +193,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                     {/* Drill name */}
                     <td className="px-4 py-3">
                       <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
-                      {row.drill.sub_category && (
-                        <p className="text-gray-500 text-[10px] font-mono">{row.drill.sub_category}</p>
-                      )}
                       {/* Player groups — print only */}
                       {row.groups && row.groups.length > 0 && (
                         <div className="hidden print:block mt-1.5 pt-1.5 border-t border-gray-200 space-y-0.5">
