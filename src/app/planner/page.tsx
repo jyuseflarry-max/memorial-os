@@ -280,6 +280,7 @@ function PlannerInner() {
               </div>
               <SessionTimeline
                 drills={session.drills}
+                startTime={session.startTime}
                 onRemove={removeDrill}
                 onDurationChange={updateDuration}
                 onReorder={reorderDrills}

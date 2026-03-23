@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { X, ChevronUp, ChevronDown, Minus, Plus, Users, GripVertical } from "lucide-react";
-import { SessionDrill } from "@/types/session";
+import { SessionDrill, parseTime, formatTime12 } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
 
@@ -16,6 +16,7 @@ const CAT_DOT: Record<string, string> = {
 
 interface Props {
   drills: SessionDrill[];
+  startTime: string;
   onRemove: (instanceId: string) => void;
   onDurationChange: (instanceId: string, duration: number) => void;
   onReorder: (from: number, to: number) => void;
@@ -25,6 +26,7 @@ interface Props {
 
 export default function SessionTimeline({
   drills,
+  startTime,
   onRemove,
   onDurationChange,
   onReorder,
@@ -54,7 +56,10 @@ export default function SessionTimeline({
     if (drillId) onDropDrill(drillId);
   }
 
-  const totalMin = drills.reduce((s, d) => s + d.duration, 0);
+  const totalMin  = drills.reduce((s, d) => s + d.duration, 0);
+  const startMin  = parseTime(startTime);
+  const endLabel  = formatTime12(startMin + totalMin);
+  const startLabel = formatTime12(startMin);
 
   return (
     <div
@@ -251,9 +256,9 @@ export default function SessionTimeline({
       {/* Footer total */}
       {drills.length > 0 && (
         <div className="flex items-center justify-between px-3 py-1.5 border-t border-gray-700 mt-1">
-          <span className="text-gray-500 text-xs font-mono">{drills.length} DRILLS</span>
+          <span className="text-gray-500 text-xs font-mono">{drills.length} DRILLS · {totalMin} MIN</span>
           <span className="text-gray-400 text-xs font-mono font-semibold">
-            {totalMin} MIN TOTAL
+            {startLabel} – {endLabel}
           </span>
         </div>
       )}
