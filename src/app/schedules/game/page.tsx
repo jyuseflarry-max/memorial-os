@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus, Edit2, Trash2, ExternalLink, FileText, Video,
   X, Save, Loader2, Trophy, ClipboardList, Target,
+  Upload, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
@@ -118,6 +119,117 @@ function WriteupModal({ game, onClose }: { game: Game; onClose: () => void }) {
 // ── Add / Edit modal ───────────────────────────────────────────────────────
 
 type ModalMode = { type: "add" } | { type: "edit"; game: Game };
+
+// ── Box score upload widget (edit mode only) ───────────────────────────────
+
+type UploadState = "idle" | "uploading" | "done" | "error";
+
+function BoxScoreUpload({
+  gameId,
+  currentUrl,
+  onUpdated,
+}: {
+  gameId: string;
+  currentUrl: string | null;
+  onUpdated: (url: string | null) => void;
+}) {
+  const fileRef                          = useRef<HTMLInputElement>(null);
+  const [uploadState, setUploadState]    = useState<UploadState>("idle");
+  const [uploadError, setUploadError]    = useState<string | null>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadState("uploading");
+    setUploadError(null);
+
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch(`/api/games/${gameId}/box-score`, { method: "POST", body: form });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setUploadState("error");
+      setUploadError(data.error ?? "Upload failed");
+      return;
+    }
+    setUploadState("done");
+    onUpdated(data.box_score_url);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleRemove() {
+    setUploadState("uploading");
+    const res = await fetch(`/api/games/${gameId}/box-score`, { method: "DELETE" });
+    if (res.ok) {
+      setUploadState("idle");
+      onUpdated(null);
+    } else {
+      setUploadState("error");
+      setUploadError("Remove failed");
+    }
+  }
+
+  const hasFile = !!currentUrl;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {hasFile ? (
+        <div className="flex items-center gap-3 bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5">
+          <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+          <span className="text-emerald-400 text-xs font-mono flex-1 truncate">box-score.pdf uploaded</span>
+          <a
+            href={currentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors shrink-0"
+          >
+            View
+          </a>
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={uploadState === "uploading"}
+            className="text-xs font-semibold text-gray-500 hover:text-mustang-red transition-colors shrink-0"
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploadState === "uploading"}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-gray-600 text-gray-400 hover:border-gray-400 hover:text-white transition-colors text-xs font-semibold disabled:opacity-50"
+        >
+          {uploadState === "uploading" ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Upload size={13} />
+          )}
+          {uploadState === "uploading" ? "Uploading…" : "Upload PDF Box Score"}
+        </button>
+      )}
+
+      {uploadState === "error" && uploadError && (
+        <div className="flex items-center gap-1.5 text-red-400 text-xs font-mono">
+          <AlertCircle size={12} /> {uploadError}
+        </div>
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
+
+// ── Add / Edit modal ───────────────────────────────────────────────────────
 
 function GameModal({
   mode,
@@ -301,14 +413,18 @@ function GameModal({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className={labelCls}>Box Score URL</label>
-              <input
-                type="url"
-                value={draft.box_score_url ?? ""}
-                onChange={(e) => patch("box_score_url", e.target.value || null)}
-                placeholder="https://maxpreps.com/..."
-                className={inputCls}
-              />
+              <label className={labelCls}>Box Score (PDF)</label>
+              {mode.type === "edit" ? (
+                <BoxScoreUpload
+                  gameId={mode.game.id}
+                  currentUrl={draft.box_score_url}
+                  onUpdated={(url) => patch("box_score_url", url)}
+                />
+              ) : (
+                <p className="text-[10px] font-mono text-gray-600 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2.5">
+                  Save the game first, then edit it to upload a box score PDF.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
