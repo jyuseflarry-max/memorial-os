@@ -1,0 +1,44 @@
+import { NextRequest } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase/server";
+
+/** GET /api/games?team_id=xxx — list games ordered by date */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = request.nextUrl;
+    const teamId = searchParams.get("team_id");
+
+    const supabase = getSupabaseServer();
+    let query = supabase
+      .from("games")
+      .select("*")
+      .order("game_date", { ascending: true })
+      .order("game_time", { ascending: true, nullsFirst: true });
+
+    if (teamId) query = query.eq("team_id", teamId);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return Response.json(data);
+  } catch (err: unknown) {
+    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+  }
+}
+
+/** POST /api/games — create a new game */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const supabase = getSupabaseServer();
+
+    const { data, error } = await supabase
+      .from("games")
+      .insert([{ ...body, updated_at: new Date().toISOString() }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return Response.json(data, { status: 201 });
+  } catch (err: unknown) {
+    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+  }
+}
