@@ -238,7 +238,7 @@ function GameModal({
             <div className="flex flex-col gap-2">
               <label className={labelCls}>Game Type</label>
               <div className="flex gap-2 flex-wrap">
-                {(["non-district", "district", "scrimmage", "tournament", "playoffs"] as GameType[]).map((t) => (
+                {(["scrimmage", "non-district", "tournament", "district", "playoffs"] as GameType[]).map((t) => (
                   <button
                     key={t}
                     type="button"
