@@ -197,7 +197,7 @@ export default function Sidebar() {
 
       {/* Collapsible nav groups */}
       <nav className="flex flex-col gap-3">
-        {NAV_GROUPS.map((group) => (
+        {NAV_GROUPS.filter((g) => (settings.enabled_modules ?? []).includes(g.label)).map((group) => (
           <NavGroup
             key={group.label}
             label={group.label}

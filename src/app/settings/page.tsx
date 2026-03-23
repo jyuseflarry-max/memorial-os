@@ -35,6 +35,7 @@ export default function SettingsPage() {
       default_start_time:  form.default_start_time,
       primary_color:       form.primary_color,
       primary_color_dark:  form.primary_color_dark,
+      enabled_modules:     form.enabled_modules,
     });
     setStatus("saved");
     setTimeout(() => setStatus("idle"), 2500);
@@ -250,6 +251,38 @@ export default function SettingsPage() {
               />
               <p className="text-[10px] font-mono text-gray-600">Pre-filled start time when creating a new practice plan.</p>
             </div>
+          </section>
+
+          {/* Module Visibility */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
+            <div className="border-b border-gray-700 pb-3">
+              <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono">Module Visibility</h2>
+              <p className="text-[10px] font-mono text-gray-500 mt-1">Control which sections appear in the sidebar. Hidden modules are preserved — just not shown.</p>
+            </div>
+            {["Players", "Practice", "Reports", "Schedules", "Strength"].map((mod) => {
+              const enabled = (form.enabled_modules ?? []).includes(mod);
+              return (
+                <div key={mod} className="flex items-center justify-between">
+                  <span className="text-sm text-white font-medium">{mod}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      patch(
+                        "enabled_modules",
+                        enabled
+                          ? (form.enabled_modules ?? []).filter((m) => m !== mod)
+                          : [...(form.enabled_modules ?? []), mod]
+                      )
+                    }
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                      enabled ? "bg-mustang-red" : "bg-gray-600"
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+              );
+            })}
           </section>
 
           {/* Colors */}

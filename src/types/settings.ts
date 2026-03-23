@@ -8,6 +8,7 @@ export interface ProgramSettings {
   default_start_time: string;         // HH:MM
   primary_color: string;              // hex e.g. #ED1C24
   primary_color_dark: string;         // hex e.g. #C01920
+  enabled_modules: string[];          // nav group labels that are visible
   updated_at: string;
 }
 
@@ -42,5 +43,6 @@ export const DEFAULT_SETTINGS: ProgramSettings = {
   default_start_time: "15:00",
   primary_color: "#ED1C24",
   primary_color_dark: "#C01920",
+  enabled_modules: ["Players", "Practice", "Reports", "Schedules", "Strength"],
   updated_at: new Date().toISOString(),
 };
