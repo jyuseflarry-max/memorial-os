@@ -43,6 +43,7 @@ export default function CalendarWidget() {
   const [sessions, setSessions]   = useState<SavedSession[]>([]);
   const [loading, setLoading]     = useState(true);
   const [dayPopover, setDayPopover] = useState<{ iso: string; sessions: SavedSession[] } | null>(null);
+  const [teamFilter, setTeamFilter] = useState<string>("all");
 
   const teamColorMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -64,14 +65,18 @@ export default function CalendarWidget() {
       .finally(() => setLoading(false));
   }, []);
 
+  const filteredSessions = useMemo(() =>
+    teamFilter === "all" ? sessions : sessions.filter((s) => s.team_id === teamFilter),
+  [sessions, teamFilter]);
+
   const sessionsByDate = useMemo(() => {
     const map: Record<string, SavedSession[]> = {};
-    sessions.forEach((s) => {
+    filteredSessions.forEach((s) => {
       if (!map[s.date]) map[s.date] = [];
       map[s.date].push(s);
     });
     return map;
-  }, [sessions]);
+  }, [filteredSessions]);
 
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -113,7 +118,7 @@ export default function CalendarWidget() {
   }
 
   // Month sessions list
-  const monthSessions = sessions
+  const monthSessions = filteredSessions
     .filter((s) => {
       const [y, m] = s.date.split("-").map(Number);
       return y === year && m === month + 1;
@@ -122,6 +127,52 @@ export default function CalendarWidget() {
 
   return (
     <>
+      {/* Team filter pills */}
+      {teams.length > 0 && (
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setTeamFilter("all")}
+            className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+            style={teamFilter === "all" ? {
+              color: "#fff",
+              backgroundColor: "rgb(237 28 36 / 0.15)",
+              borderColor: "rgb(237 28 36 / 0.4)",
+            } : {
+              color: "rgb(156 163 175)",
+              backgroundColor: "transparent",
+              borderColor: "rgb(55 65 81)",
+            }}
+          >
+            All Teams
+          </button>
+          {teams.map((team) => {
+            const color  = colorFor(team.id);
+            const active = teamFilter === team.id;
+            return (
+              <button
+                key={team.id}
+                type="button"
+                onClick={() => setTeamFilter(team.id)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+                style={active ? {
+                  color: "white",
+                  borderColor: "transparent",
+                } : {
+                  color: "rgb(156 163 175)",
+                  backgroundColor: "transparent",
+                  borderColor: "rgb(55 65 81)",
+                }}
+              >
+                {active && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.dot}`} />}
+                {!active && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.dot} opacity-60`} />}
+                <span className={active ? color.text : ""}>{team.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
         {/* Month nav */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
@@ -180,21 +231,6 @@ export default function CalendarWidget() {
             );
           })}
         </div>
-
-        {/* Legend */}
-        {teams.length > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2.5 border-t border-gray-700 flex-wrap">
-            {teams.map((team) => {
-              const color = colorFor(team.id);
-              return (
-                <div key={team.id} className="flex items-center gap-1.5 text-[9px] font-mono text-gray-400">
-                  <div className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />
-                  {team.name}
-                </div>
-              );
-            })}
-          </div>
-        )}
 
         {/* Month sessions list */}
         {!loading && monthSessions.length > 0 && (

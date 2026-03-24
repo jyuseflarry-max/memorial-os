@@ -49,12 +49,6 @@ function PlanViewInner() {
       .finally(() => setLoading(false));
   }, [date, teamIdParam]);
 
-  const dateLabel = date
-    ? new Date(date + "T12:00:00").toLocaleDateString("en-US", {
-        weekday: "long", month: "long", day: "numeric", year: "numeric",
-      })
-    : "";
-
   function handleEdit() {
     const tp = teamIdParam ? `&team_id=${teamIdParam}` : "";
     router.push(`/planner?date=${date}${tp}`);
@@ -64,10 +58,7 @@ function PlanViewInner() {
     <DashboardLayout>
       <div className="flex items-start justify-between gap-3 mb-6 print:hidden">
         <div>
-          <h1 className="text-white text-2xl font-bold tracking-tight">{dateLabel}</h1>
-          {activeTeam && (
-            <p className="text-gray-500 text-xs font-mono mt-0.5">{activeTeam.name.toUpperCase()}</p>
-          )}
+          <h1 className="text-white text-2xl font-bold tracking-tight">{activeTeam?.name ?? "Practice Plan"}</h1>
         </div>
         {session && (
           <div className="flex items-center gap-2 shrink-0 mt-1">
