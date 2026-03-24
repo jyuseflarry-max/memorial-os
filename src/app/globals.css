@@ -61,5 +61,6 @@ body {
     color: #000000 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    min-width: 720px; /* force desktop-width layout when printing from mobile */
   }
 }
