@@ -136,9 +136,10 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
                   key={ds.id}
                   type="button"
                   onClick={() => {
-                    const tp = activeTeam ? `&team_id=${activeTeam.id}` : "";
-                    const lp = ds.label ? `&label=${encodeURIComponent(ds.label)}` : "";
-                    router.push(`/planner?date=${session.date}${tp}${lp}`);
+                    const qp = new URLSearchParams({ date: session.date });
+                    if (activeTeam) qp.set("team_id", activeTeam.id);
+                    if (ds.label)   qp.set("label", ds.label);
+                    router.push(`/planner?${qp}`);
                   }}
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono border transition-colors ${
                     ds.label === activeLabel
@@ -209,8 +210,9 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
                     type="button"
                     onClick={() => {
                       if (mode === "edit") {
-                        const tp = activeTeam ? `&team_id=${activeTeam.id}` : "";
-                        window.open(`/view-plans/${session.date}?autoprint=1${tp}`, "_blank");
+                        const qp = new URLSearchParams({ autoprint: "1" });
+                        if (activeTeam) qp.set("team_id", activeTeam.id);
+                        window.open(`/view-plans/${session.date}?${qp}`, "_blank");
                       } else {
                         window.print();
                       }
