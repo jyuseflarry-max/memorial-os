@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
+import { useSettings } from "@/context/SettingsContext";
 import { Drill } from "@/types/drill";
 import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
+
+interface DrillUsage { last_used: string; use_count: number; }
+
+function formatShortDate(iso: string): string {
+  return new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+}
 
 // ── Intensity pip display ─────────────────────────────────────────────────
 
@@ -27,12 +34,24 @@ function IntensityPips({ level }: { level: number }) {
 export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
   const { activeTeam } = useTeam();
+  const { settings } = useSettings();
   const { getCatColor } = useDrillCategories();
   const [query, setQuery]             = useState("");
   const [filterCat, setFilterCat]     = useState("All");
   const [editing, setEditing]         = useState<Drill | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [duplicating, setDuplicating] = useState<string | null>(null);
+  const [usage, setUsage]             = useState<Record<string, DrillUsage>>({});
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (activeTeam) params.set("team_id", activeTeam.id);
+    if (settings.season_start) params.set("season_start", settings.season_start);
+    fetch(`/api/drills/usage?${params}`)
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setUsage(data); })
+      .catch(() => {});
+  }, [activeTeam, settings.season_start]);
 
   // Unique lists for filter dropdowns and datalist suggestions
   const categories = useMemo(
@@ -149,12 +168,14 @@ export default function DrillVaultPage() {
           </p>
         )}
         <div className="divide-y divide-gray-700/30">
-          {displayed.map((drill) => (
+          {displayed.map((drill) => {
+            const u = usage[drill.id];
+            return (
             <div key={drill.id} className="px-4 py-3">
               {/* Name */}
               <p className="text-white text-sm font-semibold mb-1">{drill.name}</p>
               {/* Attributes */}
-              <div className="flex items-center gap-3 mb-2.5">
+              <div className="flex items-center gap-3 mb-2">
                 {drill.sub_category && (
                   <span className="text-gray-400 text-xs font-mono">{drill.sub_category}</span>
                 )}
@@ -163,6 +184,12 @@ export default function DrillVaultPage() {
                   {drill.default_duration ?? 10}m
                 </span>
               </div>
+              {/* Usage */}
+              <p className="text-[10px] font-mono text-gray-600 mb-2.5">
+                {u
+                  ? <>Last used {formatShortDate(u.last_used)} <span className="text-gray-500">({u.use_count})</span></>
+                  : "Never used"}
+              </p>
               {/* Actions */}
               <div className="flex items-center gap-1">
                 {drill.video_url ? (
@@ -194,7 +221,8 @@ export default function DrillVaultPage() {
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
