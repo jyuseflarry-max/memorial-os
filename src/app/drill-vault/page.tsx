@@ -111,7 +111,8 @@ export default function DrillVaultPage() {
       setShowCatForm(false);
       setFilterCat(name);
     } catch (err) {
-      setCatError(err instanceof Error ? err.message : "Failed to save category.");
+      console.error("addCategory error:", err);
+      setCatError(err instanceof Error ? err.message : String(err));
     } finally {
       setCatSaving(false);
     }

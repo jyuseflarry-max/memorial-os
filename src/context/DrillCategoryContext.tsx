@@ -59,9 +59,10 @@ export function DrillCategoryProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, is_rest: isRest }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? "Failed to add category");
-    const row = data as DrillCategoryRow;
+    let data: { error?: string } = {};
+    try { data = await res.json(); } catch { /* non-JSON response */ }
+    if (!res.ok) throw new Error(data.error ?? `Server error (${res.status})`);
+    const row = data as unknown as DrillCategoryRow;
     setCategories((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
     return row;
   }
