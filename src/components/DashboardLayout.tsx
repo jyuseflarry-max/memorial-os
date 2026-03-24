@@ -12,7 +12,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-900 font-sans print:bg-white">
+    <div className="flex min-h-screen bg-gray-900 font-sans print:bg-white overflow-x-hidden">
 
       {/* Mobile backdrop */}
       {sidebarOpen && (
