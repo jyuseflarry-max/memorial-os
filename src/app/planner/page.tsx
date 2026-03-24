@@ -250,7 +250,7 @@ function PlannerInner() {
                     type="button"
                     onClick={() => {
                       const tp = activeTeam ? `&team_id=${activeTeam.id}` : "";
-                      router.push(`/view-plans/${session.date}?autoprint=1${tp}`);
+                      window.open(`/view-plans/${session.date}?autoprint=1${tp}`, "_blank");
                       setShowOverflow(false);
                     }}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors text-left"
