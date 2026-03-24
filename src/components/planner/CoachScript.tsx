@@ -188,6 +188,9 @@ export default function CoachScript({ session, players = [] }: Props) {
                       <span className="block text-gray-500 print:text-gray-400 text-[10px]">
                         {row.duration} min
                       </span>
+                      <span className={`block text-[10px] font-semibold mt-0.5 ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
+                        {row.drill.category}
+                      </span>
                     </td>
 
                     {/* Drill name */}
