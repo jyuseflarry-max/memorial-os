@@ -6,16 +6,7 @@ import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalSho
 import { DrillCategory } from "@/types/drill";
 import { Player } from "@/types/player";
 import ShotCounterModal from "@/components/planner/ShotCounterModal";
-
-// ── Category colours ──────────────────────────────────────────────────────
-
-const CAT_COLOR: Record<string, string> = {
-  [DrillCategory.Defense]:        "text-blue-400   print:text-blue-700",
-  [DrillCategory.Offense]:        "text-green-400  print:text-green-700",
-  [DrillCategory.Transition]:     "text-yellow-400 print:text-yellow-700",
-  [DrillCategory.SpecialTeams]:   "text-purple-400 print:text-purple-700",
-  [DrillCategory.RestTransition]: "text-sky-400    print:text-sky-700",
-};
+import { getCatColors } from "@/lib/category-colors";
 
 // ── Row builder ───────────────────────────────────────────────────────────
 
@@ -188,7 +179,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                         {row.duration} min
                       </span>
                       {row.drill.sub_category && (
-                        <span className={`block text-[10px] font-semibold mt-0.5 ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
+                        <span className={`block text-[10px] font-semibold mt-0.5 ${getCatColors(row.drill.category).text} print:opacity-80`}>
                           {row.drill.sub_category}
                         </span>
                       )}

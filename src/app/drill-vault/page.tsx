@@ -8,7 +8,8 @@ import ShotProjection from "@/components/drill-vault/ShotProjection";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
-import { Drill, DrillCategory } from "@/types/drill";
+import { Drill } from "@/types/drill";
+import { getCatColors } from "@/lib/category-colors";
 
 interface DrillUsage { last_used: string; use_count: number; }
 
@@ -35,17 +36,8 @@ function IntensityPips({ level }: { level: number }) {
 
 // ── Category badge ────────────────────────────────────────────────────────
 
-const CAT_COLORS: Record<string, string> = {
-  [DrillCategory.Defense]:        "text-blue-400   bg-blue-400/10   border-blue-400/20",
-  [DrillCategory.Offense]:        "text-green-400  bg-green-400/10  border-green-400/20",
-  [DrillCategory.RestTransition]: "text-sky-400    bg-sky-400/10    border-sky-400/20",
-  [DrillCategory.Transition]:     "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-  [DrillCategory.SpecialTeams]:   "text-purple-400 bg-purple-400/10 border-purple-400/20",
-};
-
 function CategoryBadge({ cat }: { cat: string }) {
-  const cls = CAT_COLORS[cat] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20";
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cls}`}>{cat}</span>;
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getCatColors(cat).badge}`}>{cat}</span>;
 }
 
 // ── Sortable column header ────────────────────────────────────────────────

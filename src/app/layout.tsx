@@ -20,6 +20,16 @@ export const metadata: Metadata = {
   title: "Memorial Basketball OS",
   description: "Mission Control for the Memorial Mustangs basketball program",
   icons: { icon: "/mustang-logo.png", apple: "/mustang-logo.png" },
+  openGraph: {
+    title: "Mustang Basketball OS: Command Center",
+    description: "Precision Coaching, Elite Analytics, and Mustang Culture. Fueling Memorial Basketball.",
+    images: [{ url: "/og-memorial-os.png" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-memorial-os.png"],
+  },
 };
 
 export default function RootLayout({

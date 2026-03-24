@@ -5,14 +5,7 @@ import { X, ChevronUp, ChevronDown, Minus, Plus, Users, GripVertical } from "luc
 import { SessionDrill, parseTime, formatTime12 } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
-
-const CAT_DOT: Record<string, string> = {
-  [DrillCategory.Defense]:       "bg-blue-400",
-  [DrillCategory.Offense]:       "bg-green-400",
-  [DrillCategory.Transition]:    "bg-yellow-400",
-  [DrillCategory.SpecialTeams]:  "bg-purple-400",
-  [DrillCategory.RestTransition]:"bg-sky-400",
-};
+import { getCatColors } from "@/lib/category-colors";
 
 interface Props {
   drills: SessionDrill[];
@@ -150,7 +143,7 @@ export default function SessionTimeline({
                 {/* Drag handle — spans full card height */}
                 <div className="flex flex-col items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing self-start pt-0.5">
                   <GripVertical size={14} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  <span className={`w-2 h-2 rounded-full ${CAT_DOT[sd.drill.category] ?? "bg-gray-400"}`} />
+                  <span className={`w-2 h-2 rounded-full ${getCatColors(sd.drill.category).dot}`} />
                 </div>
 
                 {/* ── Card body: 2-row on mobile, 1-row on sm+ ── */}

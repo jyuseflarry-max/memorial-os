@@ -2,15 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Search, Plus, GripVertical } from "lucide-react";
-import { Drill, DrillCategory } from "@/types/drill";
-
-const CAT_BADGE: Record<string, string> = {
-  [DrillCategory.Defense]:        "text-blue-400   bg-blue-400/10   border-blue-400/20",
-  [DrillCategory.Offense]:        "text-green-400  bg-green-400/10  border-green-400/20",
-  [DrillCategory.RestTransition]: "text-sky-400    bg-sky-400/10    border-sky-400/20",
-  [DrillCategory.Transition]:     "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-  [DrillCategory.SpecialTeams]:   "text-purple-400 bg-purple-400/10 border-purple-400/20",
-};
+import { Drill } from "@/types/drill";
+import { getCatColors } from "@/lib/category-colors";
 
 interface Props {
   drills: Drill[];
@@ -125,7 +118,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{drill.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border ${CAT_BADGE[drill.category] ?? "text-gray-400 bg-gray-400/10 border-gray-400/20"}`}>
+                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border ${getCatColors(drill.category).badge}`}>
                   {drill.category}
                 </span>
                 {drill.sub_category && (
