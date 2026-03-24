@@ -111,32 +111,32 @@ export default function CoachScript({ session, players = [] }: Props) {
         {/* ── Red accent bar ───────────────────────────────────────────── */}
         <div
           className="hidden print:block w-full mb-0"
-          style={{ backgroundColor: "var(--color-mustang-red)", height: "10px" }}
+          style={{ backgroundColor: "var(--color-mustang-red)", height: "6px" }}
         />
 
         {/* ── Main header ─────────────────────────────────────────────── */}
-        <div className="hidden print:flex items-center justify-between px-0 pt-4 pb-3 border-b-2 border-black">
-          <div className="flex items-center gap-3">
+        <div className="hidden print:flex items-center justify-between px-0 pt-2 pb-2 border-b-2 border-black">
+          <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mustang-logo.png" alt="Memorial Mustangs" width={60} height={60} />
+            <img src="/mustang-logo.png" alt="Memorial Mustangs" width={42} height={42} />
             <div>
-              <p className="font-black text-black text-xl leading-tight tracking-tight">
+              <p className="font-black text-black text-base leading-tight tracking-tight">
                 MEMORIAL HIGH SCHOOL
               </p>
-              <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">
+              <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest">
                 Mustangs Basketball · 2025–26 Season
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-black text-3xl tracking-tight leading-none" style={{ color: "var(--color-mustang-red)" }}>
+            <p className="font-black text-2xl tracking-tight leading-none" style={{ color: "var(--color-mustang-red)" }}>
               PRACTICE PLAN
             </p>
-            <p className="text-black font-bold text-sm mt-1">{dateLabel}</p>
-            <p className="text-gray-700 text-[11px] font-mono mt-0.5">
+            <p className="text-black font-bold text-xs mt-0.5">{dateLabel}</p>
+            <p className="text-gray-700 text-[10px] font-mono mt-0.5">
               {startLabel} – {formatTime12(parseTime(session.startTime) + mins)} ({mins} min)
             </p>
-            <p className="text-gray-700 text-[11px] font-mono">~{shots} shots per player</p>
+            <p className="text-gray-700 text-[10px] font-mono">~{shots} shots per player</p>
           </div>
         </div>
 
@@ -152,7 +152,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                 ].map(({ label, w }) => (
                   <th
                     key={label || "action"}
-                    className={`${w} px-4 py-2 text-left text-[10px] font-mono uppercase tracking-wider
+                    className={`${w} px-4 py-2 print:py-1 print:px-3 text-left text-[10px] font-mono uppercase tracking-wider
                                 text-gray-500 print:text-gray-700 print:border-b print:border-gray-400`}
                   >
                     {label}
@@ -172,7 +172,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                                 hover:bg-gray-700/20 print:hover:bg-transparent`}
                   >
                     {/* Time block */}
-                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap align-top">
+                    <td className="px-4 py-3 print:py-1.5 print:px-3 font-mono text-xs whitespace-nowrap align-top">
                       <span className="text-white print:text-black font-semibold">{row.startStr}</span>
                       <span className="text-gray-500 mx-1 print:text-gray-400">–</span>
                       <span className="text-white print:text-black font-semibold">{row.endStr}</span>
@@ -190,8 +190,8 @@ export default function CoachScript({ session, players = [] }: Props) {
                     </td>
 
                     {/* Drill name */}
-                    <td className="px-4 py-3 align-top">
-                      <p className="text-white print:text-black font-semibold">{row.drill.name}</p>
+                    <td className="px-4 py-3 print:py-1.5 print:px-3 align-top">
+                      <p className="text-white print:text-black font-semibold print:text-xs">{row.drill.name}</p>
                       {/* Player groups — print only */}
                       {row.groups && row.groups.length > 0 && (
                         <div className="hidden print:block mt-1.5 pt-1.5 border-t border-gray-200 space-y-0.5">
@@ -215,7 +215,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                     </td>
 
                     {/* Shot counter button — screen only */}
-                    <td className="px-2 py-3 print:hidden align-top">
+                    <td className="px-2 py-3 print:py-1.5 print:hidden align-top">
                       {!isRest && (
                         <button
                           type="button"

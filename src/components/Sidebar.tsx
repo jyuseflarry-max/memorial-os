@@ -9,7 +9,6 @@ import {
   Layers,
   Users,
   UsersRound,
-  CalendarDays,
   UserCog,
   BarChart3,
   Wifi,
@@ -24,6 +23,8 @@ import {
   Flame,
   Trophy,
   X,
+  Sparkles,
+  ListChecks,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
@@ -36,18 +37,19 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Player Vibe",        href: "/players",        icon: Users,     staff: false },
-      { label: "Player Groups",     href: "/player-groups",  icon: UsersRound, staff: false },
-      { label: "Manage Roster",     href: "/admin/roster",   icon: UserCog,   staff: true  },
-      { label: "Manage Teams",      href: "/admin/teams",    icon: Users,     staff: true  },
+      { label: "Vibe Check",         href: "/players",        icon: Users,     staff: false },
+      { label: "Groups",            href: "/player-groups",  icon: UsersRound, staff: false },
+      { label: "Roster",            href: "/admin/roster",   icon: UserCog,   staff: true  },
+      { label: "Teams",             href: "/admin/teams",    icon: Users,     staff: true  },
     ],
   },
   {
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Command Center",    href: "/",                        icon: RadioTower,   staff: false },
-      { label: "Planner",           href: "/planner",                 icon: CalendarDays, staff: false },
+      { label: "Build a Plan",      href: "/build-a-plan",            icon: Sparkles,     staff: false },
+      { label: "View Plans",        href: "/view-plans",              icon: ListChecks,   staff: false },
+      { label: "Calendar",          href: "/",                        icon: RadioTower,   staff: false },
       { label: "Drill Vault",       href: "/drill-vault",             icon: Layers,       staff: false },
     ],
   },

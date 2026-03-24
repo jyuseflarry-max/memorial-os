@@ -99,16 +99,16 @@ export default function CalendarWidget() {
     const daySessions = sessionsByDate[date] ?? [];
     if (daySessions.length === 1) {
       const s = daySessions[0];
-      router.push(`/planner?date=${date}${s.team_id ? `&team_id=${s.team_id}` : ""}`);
+      router.push(`/view-plans/${date}${s.team_id ? `?team_id=${s.team_id}` : ""}`);
     } else if (daySessions.length > 1) {
       setDayPopover({ iso: date, sessions: daySessions });
     } else {
-      router.push(`/planner?date=${date}`);
+      router.push(`/build-a-plan`);
     }
   }
 
   function openSession(s: SavedSession) {
-    router.push(`/planner?date=${s.date}${s.team_id ? `&team_id=${s.team_id}` : ""}`);
+    router.push(`/view-plans/${s.date}${s.team_id ? `?team_id=${s.team_id}` : ""}`);
     setDayPopover(null);
   }
 

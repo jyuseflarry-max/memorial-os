@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Play, Square, Target, ChevronDown, RotateCcw,
   CheckCircle2, Loader2, TrendingUp,
@@ -20,8 +21,6 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-/** Weighted running average — new session gets equal weight to all prior sessions combined
- *  up to a cap of 10 sessions, then each new session is 1/10th. */
 function weightedAverage(oldAvg: number, oldSessions: number, newRate: number): number {
   if (oldSessions === 0) return newRate;
   const weight = Math.min(oldSessions, 10);
@@ -42,9 +41,12 @@ interface Results {
   newSessions: number;
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────
+// ── Inner component (uses useSearchParams) ─────────────────────────────────
 
-export default function ShotCounterPage() {
+function ShotCounterInner() {
+  const searchParams = useSearchParams();
+  const drillIdParam = searchParams.get("drill_id") ?? "";
+
   const [drills,  setDrills]  = useState<Drill[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,34 +54,33 @@ export default function ShotCounterPage() {
   const [selectedId,  setSelectedId]  = useState<string>("");
   const [playerCount, setPlayerCount] = useState<number>(5);
 
-  // Active phase state
   const [elapsed, setElapsed] = useState(0);
   const [shots,   setShots]   = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Results phase state
   const [results,  setResults]  = useState<Results | null>(null);
   const [saving,   setSaving]   = useState(false);
   const [saved,    setSaved]    = useState(false);
   const [saveErr,  setSaveErr]  = useState<string | null>(null);
 
-  // Load drills
   useEffect(() => {
     fetch("/api/drills")
       .then((r) => r.json())
-      .then((d) => setDrills(Array.isArray(d) ? d : []))
+      .then((d) => {
+        const list = Array.isArray(d) ? d : [];
+        setDrills(list);
+        // Pre-select drill from URL param if provided
+        if (drillIdParam && list.some((drill: Drill) => drill.id === drillIdParam)) {
+          setSelectedId(drillIdParam);
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [drillIdParam]);
 
-  // Cleanup interval on unmount
   useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
 
   const selectedDrill = drills.find((d) => d.id === selectedId) ?? null;
-
-  // Live shots/player/min
   const liveRate = elapsed > 0 ? round1((shots / elapsed) * 60 / Math.max(playerCount, 1)) : 0;
-
-  // ── Controls ──────────────────────────────────────────────────────────────
 
   function handleStart() {
     setElapsed(0);
@@ -115,7 +116,6 @@ export default function ShotCounterPage() {
     setPhase("results");
   }, [elapsed, shots, playerCount, selectedDrill]);
 
-  // Increment shot — exposed as stable callback so the button re-render is minimal
   const addShot = useCallback(() => setShots((s) => s + 1), []);
 
   async function handleSave() {
@@ -133,7 +133,6 @@ export default function ShotCounterPage() {
     const data = await res.json();
     if (!res.ok) { setSaveErr(data.error ?? "Save failed"); setSaving(false); return; }
 
-    // Update local drill list so the dropdown reflects new values immediately
     setDrills((prev) => prev.map((d) => d.id === results.drill.id
       ? { ...d, shot_density: results.newDensity, shot_sessions: results.newSessions }
       : d
@@ -151,7 +150,7 @@ export default function ShotCounterPage() {
     setShots(0);
   }
 
-  // ── Render: Setup ─────────────────────────────────────────────────────────
+  // ── Render: Setup ──────────────────────────────────────────────────────────
 
   if (phase === "setup") {
     return (
@@ -164,7 +163,6 @@ export default function ShotCounterPage() {
 
           <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
 
-            {/* Drill selector */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Select Drill</label>
               {loading ? (
@@ -188,7 +186,6 @@ export default function ShotCounterPage() {
               )}
             </div>
 
-            {/* Drill info */}
             {selectedDrill && (
               <div className="bg-gray-900/60 border border-gray-700/50 rounded-xl px-4 py-3 flex flex-col gap-1">
                 <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider mb-1">Current Drill Data</p>
@@ -207,7 +204,6 @@ export default function ShotCounterPage() {
               </div>
             )}
 
-            {/* Player count */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Players in This Drill</label>
               <div className="flex items-center gap-3">
@@ -226,7 +222,6 @@ export default function ShotCounterPage() {
               <p className="text-[10px] font-mono text-gray-600">Used to calculate per-player rate.</p>
             </div>
 
-            {/* Start button */}
             <button
               onClick={handleStart}
               disabled={!selectedId}
@@ -241,14 +236,13 @@ export default function ShotCounterPage() {
     );
   }
 
-  // ── Render: Active ────────────────────────────────────────────────────────
+  // ── Render: Active ─────────────────────────────────────────────────────────
 
   if (phase === "active") {
     return (
       <DashboardLayout>
         <div className="max-w-md mx-auto flex flex-col gap-4">
 
-          {/* Status bar */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-mustang-red animate-pulse" />
@@ -257,13 +251,11 @@ export default function ShotCounterPage() {
             <span className="text-gray-400 font-mono text-xs truncate max-w-[200px]">{selectedDrill?.name}</span>
           </div>
 
-          {/* Timer */}
           <div className="bg-gray-800 border border-gray-700 rounded-2xl py-6 text-center">
             <p className="text-gray-600 font-mono text-[10px] uppercase tracking-widest mb-1">Elapsed</p>
             <p className="text-white font-mono text-5xl font-bold tracking-tight">{fmtTime(elapsed)}</p>
           </div>
 
-          {/* Shot count display */}
           <div className="bg-gray-800 border border-gray-700 rounded-2xl py-5 text-center">
             <p className="text-white font-mono text-7xl font-black leading-none">{shots}</p>
             <p className="text-gray-500 font-mono text-xs uppercase tracking-widest mt-2">Total Shots</p>
@@ -274,7 +266,6 @@ export default function ShotCounterPage() {
             )}
           </div>
 
-          {/* Counter button — as large as possible for in-practice use */}
           <button
             onClick={addShot}
             className="w-full bg-mustang-red hover:bg-mustang-red-dark active:scale-95 transition-all rounded-2xl flex flex-col items-center justify-center gap-1 select-none"
@@ -285,7 +276,6 @@ export default function ShotCounterPage() {
             <span className="text-white/60 font-mono text-xs">tap each time a player shoots</span>
           </button>
 
-          {/* End drill */}
           <button
             onClick={handleStop}
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 font-semibold text-sm transition-colors"
@@ -298,7 +288,7 @@ export default function ShotCounterPage() {
     );
   }
 
-  // ── Render: Results ───────────────────────────────────────────────────────
+  // ── Render: Results ────────────────────────────────────────────────────────
 
   if (phase === "results" && results) {
     const improved = results.newDensity > (results.drill.shot_density ?? 0) && (results.drill.shot_sessions ?? 0) > 0;
@@ -312,7 +302,6 @@ export default function ShotCounterPage() {
             <p className="text-gray-400 text-sm mt-0.5 font-mono">{results.drill.name}</p>
           </div>
 
-          {/* Stats */}
           <div className="bg-gray-800 border border-gray-700 rounded-2xl p-5 flex flex-col gap-0 mb-4">
             <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Session Results</p>
             {[
@@ -328,7 +317,6 @@ export default function ShotCounterPage() {
             ))}
           </div>
 
-          {/* Drill vault update preview */}
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mb-5">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp size={14} className="text-mustang-red" />
@@ -368,7 +356,6 @@ export default function ShotCounterPage() {
             <p className="text-red-400 text-xs font-mono mb-3">{saveErr}</p>
           )}
 
-          {/* Actions */}
           <div className="flex flex-col gap-3">
             {saved ? (
               <div className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-emerald-600/20 border border-emerald-600/40 text-emerald-400 font-semibold text-sm">
@@ -400,4 +387,14 @@ export default function ShotCounterPage() {
   }
 
   return null;
+}
+
+// ── Page (Suspense wrapper required for useSearchParams) ───────────────────
+
+export default function ShotCounterPage() {
+  return (
+    <Suspense fallback={null}>
+      <ShotCounterInner />
+    </Suspense>
+  );
 }

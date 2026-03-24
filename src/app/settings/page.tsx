@@ -41,6 +41,7 @@ export default function SettingsPage() {
       primary_color:       form.primary_color,
       primary_color_dark:  form.primary_color_dark,
       enabled_modules:     form.enabled_modules,
+      hudl_titan:          form.hudl_titan,
     });
     setStatus("saved");
     setTimeout(() => setStatus("idle"), 2500);
@@ -255,6 +256,28 @@ export default function SettingsPage() {
                 className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit"
               />
               <p className="text-[10px] font-mono text-gray-600">Pre-filled start time when creating a new practice plan.</p>
+            </div>
+          </section>
+
+          {/* Integrations */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
+            <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
+              Integrations
+            </h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white font-medium">HUDL Titan Sensors</p>
+                <p className="text-[10px] font-mono text-gray-500 mt-0.5">Shows Titan Load data on the Vibe Check page.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => patch("hudl_titan", !form.hudl_titan)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  form.hudl_titan ? "bg-mustang-red" : "bg-gray-600"
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.hudl_titan ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
             </div>
           </section>
 

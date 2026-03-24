@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
+import { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, Sparkles } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -21,9 +21,8 @@ const TODAY = new Date().toISOString().split("T")[0];
 
 type SaveStatus = "idle" | "saving" | "saved" | "unsaved";
 
-function PlannerInner() {
+function BuildAPlanInner() {
   const searchParams = useSearchParams();
-  const initialDate  = searchParams.get("date") ?? TODAY;
 
   const { drills: vaultDrills, addToCache } = useDrills();
   const { activeTeam, teams, setActiveTeam } = useTeam();
@@ -40,7 +39,6 @@ function PlannerInner() {
     [vaultDrills]
   );
 
-  // If the URL specifies a team_id (e.g. clicking from the calendar), switch to that team
   const urlTeamId = searchParams.get("team_id");
   useEffect(() => {
     if (!urlTeamId || !teams.length) return;
@@ -49,57 +47,13 @@ function PlannerInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlTeamId, teams]);
 
-  const [session, setSession] = useState<Session>({ date: initialDate, startTime: settings.default_start_time, drills: [] });
+  // Always start blank — today's date, default practice time, no drills
+  const [session, setSession] = useState<Session>({ date: TODAY, startTime: settings.default_start_time, drills: [] });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [loadingDate, setLoadingDate] = useState(false);
 
-  // Keep sessionRef always current for auto-save
   const sessionRef = useRef<Session | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { sessionRef.current = session; }, [session]);
-
-  // ── Load session for a given date ────────────────────────────────────────
-
-  const loadDate = useCallback(async (date: string) => { // eslint-disable-line react-hooks/exhaustive-deps
-    setLoadingDate(true);
-    try {
-      const teamParam = activeTeam ? `?team_id=${activeTeam.id}` : "";
-      const res = await fetch(`/api/sessions/${date}${teamParam}`);
-      const data = await res.json();
-      if (data && !data.error && data.drills) {
-        setSession({ date, startTime: data.start_time, drills: data.drills });
-        setSaveStatus("saved");
-      } else {
-        setSession({ date, startTime: settings.default_start_time, drills: [] });
-        setSaveStatus("idle");
-      }
-    } catch {
-      setSession({ date, startTime: "15:00", drills: [] });
-      setSaveStatus("idle");
-    } finally {
-      setLoadingDate(false);
-    }
-  }, []);
-
-  // Reload when the date OR active team changes
-  useEffect(() => { loadDate(session.date); }, [activeTeam]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-print when opened with ?autoprint=1 (e.g. from Practice Plans list)
-  const autoPrint = searchParams.get("autoprint") === "1";
-  useEffect(() => {
-    if (!autoPrint || loadingDate) return;
-    const t = setTimeout(() => window.print(), 300);
-    return () => clearTimeout(t);
-  }, [autoPrint, loadingDate]);
-
-  // ── Date change — warn about unsaved changes ──────────────────────────────
-
-  function handleDateChange(newDate: string) {
-    if (saveStatus === "unsaved" && session.drills.length > 0) {
-      if (!confirm("You have unsaved changes. Switch dates without saving?")) return;
-    }
-    loadDate(newDate);
-  }
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
 
@@ -121,7 +75,7 @@ function PlannerInner() {
     }
   }
 
-  // ── Session mutations ────────────────────────────────────────────────────
+  // ── Session mutations ─────────────────────────────────────────────────────
 
   function mutate(updater: (s: Session) => Session) {
     setSession(updater);
@@ -167,6 +121,10 @@ function PlannerInner() {
     mutate((s) => ({ ...s, startTime }));
   }
 
+  function handleDateChange(newDate: string) {
+    mutate((s) => ({ ...s, date: newDate }));
+  }
+
   function loadGeneratedPlan(plan: GeneratedDrill[]) {
     const newDrills: SessionDrill[] = plan.flatMap(({ drill_id, duration }) => {
       const drill = vaultDrills.find((d) => d.id === drill_id);
@@ -176,7 +134,7 @@ function PlannerInner() {
     mutate((s) => ({ ...s, drills: newDrills }));
   }
 
-  // ── Derived stats ────────────────────────────────────────────────────────
+  // ── Derived stats ─────────────────────────────────────────────────────────
 
   const totalMin      = totalDuration(session.drills);
   const totalShotsNum = Math.round(totalShots(session.drills));
@@ -186,9 +144,8 @@ function PlannerInner() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 mb-4 print:hidden">
         <div className="min-w-0">
-          <h1 className="text-white text-2xl font-bold tracking-tight">Planner</h1>
+          <h1 className="text-white text-2xl font-bold tracking-tight">Build a Plan</h1>
 
-          {/* Date @ Time — minimal inline inputs */}
           <div className="flex items-center gap-1 mt-1 flex-wrap">
             {activeTeam && (
               <span className="text-gray-500 text-xs font-mono mr-1">{activeTeam.name.toUpperCase()} ·</span>
@@ -208,17 +165,15 @@ function PlannerInner() {
             />
           </div>
 
-          {/* Stats */}
           <p className="text-gray-400 text-xs font-mono mt-1">
             {session.drills.length > 0
               ? `${session.drills.length} DRILLS · ${totalMin} MIN · ~${totalShotsNum} SHOTS`
-              : loadingDate ? "LOADING…" : "BUILD YOUR PRACTICE PLAN"}
+              : "DESCRIBE YOUR PRACTICE OR ADD DRILLS BELOW"}
           </p>
         </div>
 
-        {/* Right side: save indicator + overflow menu */}
+        {/* Save indicator + overflow menu */}
         <div className="flex items-center gap-2 shrink-0 mt-1">
-          {/* Auto-save indicator — subtle, no button */}
           {saveStatus === "saving" && (
             <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
               <Loader2 size={11} className="animate-spin" /> Saving…
@@ -233,7 +188,6 @@ function PlannerInner() {
             <span className="text-[11px] font-mono text-gray-600">Unsaved</span>
           )}
 
-          {/* Overflow menu */}
           <div className="relative">
             <button
               type="button"
@@ -269,65 +223,54 @@ function PlannerInner() {
         </div>
       </div>
 
-      {/* ── Loading ─────────────────────────────────────────────── */}
-      {loadingDate && (
-        <div className="flex items-center justify-center py-20 print:hidden">
-          <Loader2 size={24} className="text-mustang-red animate-spin" />
-        </div>
-      )}
-
       {/* ── Main content ────────────────────────────────────────── */}
-      {!loadingDate && (
-        <div className="flex flex-col gap-4 print:hidden">
+      <div className="flex flex-col gap-4 print:hidden">
 
-          {/* AI panel — only shown when 0 drills OR when toggled from overflow */}
-          {(session.drills.length === 0 || showAI) && (
-            <div>
-              <AIGeneratorPanel
-                playerCount={players.length || 10}
-                teamName={activeTeam?.name}
-                onLoadPlan={(plan) => { loadGeneratedPlan(plan); setShowAI(false); }}
-              />
+        {/* AI Generator — only shown when 0 drills OR toggled from overflow */}
+        {(session.drills.length === 0 || showAI) && (
+          <AIGeneratorPanel
+            playerCount={players.length || 10}
+            teamName={activeTeam?.name}
+            onLoadPlan={(plan) => { loadGeneratedPlan(plan); setShowAI(false); }}
+          />
+        )}
+
+        {/* Timeline */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">Practice Timeline</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-600 text-[10px] font-mono hidden sm:inline">QUICK ADD</span>
+              <button type="button" onClick={() => addQuickAction("qa-water-break")}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
+                <Droplets size={12} /> Water Break
+              </button>
+              <button type="button" onClick={() => addQuickAction("qa-transition")}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
+                <Zap size={12} /> Transition
+              </button>
             </div>
-          )}
-
-          {/* Timeline */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-1">
-              <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">Practice Timeline</p>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-600 text-[10px] font-mono hidden sm:inline">QUICK ADD</span>
-                <button type="button" onClick={() => addQuickAction("qa-water-break")}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
-                  <Droplets size={12} /> Water Break
-                </button>
-                <button type="button" onClick={() => addQuickAction("qa-transition")}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
-                  <Zap size={12} /> Transition
-                </button>
-              </div>
-            </div>
-
-            <SessionTimeline
-              drills={session.drills}
-              startTime={session.startTime}
-              onRemove={removeDrill}
-              onDurationChange={updateDuration}
-              onReorder={reorderDrills}
-              onGroupsClick={(id) => setGroupingDrillId(id)}
-            />
           </div>
 
-          {/* + Add Drills button */}
-          <button
-            type="button"
-            onClick={() => setShowDrillSheet(true)}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-dashed border-gray-700 hover:border-mustang-red/50 text-gray-500 hover:text-mustang-red text-sm font-semibold transition-colors"
-          >
-            <Plus size={16} /> Add Drill
-          </button>
+          <SessionTimeline
+            drills={session.drills}
+            startTime={session.startTime}
+            onRemove={removeDrill}
+            onDurationChange={updateDuration}
+            onReorder={reorderDrills}
+            onGroupsClick={(id) => setGroupingDrillId(id)}
+          />
         </div>
-      )}
+
+        {/* + Add Drill */}
+        <button
+          type="button"
+          onClick={() => setShowDrillSheet(true)}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-dashed border-gray-700 hover:border-mustang-red/50 text-gray-500 hover:text-mustang-red text-sm font-semibold transition-colors"
+        >
+          <Plus size={16} /> Add Drill
+        </button>
+      </div>
 
       {/* ── New Drill Modal ───────────────────────────────────────── */}
       {showNewDrillForm && (
@@ -367,10 +310,10 @@ function PlannerInner() {
   );
 }
 
-export default function PlannerPage() {
+export default function BuildAPlanPage() {
   return (
     <Suspense fallback={null}>
-      <PlannerInner />
+      <BuildAPlanInner />
     </Suspense>
   );
 }

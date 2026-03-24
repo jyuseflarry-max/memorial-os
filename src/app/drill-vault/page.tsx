@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
-import ShotProjection from "@/components/drill-vault/ShotProjection";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -83,6 +82,7 @@ export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
   const { activeTeam } = useTeam();
   const { settings } = useSettings();
+  const { getCatColor } = useDrillCategories();
   const [query, setQuery]             = useState("");
   const [filterCat, setFilterCat]     = useState("All");
   const [sortKey, setSortKey]         = useState<SortKey>("name");
@@ -176,31 +176,47 @@ export default function DrillVaultPage() {
         </button>
       </div>
 
-      {/* Shot Projection */}
-      <div className="mb-6">
-        <ShotProjection drills={drills} />
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+        <input
+          type="text"
+          placeholder="Search drills…"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
       </div>
 
-      {/* Search + Category filter */}
-      <div className="flex gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-48">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search drills…"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <select
-          value={filterCat}
-          onChange={(e) => setFilterCat(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
-        >
-          <option value="All">All Categories</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+      {/* Category filter chips */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
+        {["All", ...categories].map((cat) => {
+          const active = filterCat === cat;
+          const color  = cat !== "All" ? getCatColor(cat) : null;
+          return (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setFilterCat(cat)}
+              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+              style={active && color ? {
+                color,
+                backgroundColor: hexToRgba(color, 0.15),
+                borderColor: hexToRgba(color, 0.4),
+              } : active ? {
+                color: "#fff",
+                backgroundColor: "rgb(237 28 36 / 0.15)",
+                borderColor: "rgb(237 28 36 / 0.4)",
+              } : {
+                color: "rgb(156 163 175)",
+                backgroundColor: "transparent",
+                borderColor: "rgb(55 65 81)",
+              }}
+            >
+              {cat === "All" ? "All Categories" : cat}
+            </button>
+          );
+        })}
       </div>
 
       {/* Table */}

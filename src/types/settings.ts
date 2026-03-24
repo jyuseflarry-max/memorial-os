@@ -9,6 +9,7 @@ export interface ProgramSettings {
   primary_color: string;              // hex e.g. #ED1C24
   primary_color_dark: string;         // hex e.g. #C01920
   enabled_modules: string[];          // nav group labels that are visible
+  hudl_titan: boolean;                // whether program uses HUDL Titan sensors
   updated_at: string;
 }
 
@@ -44,5 +45,6 @@ export const DEFAULT_SETTINGS: ProgramSettings = {
   primary_color: "#ED1C24",
   primary_color_dark: "#C01920",
   enabled_modules: ["Players", "Practice", "Reports", "Schedules", "Strength"],
+  hudl_titan: false,
   updated_at: new Date().toISOString(),
 };

@@ -171,7 +171,7 @@ function computeAvgs(rows: VibeCheckRow[]): VibeAvgs | null {
 
 // ── Player card ───────────────────────────────────────────────────────────
 
-function PlayerCard({ player, check, history }: { player: Player; check: VibeCheckRow | null; history: VibeCheckRow[] }) {
+function PlayerCard({ player, check, history, showTitan }: { player: Player; check: VibeCheckRow | null; history: VibeCheckRow[]; showTitan: boolean }) {
   const avgs = computeAvgs(history);
   const light = getTrafficLight(player);
   const { label, badge } = LIGHT_CONFIG[light];
@@ -199,7 +199,7 @@ function PlayerCard({ player, check, history }: { player: Player; check: VibeChe
       </div>
 
       {/* Row 2: vibe + load */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className={`grid gap-2 ${showTitan ? "grid-cols-2" : "grid-cols-1"}`}>
         <div className="bg-gray-700/40 rounded-xl px-3 py-2">
           <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-0.5">Vibe Score</p>
           <p className="text-white font-bold font-mono text-lg">
@@ -207,13 +207,15 @@ function PlayerCard({ player, check, history }: { player: Player; check: VibeChe
             {check && <span className="text-gray-500 text-xs font-normal"> / 5</span>}
           </p>
         </div>
-        <div className="bg-gray-700/40 rounded-xl px-3 py-2">
-          <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-0.5">Titan Load</p>
-          <p className="text-white font-bold font-mono text-lg">
-            {player.titan_load}
-            <span className="text-gray-500 text-xs font-normal"> AU</span>
-          </p>
-        </div>
+        {showTitan && (
+          <div className="bg-gray-700/40 rounded-xl px-3 py-2">
+            <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-0.5">Titan Load</p>
+            <p className="text-white font-bold font-mono text-lg">
+              {player.titan_load}
+              <span className="text-gray-500 text-xs font-normal"> AU</span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Row 3: readiness bar */}
@@ -347,7 +349,7 @@ export default function PlayersPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((p) => (
-            <PlayerCard key={p.id} player={p} check={checks[p.id] ?? null} history={history[p.id] ?? []} />
+            <PlayerCard key={p.id} player={p} check={checks[p.id] ?? null} history={history[p.id] ?? []} showTitan={settings.hudl_titan ?? false} />
           ))}
         </div>
       )}
