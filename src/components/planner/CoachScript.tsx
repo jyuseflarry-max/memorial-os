@@ -156,7 +156,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                 {[
                   { label: "Time Block",  w: "w-[130px]" },
                   { label: "Drill",       w: ""           },
-                  { label: "Proj. Shots", w: "w-[90px]"   },
                   { label: "",            w: "w-[48px] print:hidden" },
                 ].map(({ label, w }) => (
                   <th
@@ -172,7 +171,6 @@ export default function CoachScript({ session, players = [] }: Props) {
 
             <tbody>
               {rows.map((row, i) => {
-                const projReps = Math.round(row.drill.shot_density * row.duration);
                 const isRest   = row.drill.category === DrillCategory.RestTransition;
                 return (
                   <tr
@@ -219,13 +217,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                           })}
                         </div>
                       )}
-                    </td>
-
-                    {/* Proj. shots */}
-                    <td className="px-4 py-3 font-mono text-xs align-top">
-                      {isRest
-                        ? <span className="text-gray-500">—</span>
-                        : <span className="text-white print:text-black font-bold">~{projReps}</span>}
                     </td>
 
                     {/* Shot counter button — screen only */}
