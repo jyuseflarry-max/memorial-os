@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy, Tag } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import { useDrills } from "@/hooks/useDrills";
@@ -35,13 +35,18 @@ export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
   const { activeTeam } = useTeam();
   const { settings } = useSettings();
-  const { getCatColor } = useDrillCategories();
+  const { getCatColor, addCategory } = useDrillCategories();
   const [query, setQuery]             = useState("");
   const [filterCat, setFilterCat]     = useState("All");
   const [editing, setEditing]         = useState<Drill | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const [usage, setUsage]             = useState<Record<string, DrillUsage>>({});
+  const [showCatForm, setShowCatForm] = useState(false);
+  const [newCatName, setNewCatName]   = useState("");
+  const [catSaving, setCatSaving]     = useState(false);
+  const [catError, setCatError]       = useState<string | null>(null);
+  const catInputRef                   = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -92,6 +97,23 @@ export default function DrillVaultPage() {
     } finally {
       setDuplicating(null);
     }
+  }
+
+  async function handleAddCategory(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newCatName.trim();
+    if (!name) return;
+    setCatSaving(true);
+    setCatError(null);
+    const result = await addCategory(name);
+    setCatSaving(false);
+    if (!result) {
+      setCatError("Failed to save — name may already exist.");
+      return;
+    }
+    setNewCatName("");
+    setShowCatForm(false);
+    setFilterCat(name);
   }
 
   return (
@@ -155,7 +177,63 @@ export default function DrillVaultPage() {
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={() => { setShowCatForm(true); setCatError(null); setTimeout(() => catInputRef.current?.focus(), 50); }}
+          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-dashed border-gray-600 text-gray-500 hover:text-white hover:border-gray-400 transition-colors"
+        >
+          <Tag size={11} /> New Category
+        </button>
       </div>
+
+      {/* Add Category modal */}
+      {showCatForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setShowCatForm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-white font-semibold text-base mb-4">New Category</h2>
+            {catError && (
+              <p className="mb-3 text-red-400 text-xs font-mono">{catError}</p>
+            )}
+            <form onSubmit={handleAddCategory} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider">Name</label>
+                <input
+                  ref={catInputRef}
+                  required
+                  type="text"
+                  placeholder="e.g. Transition"
+                  className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                />
+                <p className="text-gray-600 text-[10px] font-mono mt-1">A color will be assigned automatically.</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCatForm(false)}
+                  className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={catSaving}
+                  className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+                >
+                  {catSaving ? "Saving…" : "Save Category"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Drill card list */}
       <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
