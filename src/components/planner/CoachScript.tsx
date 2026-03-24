@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Target } from "lucide-react";
 import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalShots } from "@/types/session";
 import { DrillCategory } from "@/types/drill";
@@ -170,10 +170,11 @@ export default function CoachScript({ session, players = [] }: Props) {
             <tbody>
               {rows.map((row, i) => {
                 const isRest   = row.drill.category === DrillCategory.RestTransition;
+                const hasGroups = row.groups && row.groups.length > 0;
                 return (
+                  <Fragment key={row.instanceId}>
                   <tr
-                    key={row.instanceId}
-                    className={`border-b border-gray-700/50 last:border-0 print:border-gray-200 align-top
+                    className={`${hasGroups ? "" : "border-b border-gray-700/50 last:border-0"} print:border-gray-200 align-top
                                 ${i % 2 === 0 ? "print:bg-white" : "print:bg-gray-50"}
                                 hover:bg-gray-700/20 print:hover:bg-transparent`}
                   >
@@ -203,10 +204,28 @@ export default function CoachScript({ session, players = [] }: Props) {
                     {/* Drill name */}
                     <td className="px-4 py-3 print:py-1.5 print:px-3 align-top">
                       <p className="text-white print:text-black font-semibold print:text-xs">{row.drill.name}</p>
-                      {/* Player groups */}
-                      {row.groups && row.groups.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-700 print:border-gray-200 space-y-1.5 print:space-y-0.5">
-                          {row.groups.map((g, gi) => {
+                    </td>
+
+                    {/* Shot counter button — screen only */}
+                    <td className="px-2 py-3 print:py-1.5 print:hidden align-top">
+                      {!isRest && (
+                        <button
+                          type="button"
+                          onClick={() => setCountingDrill(row)}
+                          title="Count shots for this drill"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-white hover:bg-mustang-red/20 hover:border-mustang-red/40 border border-transparent transition-colors"
+                        >
+                          <Target size={15} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  {hasGroups && (
+                    <tr className={`border-b border-gray-700/50 last:border-0 print:border-gray-200
+                                    ${i % 2 === 0 ? "print:bg-white" : "print:bg-gray-50"}`}>
+                      <td colSpan={4} className="px-4 pb-3 print:pb-2 print:px-3">
+                        <div className="flex flex-col gap-2 print:gap-0.5">
+                          {row.groups!.map((g, gi) => {
                             const playerNames = g.playerIds
                               .map((id) => {
                                 const p = players.find((pl) => pl.id === id);
@@ -216,8 +235,8 @@ export default function CoachScript({ session, players = [] }: Props) {
                             return (
                               <div key={gi}>
                                 {/* Screen */}
-                                <div className="print:hidden">
-                                  <p className="text-[10px] font-mono font-semibold text-gray-500 uppercase tracking-wider mb-1">{g.name}</p>
+                                <div className="print:hidden flex items-start gap-2 flex-wrap">
+                                  <span className="text-[10px] font-mono font-semibold text-gray-500 uppercase tracking-wider shrink-0 pt-0.5">{g.name}:</span>
                                   <div className="flex flex-wrap gap-1">
                                     {playerNames.length > 0
                                       ? playerNames.map((name) => (
@@ -238,23 +257,10 @@ export default function CoachScript({ session, players = [] }: Props) {
                             );
                           })}
                         </div>
-                      )}
-                    </td>
-
-                    {/* Shot counter button — screen only */}
-                    <td className="px-2 py-3 print:py-1.5 print:hidden align-top">
-                      {!isRest && (
-                        <button
-                          type="button"
-                          onClick={() => setCountingDrill(row)}
-                          title="Count shots for this drill"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-white hover:bg-mustang-red/20 hover:border-mustang-red/40 border border-transparent transition-colors"
-                        >
-                          <Target size={15} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
