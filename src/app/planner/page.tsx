@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarDays, Clock, Droplets, FileText, Save, Zap, CheckCircle2, Loader2 } from "lucide-react";
+import { Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, Sparkles } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import DrillPicker from "@/components/planner/DrillPicker";
 import SessionTimeline from "@/components/planner/SessionTimeline";
 import CoachScript from "@/components/planner/CoachScript";
 import MissionProfile from "@/components/planner/MissionProfile";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import AIGeneratorPanel, { GeneratedDrill } from "@/components/planner/AIGeneratorPanel";
+import DrillSheet from "@/components/planner/DrillSheet";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
@@ -33,6 +33,9 @@ function PlannerInner() {
   const { settings } = useSettings();
   const [groupingDrillId, setGroupingDrillId] = useState<string | null>(null);
   const [showNewDrillForm, setShowNewDrillForm] = useState(false);
+  const [showDrillSheet, setShowDrillSheet] = useState(false);
+  const [showOverflow, setShowOverflow] = useState(false);
+  const [showAI, setShowAI] = useState(false);
 
   const drillSubCategories = useMemo(
     () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
@@ -47,9 +50,15 @@ function PlannerInner() {
     if (target && activeTeam?.id !== target.id) setActiveTeam(target);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlTeamId, teams]);
+
   const [session, setSession] = useState<Session>({ date: initialDate, startTime: settings.default_start_time, drills: [] });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [loadingDate, setLoadingDate] = useState(false);
+
+  // Keep sessionRef always current for auto-save
+  const sessionRef = useRef<Session | null>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => { sessionRef.current = session; }, [session]);
 
   // ── Load session for a given date ────────────────────────────────────────
 
@@ -94,11 +103,33 @@ function PlannerInner() {
     loadDate(newDate);
   }
 
+  // ── Auto-save ─────────────────────────────────────────────────────────────
+
+  async function autoSave() {
+    const s = sessionRef.current;
+    if (!s) return;
+    setSaveStatus("saving");
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: s.date, start_time: s.startTime, drills: s.drills, team_id: activeTeam?.id ?? null }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } catch {
+      setSaveStatus("unsaved");
+    }
+  }
+
   // ── Session mutations ────────────────────────────────────────────────────
 
   function mutate(updater: (s: Session) => Session) {
     setSession(updater);
     setSaveStatus("unsaved");
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => { void autoSave(); }, 2000);
   }
 
   function addQuickAction(qaId: string) {
@@ -147,145 +178,156 @@ function PlannerInner() {
     mutate((s) => ({ ...s, drills: newDrills }));
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────
-
-  async function saveSession() {
-    setSaveStatus("saving");
-    try {
-      const res = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: session.date, start_time: session.startTime, drills: session.drills, team_id: activeTeam?.id ?? null }),
-      });
-      if (!res.ok) throw new Error("Save failed");
-      setSaveStatus("saved");
-    } catch {
-      setSaveStatus("unsaved");
-    }
-  }
-
   // ── Derived stats ────────────────────────────────────────────────────────
 
   const totalMin      = totalDuration(session.drills);
   const totalShotsNum = Math.round(totalShots(session.drills));
 
-  // ── Save button label ────────────────────────────────────────────────────
-
-  const saveBtn = {
-    idle:    { icon: Save,         label: "Save Plan",  cls: "bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white" },
-    unsaved: { icon: Save,         label: "Save Plan",  cls: "bg-mustang-red hover:bg-mustang-red-dark text-white" },
-    saving:  { icon: Loader2,      label: "Saving…",    cls: "bg-gray-700 border border-gray-600 text-gray-400 cursor-not-allowed opacity-60" },
-    saved:   { icon: CheckCircle2, label: "Saved",      cls: "bg-green-600/20 border border-green-600/40 text-green-400 cursor-default" },
-  }[saveStatus];
-
-  const SaveIcon = saveBtn.icon;
-
   return (
     <DashboardLayout>
-      {/* ── Page header ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 print:hidden">
-        <div>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-3 mb-4 print:hidden">
+        <div className="min-w-0">
           <h1 className="text-white text-2xl font-bold tracking-tight">Planner</h1>
-          <p className="text-gray-400 text-sm mt-0.5 font-mono">
-            {activeTeam ? `${activeTeam.name.toUpperCase()} · ` : ""}
+
+          {/* Date @ Time — minimal inline inputs */}
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            {activeTeam && (
+              <span className="text-gray-500 text-xs font-mono mr-1">{activeTeam.name.toUpperCase()} ·</span>
+            )}
+            <input
+              type="date"
+              value={session.date}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
+            />
+            <span className="text-gray-500 text-sm">@</span>
+            <input
+              type="time"
+              value={session.startTime}
+              onChange={(e) => handleStartTimeChange(e.target.value)}
+              className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
+            />
+          </div>
+
+          {/* Stats */}
+          <p className="text-gray-400 text-xs font-mono mt-1">
             {session.drills.length > 0
               ? `${session.drills.length} DRILLS · ${totalMin} MIN · ~${totalShotsNum} SHOTS`
               : loadingDate ? "LOADING…" : "BUILD YOUR PRACTICE PLAN"}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Date */}
-          <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
-            <CalendarDays size={15} className="text-mustang-red shrink-0" />
-            <input
-              type="date"
-              value={session.date}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="bg-transparent text-white text-sm focus:outline-none font-mono"
-            />
+        {/* Right side: save indicator + overflow menu */}
+        <div className="flex items-center gap-2 shrink-0 mt-1">
+          {/* Auto-save indicator — subtle, no button */}
+          {saveStatus === "saving" && (
+            <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
+              <Loader2 size={11} className="animate-spin" /> Saving…
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span className="flex items-center gap-1 text-[11px] font-mono text-green-500">
+              <CheckCircle2 size={11} /> Saved
+            </span>
+          )}
+          {saveStatus === "unsaved" && (
+            <span className="text-[11px] font-mono text-gray-600">Unsaved</span>
+          )}
+
+          {/* Overflow menu */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowOverflow((o) => !o)}
+              className="p-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-400 hover:text-white transition-colors"
+            >
+              <MoreVertical size={16} />
+            </button>
+            {showOverflow && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowOverflow(false)} />
+                <div className="absolute right-0 top-full mt-1 z-20 bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-1 w-52 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => { window.print(); setShowOverflow(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors text-left"
+                  >
+                    <FileText size={14} /> Print / Export PDF
+                  </button>
+                  {session.drills.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowAI(true); setShowOverflow(false); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors text-left"
+                    >
+                      <Sparkles size={14} /> AI Generate Practice
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
-          {/* Start time */}
-          <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
-            <Clock size={15} className="text-mustang-red shrink-0" />
-            <input
-              type="time"
-              value={session.startTime}
-              onChange={(e) => handleStartTimeChange(e.target.value)}
-              className="bg-transparent text-white text-sm focus:outline-none font-mono"
-            />
-          </div>
-          {/* Save */}
-          <button
-            type="button"
-            onClick={saveStatus === "saving" || saveStatus === "saved" ? undefined : saveSession}
-            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors ${saveBtn.cls}`}
-          >
-            <SaveIcon size={15} className={saveStatus === "saving" ? "animate-spin" : ""} />
-            {saveBtn.label}
-          </button>
-          {/* Print / Generate Script */}
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors text-gray-300 hover:text-white text-sm font-medium px-4 py-2.5 rounded-xl"
-          >
-            <FileText size={15} />
-            Print
-          </button>
         </div>
       </div>
 
-      {/* ── Loading overlay ──────────────────────────────────────── */}
+      {/* ── Loading ─────────────────────────────────────────────── */}
       {loadingDate && (
         <div className="flex items-center justify-center py-20 print:hidden">
           <Loader2 size={24} className="text-mustang-red animate-spin" />
         </div>
       )}
 
-      {/* ── Main layout ──────────────────────────────────────────── */}
+      {/* ── Main content ────────────────────────────────────────── */}
       {!loadingDate && (
         <div className="flex flex-col gap-4 print:hidden">
-          {/* AI Generator */}
-          <AIGeneratorPanel
-            playerCount={players.length || 10}
-            teamName={activeTeam?.name}
-            onLoadPlan={loadGeneratedPlan}
-          />
 
-          {/* Drill Picker + Timeline side by side (lg+), stacked on mobile */}
-          <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr] gap-4" style={{ minHeight: "420px" }}>
-            {/* Left — Drill Picker */}
-            <DrillPicker drills={vaultDrills} onAdd={addDrill} onNewDrill={() => setShowNewDrillForm(true)} />
-
-            {/* Center — Timeline */}
-            <div className="flex flex-col gap-2 min-w-0">
-              <div className="flex items-center justify-between px-1">
-                <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">Practice Timeline</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-gray-600 text-[10px] font-mono hidden sm:inline">QUICK ADD</span>
-                  <button type="button" onClick={() => addQuickAction("qa-water-break")}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
-                    <Droplets size={12} /> Water Break
-                  </button>
-                  <button type="button" onClick={() => addQuickAction("qa-transition")}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
-                    <Zap size={12} /> Transition
-                  </button>
-                </div>
-              </div>
-              <SessionTimeline
-                drills={session.drills}
-                startTime={session.startTime}
-                onRemove={removeDrill}
-                onDurationChange={updateDuration}
-                onReorder={reorderDrills}
-                onDropDrill={addDrill}
-                onGroupsClick={(id) => setGroupingDrillId(id)}
+          {/* AI panel — only shown when 0 drills OR when toggled from overflow */}
+          {(session.drills.length === 0 || showAI) && (
+            <div>
+              <AIGeneratorPanel
+                playerCount={players.length || 10}
+                teamName={activeTeam?.name}
+                onLoadPlan={(plan) => { loadGeneratedPlan(plan); setShowAI(false); }}
               />
             </div>
+          )}
+
+          {/* Timeline */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">Practice Timeline</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-600 text-[10px] font-mono hidden sm:inline">QUICK ADD</span>
+                <button type="button" onClick={() => addQuickAction("qa-water-break")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
+                  <Droplets size={12} /> Water Break
+                </button>
+                <button type="button" onClick={() => addQuickAction("qa-transition")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
+                  <Zap size={12} /> Transition
+                </button>
+              </div>
+            </div>
+
+            <SessionTimeline
+              drills={session.drills}
+              startTime={session.startTime}
+              onRemove={removeDrill}
+              onDurationChange={updateDuration}
+              onReorder={reorderDrills}
+              onGroupsClick={(id) => setGroupingDrillId(id)}
+            />
           </div>
 
+          {/* + Add Drills button */}
+          <button
+            type="button"
+            onClick={() => setShowDrillSheet(true)}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-dashed border-gray-700 hover:border-mustang-red/50 text-gray-500 hover:text-mustang-red text-sm font-semibold transition-colors"
+          >
+            <Plus size={16} /> Add Drill
+          </button>
         </div>
       )}
 
@@ -304,11 +346,18 @@ function PlannerInner() {
       {showNewDrillForm && (
         <DrillForm
           subCategories={drillSubCategories}
-          onSave={(drill) => {
-            addToCache(drill);
-            setShowNewDrillForm(false);
-          }}
+          onSave={(drill) => { addToCache(drill); setShowNewDrillForm(false); }}
           onClose={() => setShowNewDrillForm(false)}
+        />
+      )}
+
+      {/* ── Drill Sheet ───────────────────────────────────────────── */}
+      {showDrillSheet && (
+        <DrillSheet
+          drills={vaultDrills}
+          onAdd={addDrill}
+          onNewDrill={() => { setShowDrillSheet(false); setShowNewDrillForm(true); }}
+          onClose={() => setShowDrillSheet(false)}
         />
       )}
 
@@ -322,10 +371,7 @@ function PlannerInner() {
             teamId={activeTeam?.id ?? null}
             players={players}
             initialGroups={sd.groups ?? null}
-            onApply={(groups) => {
-              updateGroups(groupingDrillId, groups);
-              setGroupingDrillId(null);
-            }}
+            onApply={(groups) => { updateGroups(groupingDrillId, groups); setGroupingDrillId(null); }}
             onClose={() => setGroupingDrillId(null)}
           />
         );

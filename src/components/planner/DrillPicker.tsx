@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Plus, GripVertical } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { Drill } from "@/types/drill";
 import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
@@ -13,20 +13,14 @@ interface Props {
 
 export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
   const { getCatColor } = useDrillCategories();
-  const [query,      setQuery]      = useState("");
-  const [filterCat,  setFilterCat]  = useState("All");
-  const [filterSub,  setFilterSub]  = useState("All");
+  const [query,     setQuery]     = useState("");
+  const [filterCat, setFilterCat] = useState("All");
 
-  // Unique categories and sub-categories derived from drill list
+  // Unique categories derived from drill list
   const categories = useMemo(
     () => Array.from(new Set(drills.map((d) => d.category))).sort(),
     [drills]
   );
-
-  const subCategories = useMemo(() => {
-    const source = filterCat === "All" ? drills : drills.filter((d) => d.category === filterCat);
-    return Array.from(new Set(source.map((d) => d.sub_category).filter(Boolean))).sort();
-  }, [drills, filterCat]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -36,20 +30,9 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
         d.category.toLowerCase().includes(q) ||
         d.sub_category.toLowerCase().includes(q);
       const matchesCat = filterCat === "All" || d.category === filterCat;
-      const matchesSub = filterSub === "All" || d.sub_category === filterSub;
-      return matchesSearch && matchesCat && matchesSub;
+      return matchesSearch && matchesCat;
     });
-  }, [drills, query, filterCat, filterSub]);
-
-  function handleCatChange(cat: string) {
-    setFilterCat(cat);
-    setFilterSub("All"); // reset sub when category changes
-  }
-
-  function handleDragStart(e: React.DragEvent, drill: Drill) {
-    e.dataTransfer.setData("x-drill-id", drill.id);
-    e.dataTransfer.effectAllowed = "copy";
-  }
+  }, [drills, query, filterCat]);
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-2xl flex flex-col h-full min-h-0">
@@ -81,25 +64,23 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
           />
         </div>
 
-        {/* Category filter */}
-        <select
-          value={filterCat}
-          onChange={(e) => handleCatChange(e.target.value)}
-          className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-mustang-red transition-colors"
-        >
-          <option value="All">All Categories</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        {/* Sub-category filter */}
-        <select
-          value={filterSub}
-          onChange={(e) => setFilterSub(e.target.value)}
-          className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-mustang-red transition-colors"
-        >
-          <option value="All">All Sub-Categories</option>
-          {subCategories.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        {/* Category chips — horizontal scroll */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          {["All", ...categories].map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setFilterCat(cat)}
+              className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                filterCat === cat
+                  ? "bg-mustang-red border-mustang-red text-white"
+                  : "bg-gray-700/40 border-gray-600 text-gray-400 hover:text-white"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
         <p className="text-gray-600 text-[10px] font-mono text-right">
           {filtered.length} of {drills.length}
@@ -109,13 +90,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
       {/* List */}
       <ul className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
         {filtered.map((drill) => (
-          <li
-            key={drill.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, drill)}
-            className="flex items-center gap-2 bg-gray-700/40 hover:bg-gray-700/80 border border-transparent hover:border-gray-600 rounded-xl px-3 py-2.5 cursor-grab active:cursor-grabbing transition-colors group"
-          >
-            <GripVertical size={14} className="text-gray-600 group-hover:text-gray-400 shrink-0" />
+          <li key={drill.id} className="flex items-center gap-2 bg-gray-700/40 hover:bg-gray-700/80 border border-transparent hover:border-gray-600 rounded-xl px-3 py-2.5 transition-colors group">
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{drill.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -152,7 +127,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
 
       <div className="px-4 py-2 border-t border-gray-700 shrink-0">
         <p className="text-gray-600 text-[10px] font-mono text-center">
-          DRAG TO TIMELINE OR CLICK +
+          TAP + TO ADD TO PLAN
         </p>
       </div>
     </div>

@@ -13,7 +13,6 @@ interface Props {
   onRemove: (instanceId: string) => void;
   onDurationChange: (instanceId: string, duration: number) => void;
   onReorder: (from: number, to: number) => void;
-  onDropDrill: (drillId: string) => void;
   onGroupsClick: (instanceId: string) => void;
 }
 
@@ -23,28 +22,11 @@ export default function SessionTimeline({
   onRemove,
   onDurationChange,
   onReorder,
-  onDropDrill,
   onGroupsClick,
 }: Props) {
   const { getCatColor } = useDrillCategories();
-  const [isDragOver, setIsDragOver] = useState(false);
   const dragFromIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  function handleContainerDragOver(e: React.DragEvent) {
-    if (e.dataTransfer.types.includes("x-drill-id")) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
-      setIsDragOver(true);
-    }
-  }
-
-  function handleContainerDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragOver(false);
-    const drillId = e.dataTransfer.getData("x-drill-id");
-    if (drillId) onDropDrill(drillId);
-  }
 
   const totalMin   = drills.reduce((s, d) => s + d.duration, 0);
   const startMin   = parseTime(startTime);
@@ -53,15 +35,8 @@ export default function SessionTimeline({
 
   return (
     <div
-      onDragOver={handleContainerDragOver}
-      onDragLeave={() => setIsDragOver(false)}
-      onDrop={handleContainerDrop}
-      className={`flex flex-col gap-0 min-h-[200px] rounded-2xl border-2 border-dashed transition-colors p-1 ${
-        isDragOver
-          ? "border-mustang-red bg-mustang-red/5"
-          : drills.length === 0
-          ? "border-gray-700"
-          : "border-transparent"
+      className={`flex flex-col gap-0 min-h-[200px] rounded-2xl border-2 transition-colors p-1 ${
+        drills.length === 0 ? "border-dashed border-gray-700" : "border-transparent"
       }`}
     >
       {/* Empty state */}
@@ -70,8 +45,7 @@ export default function SessionTimeline({
           <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-gray-700 flex items-center justify-center mb-3">
             <Plus size={20} className="text-gray-600" />
           </div>
-          <p className="text-gray-500 text-sm font-medium">Drop drills here</p>
-          <p className="text-gray-600 text-xs mt-1">Drag from the vault or click +</p>
+          <p className="text-gray-500 text-sm font-medium">Tap + Add Drill below to start</p>
         </div>
       )}
 
