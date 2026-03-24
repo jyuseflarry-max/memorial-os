@@ -115,7 +115,6 @@ function PlannerInner() {
       });
       if (!res.ok) throw new Error("Save failed");
       setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 3000);
     } catch {
       setSaveStatus("unsaved");
     }
