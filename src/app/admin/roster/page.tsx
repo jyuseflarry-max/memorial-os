@@ -316,7 +316,7 @@ export default function RosterPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">
-              {["#", "Name", "Pos", "Class", "Status", "Titan Load", "Vibe", "Actions"].map((h) => (
+              {["#", "Name", "Status", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
                   {h}
                 </th>
@@ -326,14 +326,14 @@ export default function RosterPage() {
           <tbody>
             {loading && players.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={4} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   LOADING…
                 </td>
               </tr>
             )}
             {!loading && sorted.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={4} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   ROSTER IS EMPTY — ADD THE FIRST PLAYER
                 </td>
               </tr>
@@ -350,15 +350,7 @@ export default function RosterPage() {
                     <p className="text-gray-600 text-[10px] font-mono mt-0.5">{player.email}</p>
                   )}
                 </td>
-                <td className="px-4 py-3 text-gray-400 font-mono text-xs">{player.position}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{player.class_year ?? "—"}</td>
                 <td className="px-4 py-3"><StatusBadge status={player.status} /></td>
-                <td className="px-4 py-3 text-gray-300 font-mono text-xs">
-                  {player.titan_load}<span className="text-gray-600 ml-1">AU</span>
-                </td>
-                <td className="px-4 py-3 text-gray-300 font-mono text-xs font-bold">
-                  {player.latest_vibe_score.toFixed(1)}
-                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setEditing(player)}
