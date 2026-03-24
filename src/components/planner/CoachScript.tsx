@@ -128,10 +128,10 @@ export default function CoachScript({ session, players = [] }: Props) {
             <img src="/mustang-logo.png" alt="Memorial Mustangs" width={42} height={42} />
             <div>
               <p className="font-black text-black text-base leading-tight tracking-tight">
-                MEMORIAL HIGH SCHOOL
+                {settings.program_name.toUpperCase()}
               </p>
               <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest">
-                Mustangs Basketball · {settings.current_season} Season
+                {settings.current_season} Season
               </p>
             </div>
           </div>
@@ -275,8 +275,8 @@ export default function CoachScript({ session, players = [] }: Props) {
           className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
           style={{ backgroundColor: "var(--color-mustang-red)" }}
         >
-          <span>MEMORIAL MUSTANGS BASKETBALL · STAFF CONFIDENTIAL</span>
-          <span>Generated {generatedOn} · Memorial Basketball OS</span>
+          <span>{settings.program_name.toUpperCase()} · STAFF CONFIDENTIAL</span>
+          <span>Generated {generatedOn} · {settings.program_name}</span>
         </div>
       </section>
 
