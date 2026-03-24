@@ -291,40 +291,41 @@ export default function PracticeHistoryCard() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button type="button" title="Edit in Planner"
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Primary: Edit */}
+                  <button type="button"
                     onClick={() => {
                       const tp = s.team_id ? `&team_id=${s.team_id}` : "";
                       router.push(`/planner?date=${s.date}${tp}`);
                     }}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
-                    <Pencil size={14} />
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Pencil size={12} /> Edit
                   </button>
 
-                  <button type="button" title="Copy to another date"
-                    onClick={() => setCopying(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
-                    <Copy size={14} />
-                  </button>
-
-                  <button type="button" title="Print / Save as PDF"
-                    onClick={() => handlePrint(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
-                    <Printer size={14} />
-                  </button>
-
-                  <button type="button" title="Email plan"
-                    onClick={() => handleEmail(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
-                    <Mail size={14} />
-                  </button>
-
-                  <button type="button" title="Delete plan"
-                    disabled={deleting === s.id}
-                    onClick={() => handleDelete(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40">
-                    <Trash2 size={14} />
-                  </button>
+                  {/* Secondary: Copy, Print, Email, Delete */}
+                  <div className="flex items-center gap-0.5">
+                    <button type="button" title="Copy to another date"
+                      onClick={() => setCopying(s)}
+                      className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
+                      <Copy size={13} />
+                    </button>
+                    <button type="button" title="Print / Save as PDF"
+                      onClick={() => handlePrint(s)}
+                      className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
+                      <Printer size={13} />
+                    </button>
+                    <button type="button" title="Email plan"
+                      onClick={() => handleEmail(s)}
+                      className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
+                      <Mail size={13} />
+                    </button>
+                    <button type="button" title="Delete plan"
+                      disabled={deleting === s.id}
+                      onClick={() => handleDelete(s)}
+                      className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
