@@ -20,6 +20,8 @@ function PlanViewInner() {
   const { activeTeam, teams, setActiveTeam } = useTeam();
   const { players } = useTeamPlayers();
 
+  const autoPrint  = searchParams.get("autoprint") === "1";
+
   const [session,  setSession]  = useState<Session | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -48,6 +50,12 @@ function PlanViewInner() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [date, teamIdParam]);
+
+  useEffect(() => {
+    if (!autoPrint || loading) return;
+    const t = setTimeout(() => window.print(), 300);
+    return () => clearTimeout(t);
+  }, [autoPrint, loading]);
 
   function handleEdit() {
     const tp = teamIdParam ? `&team_id=${teamIdParam}` : "";

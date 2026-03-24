@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, Sparkles } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SessionTimeline from "@/components/planner/SessionTimeline";
@@ -23,6 +23,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "unsaved";
 
 function PlannerInner() {
   const searchParams = useSearchParams();
+  const router       = useRouter();
   const initialDate  = searchParams.get("date") ?? TODAY;
 
   const { drills: vaultDrills, addToCache } = useDrills();
@@ -247,7 +248,11 @@ function PlannerInner() {
                 <div className="absolute right-0 top-full mt-1 z-20 bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-1 w-52 overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => { window.print(); setShowOverflow(false); }}
+                    onClick={() => {
+                      const tp = activeTeam ? `&team_id=${activeTeam.id}` : "";
+                      router.push(`/view-plans/${session.date}?autoprint=1${tp}`);
+                      setShowOverflow(false);
+                    }}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors text-left"
                   >
                     <FileText size={14} /> Print / Export PDF
