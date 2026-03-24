@@ -16,6 +16,7 @@ import {
   getTrafficLight,
   computeReadiness,
 } from "@/types/player";
+import { StatusBadge } from "@/components/player/StatusBadge";
 
 // ── Traffic light config ──────────────────────────────────────────────────
 
@@ -29,21 +30,6 @@ function TrafficDot({ light }: { light: TrafficLight }) {
   return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${LIGHT_CONFIG[light].dot}`} />;
 }
 
-// ── Status badge ──────────────────────────────────────────────────────────
-
-const STATUS_COLORS: Record<PlayerStatus, string> = {
-  [PlayerStatus.Active]:     "text-gray-300 bg-gray-700 border-gray-600",
-  [PlayerStatus.Out]:        "text-red-400 bg-red-400/10 border-red-400/20",
-  [PlayerStatus.Restricted]: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-};
-
-function StatusBadge({ status }: { status: PlayerStatus }) {
-  return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[status]}`}>
-      {status}
-    </span>
-  );
-}
 
 // ── Readiness bar ─────────────────────────────────────────────────────────
 
@@ -162,7 +148,7 @@ function PlayerCard({ player, check, history, showTitan }: { player: Player; che
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <StatusBadge status={player.status} />
+          <StatusBadge status={player.status} variant="subtle" />
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 ${badge}`}>
             <TrafficDot light={light} />
             {label}

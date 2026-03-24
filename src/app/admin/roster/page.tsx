@@ -17,22 +17,7 @@ import { NewPlayerData } from "@/context/PlayerContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useTeam } from "@/context/TeamContext";
 import { Player, PlayerStatus } from "@/types/player";
-
-// ── Status badge ──────────────────────────────────────────────────────────
-
-const STATUS_STYLE: Record<PlayerStatus, string> = {
-  [PlayerStatus.Active]:     "text-green-400  bg-green-400/10  border-green-400/20",
-  [PlayerStatus.Out]:        "text-red-400    bg-red-400/10    border-red-400/20",
-  [PlayerStatus.Restricted]: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-};
-
-function StatusBadge({ status }: { status: PlayerStatus }) {
-  return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLE[status]}`}>
-      {status}
-    </span>
-  );
-}
+import { StatusBadge } from "@/components/player/StatusBadge";
 
 // ── Delete confirmation ───────────────────────────────────────────────────
 

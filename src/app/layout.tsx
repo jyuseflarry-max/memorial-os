@@ -5,6 +5,7 @@ import { PlayerProvider } from "@/context/PlayerContext";
 import { TeamProvider } from "@/context/TeamContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { DrillCategoryProvider } from "@/context/DrillCategoryContext";
+import { DrillProvider } from "@/context/DrillContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
 
 const geistSans = Geist({
@@ -48,7 +49,9 @@ export default function RootLayout({
           <DrillCategoryProvider>
             <PrintOrientationStyle />
             <TeamProvider>
-              <PlayerProvider>{children}</PlayerProvider>
+              <PlayerProvider>
+                <DrillProvider>{children}</DrillProvider>
+              </PlayerProvider>
             </TeamProvider>
           </DrillCategoryProvider>
         </SettingsProvider>

@@ -1,20 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { Player, PlayerStatus } from "@/types/player";
+import { Player, PlayerStatus, NewPlayerData } from "@/types/player";
 
-// ── Types ─────────────────────────────────────────────────────────────────
-
-export type NewPlayerData = {
-  name: string;
-  jersey_number: number;
-  position: string;
-  class_year: string;
-  status: PlayerStatus;
-  titan_load: number;
-  team_id?: string | null;
-  email?: string | null;
-};
+export type { NewPlayerData }; // re-export so existing imports from this file still work
 
 interface PlayerContextValue {
   players: Player[];

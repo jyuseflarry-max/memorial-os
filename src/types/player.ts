@@ -32,6 +32,17 @@ export enum PlayerStatus {
   Restricted = "Restricted",
 }
 
+export type NewPlayerData = {
+  name: string;
+  jersey_number: number;
+  position: string;
+  class_year: string;
+  status: PlayerStatus;
+  titan_load: number;
+  team_id?: string | null;
+  email?: string | null;
+};
+
 export type VibeScale = 1 | 2 | 3 | 4 | 5;
 
 export interface Player {
