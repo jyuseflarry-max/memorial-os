@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useSettings } from "@/context/SettingsContext";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
 import { seasonOptions, currentSeasonLabel } from "@/types/settings";
+import { formatHHMM } from "@/types/session";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -249,12 +250,17 @@ export default function SettingsPage() {
             {/* Default Start Time */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Default Practice Start Time</label>
-              <input
-                type="time"
-                value={form.default_start_time}
-                onChange={(e) => patch("default_start_time", e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit"
-              />
+              <label className="relative inline-flex items-center cursor-pointer bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 focus-within:border-mustang-red transition-colors w-fit">
+                <span className="text-sm text-white font-mono pointer-events-none">
+                  {formatHHMM(form.default_start_time)}
+                </span>
+                <input
+                  type="time"
+                  value={form.default_start_time}
+                  onChange={(e) => patch("default_start_time", e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                />
+              </label>
               <p className="text-[10px] font-mono text-gray-600">Pre-filled start time when creating a new practice plan.</p>
             </div>
           </section>

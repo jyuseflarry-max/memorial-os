@@ -26,6 +26,15 @@ export interface Session {
 
 // ── Time helpers ──────────────────────────────────────────────────────────
 
+/** "15:30" → "3:30 PM" */
+export function formatHHMM(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return hhmm;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 /** "15:30" → 930 (minutes since midnight) */
 export function parseTime(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);

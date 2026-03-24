@@ -17,7 +17,7 @@ import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useSettings } from "@/context/SettingsContext";
 import { QUICK_ACTIONS, SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
-import { Session, SessionDrill, SessionSummary, totalDuration, totalShots } from "@/types/session";
+import { Session, SessionDrill, SessionSummary, totalDuration, totalShots, formatHHMM } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -245,12 +245,17 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
               className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
             />
             <span className="text-gray-500 text-sm">@</span>
-            <input
-              type="time"
-              value={session.startTime}
-              onChange={(e) => handleStartTimeChange(e.target.value)}
-              className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
-            />
+            <label className="relative inline-flex items-center cursor-pointer">
+              <span className="text-white text-sm font-medium pointer-events-none">
+                {formatHHMM(session.startTime)}
+              </span>
+              <input
+                type="time"
+                value={session.startTime}
+                onChange={(e) => handleStartTimeChange(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full"
+              />
+            </label>
           </div>
 
           {/* Multi-session switcher — edit mode only */}

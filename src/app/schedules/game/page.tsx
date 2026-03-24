@@ -12,6 +12,7 @@ import { useSettings } from "@/context/SettingsContext";
 import type { Game, LocationType, GameType, GameDraft } from "@/types/game";
 import { LOCATION_LABELS, GAME_TYPE_LABELS, EMPTY_DRAFT } from "@/types/game";
 import { seasonOptions } from "@/types/settings";
+import { formatHHMM } from "@/types/session";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -316,7 +317,10 @@ function GameModal({
               </div>
               <div className="flex flex-col gap-1 w-32">
                 <label className={labelCls}>Time</label>
-                <input type="time" value={draft.game_time ?? ""} onChange={(e) => patch("game_time", e.target.value || null)} className={inputCls} />
+                <label className={`${inputCls} relative inline-flex items-center cursor-pointer`}>
+                  <span className="pointer-events-none">{draft.game_time ? formatHHMM(draft.game_time) : <span className="text-gray-500">—</span>}</span>
+                  <input type="time" value={draft.game_time ?? ""} onChange={(e) => patch("game_time", e.target.value || null)} className="absolute inset-0 opacity-0 cursor-pointer w-full" />
+                </label>
               </div>
             </div>
 
