@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { VibeCheckRow } from "@/types/vibe-check";
 
-export interface VibeCheckRow {
-  player_id: string;
-  sleep_hours: number;
-  soreness: number;
-  stress: number;
-  mood_energy: number;
-  vibe_score: number;
-  submitted_at: string;
-}
+export type { VibeCheckRow };
 
 /**
  * Fetches the latest vibe check per player and the full season history,
