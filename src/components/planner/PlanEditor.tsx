@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, Sparkles, BookmarkPlus,
@@ -9,20 +9,18 @@ import DashboardLayout from "@/components/DashboardLayout";
 import SessionTimeline from "@/components/planner/SessionTimeline";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
-import AIGeneratorPanel, { GeneratedDrill } from "@/components/planner/AIGeneratorPanel";
+import AIGeneratorPanel from "@/components/planner/AIGeneratorPanel";
 import DrillSheet from "@/components/planner/DrillSheet";
 import SaveToPlannerModal from "@/components/planner/SaveToPlannerModal";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useSettings } from "@/context/SettingsContext";
-import { QUICK_ACTIONS, SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
-import { Session, SessionDrill, SessionSummary, totalDuration, totalShots, formatHHMM } from "@/types/session";
-import { DrillGroup } from "@/types/grouping";
+import { useSessionEditor } from "@/hooks/useSessionEditor";
+import { SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
+import { totalDuration, totalShots, formatHHMM } from "@/types/session";
 
 const TODAY = new Date().toISOString().split("T")[0];
-
-type SaveStatus = "idle" | "saving" | "saved" | "unsaved";
 
 export interface PlanEditorProps {
   mode: "new" | "edit";
@@ -32,27 +30,15 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const initialDate  = mode === "edit" ? (searchParams.get("date") ?? TODAY) : TODAY;
-  const activeLabel  = mode === "edit" ? (searchParams.get("label") ?? "") : "";
+  const initialDate = mode === "edit" ? (searchParams.get("date") ?? TODAY) : TODAY;
+  const activeLabel = mode === "edit" ? (searchParams.get("label") ?? "") : "";
 
   const { drills: vaultDrills, addToCache } = useDrills();
   const { activeTeam, teams, setActiveTeam } = useTeam();
-  const { players } = useTeamPlayers();
+  const { players }  = useTeamPlayers();
   const { settings } = useSettings();
 
-  const [groupingDrillId,  setGroupingDrillId]  = useState<string | null>(null);
-  const [showNewDrillForm, setShowNewDrillForm] = useState(false);
-  const [showDrillSheet,   setShowDrillSheet]   = useState(false);
-  const [showOverflow,     setShowOverflow]     = useState(false);
-  const [showAI,           setShowAI]           = useState(false);
-  const [showSaveModal,    setShowSaveModal]    = useState(false);
-  const [daySessions,      setDaySessions]      = useState<SessionSummary[]>([]);
-
-  const drillSubCategories = useMemo(
-    () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
-    [vaultDrills],
-  );
-
+  // Sync URL team_id param → active team
   const urlTeamId = searchParams.get("team_id");
   useEffect(() => {
     if (!urlTeamId || !teams.length) return;
@@ -61,53 +47,42 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlTeamId, teams]);
 
-  const [session, setSession] = useState<Session>({
-    date: initialDate,
-    startTime: settings.default_start_time,
-    drills: [],
+  // All session data and mutation logic lives in the hook
+  const {
+    session,
+    saveStatus,
+    loadingDate,
+    daySessions,
+    addQuickAction,
+    addDrill,
+    removeDrill,
+    updateDuration,
+    updateGroups,
+    reorderDrills,
+    handleStartTimeChange,
+    handleDateChange,
+    loadGeneratedPlan,
+  } = useSessionEditor({
+    mode,
+    initialDate,
+    activeLabel,
+    teamId:           activeTeam?.id ?? null,
+    defaultStartTime: settings.default_start_time,
+    vaultDrills,
   });
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [loadingDate, setLoadingDate] = useState(false);
 
-  const sessionRef = useRef<Session | null>(null);
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => { sessionRef.current = session; }, [session]);
+  // UI-only state — which modals / panels are open
+  const [groupingDrillId,  setGroupingDrillId]  = useState<string | null>(null);
+  const [showNewDrillForm, setShowNewDrillForm] = useState(false);
+  const [showDrillSheet,   setShowDrillSheet]   = useState(false);
+  const [showOverflow,     setShowOverflow]     = useState(false);
+  const [showAI,           setShowAI]           = useState(false);
+  const [showSaveModal,    setShowSaveModal]    = useState(false);
 
-  // ── DB load (edit mode only) ───────────────────────────────────────────────
-
-  async function loadDate(date: string, label = activeLabel) {
-    setLoadingDate(true);
-    try {
-      const qp = new URLSearchParams({ label });
-      if (activeTeam) qp.set("team_id", activeTeam.id);
-      const res  = await fetch(`/api/sessions/${date}?${qp}`);
-      const data = await res.json();
-      if (data && !data.error && data.drills) {
-        setSession({ date, startTime: data.start_time, drills: data.drills });
-        setSaveStatus("saved");
-      } else {
-        setSession({ date, startTime: settings.default_start_time, drills: [] });
-        setSaveStatus("idle");
-      }
-
-      // Load session list for the day switcher
-      const listQp = activeTeam ? `?team_id=${activeTeam.id}` : "";
-      fetch(`/api/sessions/${date}/list${listQp}`)
-        .then((r) => r.json())
-        .then((d) => { if (Array.isArray(d)) setDaySessions(d); })
-        .catch(() => {});
-    } catch {
-      setSession({ date, startTime: "15:00", drills: [] });
-      setSaveStatus("idle");
-    } finally {
-      setLoadingDate(false);
-    }
-  }
-
-  useEffect(() => {
-    if (mode === "edit") loadDate(session.date, activeLabel);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTeam, activeLabel]);
+  const drillSubCategories = useMemo(
+    () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
+    [vaultDrills],
+  );
 
   // Auto-print when ?autoprint=1 (edit mode only)
   const autoPrint = mode === "edit" && searchParams.get("autoprint") === "1";
@@ -117,115 +92,10 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
     return () => clearTimeout(t);
   }, [autoPrint, loadingDate]);
 
-  // ── Auto-save ──────────────────────────────────────────────────────────────
-
-  async function autoSave() {
-    const s = sessionRef.current;
-    if (!s) return;
-    setSaveStatus("saving");
-    try {
-      const res = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date:       s.date,
-          start_time: s.startTime,
-          drills:     s.drills,
-          team_id:    activeTeam?.id ?? null,
-          label:      activeLabel,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        console.error("Auto-save failed:", body.error ?? res.status);
-        throw new Error("Save failed");
-      }
-      setSaveStatus("saved");
-    } catch (err) {
-      console.error("Auto-save error:", err);
-      setSaveStatus("unsaved");
-    }
-  }
-
-  // ── Session mutations ──────────────────────────────────────────────────────
-
-  function mutate(updater: (s: Session) => Session) {
-    setSession(updater);
-    if (mode === "edit") {
-      setSaveStatus("unsaved");
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-      autoSaveTimer.current = setTimeout(() => { void autoSave(); }, 2000);
-    }
-  }
-
-  function addQuickAction(qaId: string) {
-    const drill = QUICK_ACTIONS.find((d) => d.id === qaId);
-    if (!drill) return;
-    mutate((s) => ({ ...s, drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: 2 }] }));
-  }
-
-  function addDrill(drillId: string) {
-    const drill = vaultDrills.find((d) => d.id === drillId);
-    if (!drill) return;
-    mutate((s) => ({
-      ...s,
-      drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: drill.default_duration ?? 10 }],
-    }));
-  }
-
-  function removeDrill(instanceId: string) {
-    mutate((s) => ({ ...s, drills: s.drills.filter((d) => d.instanceId !== instanceId) }));
-  }
-
-  function updateDuration(instanceId: string, duration: number) {
-    mutate((s) => ({ ...s, drills: s.drills.map((d) => d.instanceId === instanceId ? { ...d, duration } : d) }));
-  }
-
-  function updateGroups(instanceId: string, groups: DrillGroup[]) {
-    mutate((s) => ({ ...s, drills: s.drills.map((d) => d.instanceId === instanceId ? { ...d, groups } : d) }));
-  }
-
-  function reorderDrills(from: number, to: number) {
-    mutate((s) => {
-      const drills = [...s.drills];
-      const [item] = drills.splice(from, 1);
-      drills.splice(to, 0, item);
-      return { ...s, drills };
-    });
-  }
-
-  function handleStartTimeChange(startTime: string) {
-    mutate((s) => ({ ...s, startTime }));
-  }
-
-  function handleDateChange(newDate: string) {
-    if (mode === "edit") {
-      if (saveStatus === "unsaved" && session.drills.length > 0) {
-        if (!confirm("You have unsaved changes. Switch dates without saving?")) return;
-      }
-      loadDate(newDate);
-    } else {
-      mutate((s) => ({ ...s, date: newDate }));
-    }
-  }
-
-  function loadGeneratedPlan(plan: GeneratedDrill[]) {
-    const newDrills: SessionDrill[] = plan.flatMap(({ drill_id, duration }) => {
-      const drill = vaultDrills.find((d) => d.id === drill_id);
-      if (!drill) return [];
-      return [{ instanceId: crypto.randomUUID(), drill, duration }];
-    });
-    mutate((s) => ({ ...s, drills: newDrills }));
-  }
-
-  // ── Derived ───────────────────────────────────────────────────────────────
-
   const totalMin      = totalDuration(session.drills);
   const totalShotsNum = Math.round(totalShots(session.drills));
   const title         = mode === "edit" ? "Planner" : "Build a Plan";
   const emptyHint     = mode === "edit" ? "BUILD YOUR PRACTICE PLAN" : "DESCRIBE YOUR PRACTICE OR ADD DRILLS BELOW";
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <DashboardLayout>
@@ -258,7 +128,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
             </label>
           </div>
 
-          {/* Multi-session switcher — edit mode only */}
+          {/* Multi-session switcher — edit mode, days with more than one session */}
           {mode === "edit" && daySessions.length > 1 && (
             <div className="flex items-center gap-1 mt-1.5 flex-wrap">
               {daySessions.map((ds) => (
