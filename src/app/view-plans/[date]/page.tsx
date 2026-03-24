@@ -15,6 +15,7 @@ function PlanViewInner() {
   const searchParams = useSearchParams();
   const date         = params.date as string;
   const teamIdParam  = searchParams.get("team_id");
+  const labelParam   = searchParams.get("label") ?? "";
 
   const router = useRouter();
   const { activeTeam, teams, setActiveTeam } = useTeam();
@@ -37,8 +38,9 @@ function PlanViewInner() {
   useEffect(() => {
     if (!date) return;
     setLoading(true);
-    const teamParam = teamIdParam ? `?team_id=${teamIdParam}` : "";
-    fetch(`/api/sessions/${date}${teamParam}`)
+    const qp = new URLSearchParams({ label: labelParam });
+    if (teamIdParam) qp.set("team_id", teamIdParam);
+    fetch(`/api/sessions/${date}?${qp}`)
       .then((r) => r.json())
       .then((data) => {
         if (data && !data.error && data.drills) {
@@ -49,7 +51,7 @@ function PlanViewInner() {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
-  }, [date, teamIdParam]);
+  }, [date, teamIdParam, labelParam]);
 
   useEffect(() => {
     if (!autoPrint || loading) return;
@@ -59,7 +61,8 @@ function PlanViewInner() {
 
   function handleEdit() {
     const tp = teamIdParam ? `&team_id=${teamIdParam}` : "";
-    router.push(`/planner?date=${date}${tp}`);
+    const lp = labelParam  ? `&label=${encodeURIComponent(labelParam)}` : "";
+    router.push(`/planner?date=${date}${tp}${lp}`);
   }
 
   return (

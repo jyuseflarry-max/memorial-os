@@ -12,6 +12,7 @@ import { useTeam } from "@/context/TeamContext";
 interface SavedSession {
   id: string;
   date: string;
+  label: string;
   start_time: string;
   drills: Array<{
     drill: { id?: string; name: string; category: string; sub_category?: string };
@@ -158,11 +159,14 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
   const paginated  = perPage === 0 ? sorted : sorted.slice((page - 1) * perPage, page * perPage);
 
   async function handleDelete(session: SavedSession) {
-    if (!confirm(`Delete plan for ${formatDate(session.date)}? This cannot be undone.`)) return;
+    const label = session.label ? ` (${session.label})` : "";
+    if (!confirm(`Delete plan for ${formatDate(session.date)}${label}? This cannot be undone.`)) return;
     setDeleting(session.id);
     try {
-      const teamParam = session.team_id ? `?team_id=${session.team_id}` : "";
-      await fetch(`/api/sessions/${session.date}${teamParam}`, { method: "DELETE" });
+      const qp = new URLSearchParams();
+      if (session.team_id) qp.set("team_id", session.team_id);
+      qp.set("label", session.label ?? "");
+      await fetch(`/api/sessions/${session.date}?${qp}`, { method: "DELETE" });
       setSessions((prev) => prev.filter((s) => s.id !== session.id));
     } catch {}
     setDeleting(null);
@@ -187,8 +191,10 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
   }
 
   function handlePrint(session: SavedSession) {
-    const teamParam = session.team_id ? `&team_id=${session.team_id}` : "";
-    window.open(`/view-plans/${session.date}?autoprint=1${teamParam}`, "_blank");
+    const qp = new URLSearchParams({ autoprint: "1" });
+    if (session.team_id) qp.set("team_id", session.team_id);
+    if (session.label)   qp.set("label", session.label);
+    window.open(`/view-plans/${session.date}?${qp}`, "_blank");
   }
 
   function handleEmail(session: SavedSession) {
@@ -265,6 +271,9 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                   <p className={`text-sm font-semibold ${isToday ? "text-mustang-red" : "text-white"}`}>
                     {formatDate(s.date)}
                   </p>
+                  {s.label && (
+                    <span className="text-[9px] font-mono text-gray-400 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-full">{s.label}</span>
+                  )}
                   <span className="text-gray-500 text-xs font-mono">{formatTime12(s.start_time)}</span>
                   {isToday && (
                     <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
@@ -279,8 +288,11 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                   {showViewButton && (
                     <button type="button" title="View plan"
                       onClick={() => {
-                        const tp = s.team_id ? `?team_id=${s.team_id}` : "";
-                        router.push(`/view-plans/${s.date}${tp}`);
+                        const qp = new URLSearchParams();
+                        if (s.team_id) qp.set("team_id", s.team_id);
+                        if (s.label)   qp.set("label", s.label);
+                        const qs = qp.toString();
+                        router.push(`/view-plans/${s.date}${qs ? `?${qs}` : ""}`);
                       }}
                       className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
                       <Eye size={14} />
@@ -289,7 +301,8 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                   <button type="button" title="Edit plan"
                     onClick={() => {
                       const tp = s.team_id ? `&team_id=${s.team_id}` : "";
-                      router.push(`/planner?date=${s.date}${tp}`);
+                      const lp = s.label   ? `&label=${encodeURIComponent(s.label)}` : "";
+                      router.push(`/planner?date=${s.date}${tp}${lp}`);
                     }}
                     className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
                     <Pencil size={14} />

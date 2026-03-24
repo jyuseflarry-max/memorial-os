@@ -8,6 +8,7 @@ import { useTeam } from "@/context/TeamContext";
 interface SavedSession {
   id: string;
   date: string;
+  label: string;
   start_time: string;
   drills: Array<{ duration: number }>;
   team_id: string | null;
@@ -121,12 +122,19 @@ export default function CalendarWidget() {
     return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
 
+  function sessionUrl(s: SavedSession) {
+    const qp = new URLSearchParams();
+    if (s.team_id) qp.set("team_id", s.team_id);
+    if (s.label)   qp.set("label", s.label);
+    const qs = qp.toString();
+    return `/view-plans/${s.date}${qs ? `?${qs}` : ""}`;
+  }
+
   function openDay(day: number) {
     const date = cellDate(day);
     const daySessions = sessionsByDate[date] ?? [];
     if (daySessions.length === 1) {
-      const s = daySessions[0];
-      router.push(`/view-plans/${date}${s.team_id ? `?team_id=${s.team_id}` : ""}`);
+      router.push(sessionUrl(daySessions[0]));
     } else if (daySessions.length > 1) {
       setDayPopover({ iso: date, sessions: daySessions });
     } else {
@@ -135,7 +143,7 @@ export default function CalendarWidget() {
   }
 
   function openSession(s: SavedSession) {
-    router.push(`/view-plans/${s.date}${s.team_id ? `?team_id=${s.team_id}` : ""}`);
+    router.push(sessionUrl(s));
     setDayPopover(null);
   }
 
@@ -278,7 +286,10 @@ export default function CalendarWidget() {
                     <Dumbbell size={12} className={color.text} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-xs font-medium">{formatDisplayDate(s.date)}</p>
+                    <p className="text-white text-xs font-medium">
+                      {formatDisplayDate(s.date)}
+                      {s.label && <span className="ml-1.5 text-[9px] font-mono text-gray-400 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-full">{s.label}</span>}
+                    </p>
                     <p className="text-gray-500 text-[10px] font-mono">
                       {teamName ? `${teamName} · ` : ""}{formatTime12(s.start_time)}
                     </p>
@@ -308,7 +319,9 @@ export default function CalendarWidget() {
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${color.border} ${color.bg} hover:opacity-90 transition-opacity text-left`}>
                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
                     <div>
-                      <p className={`text-sm font-semibold ${color.text}`}>{teamName}</p>
+                      <p className={`text-sm font-semibold ${color.text}`}>
+                        {teamName}{s.label ? ` · ${s.label}` : ""}
+                      </p>
                       <p className="text-gray-500 text-xs font-mono">{s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}</p>
                     </div>
                   </button>

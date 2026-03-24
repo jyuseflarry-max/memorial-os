@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Drill } from "@/types/drill";
+import { SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
+
+const SYSTEM_IDS = new Set(Object.values(SYSTEM_DRILL_IDS));
 
 export function useDrills() {
   const [drills, setDrills]   = useState<Drill[]>([]);
@@ -10,7 +13,7 @@ export function useDrills() {
   useEffect(() => {
     fetch("/api/drills")
       .then((r) => r.json())
-      .then((data) => { if (!data.error) setDrills(data); })
+      .then((data) => { if (!data.error) setDrills(data.filter((d: Drill) => !SYSTEM_IDS.has(d.id))); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

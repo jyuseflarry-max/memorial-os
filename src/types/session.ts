@@ -1,6 +1,14 @@
 import { Drill } from "@/types/drill";
 import { DrillGroup } from "@/types/grouping";
 
+/** Summary row returned by GET /api/sessions/[date]/list */
+export interface SessionSummary {
+  id: string;
+  label: string;       // "" = main practice
+  start_time: string;
+  drill_count: number;
+}
+
 export interface SessionDrill {
   /** Unique instance — a drill may appear more than once in a session */
   instanceId: string;

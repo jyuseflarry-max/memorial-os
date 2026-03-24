@@ -23,7 +23,7 @@ export default function DrillSheet({ drills, onAdd, onClose, onNewDrill }: Props
       {/* Backdrop */}
       <div className="fixed inset-0 z-40 bg-black/60 print:hidden" onClick={onClose} />
       {/* Sheet — slides up from bottom */}
-      <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-gray-900 border-t border-gray-700 rounded-t-2xl print:hidden" style={{ maxHeight: "85vh" }}>
+      <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-gray-900 border-t border-gray-700 rounded-t-2xl print:hidden" style={{ height: "85vh" }}>
         {/* Drag handle bar */}
         <div className="flex justify-center pt-2 pb-1 shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-700" />

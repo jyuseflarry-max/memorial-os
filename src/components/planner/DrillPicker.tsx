@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Plus } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Search, Plus, Check } from "lucide-react";
 import { Drill } from "@/types/drill";
 import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
@@ -15,6 +15,8 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
   const { getCatColor } = useDrillCategories();
   const [query,     setQuery]     = useState("");
   const [filterCat, setFilterCat] = useState("All");
+  const [addedId,   setAddedId]   = useState<string | null>(null);
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Unique categories derived from drill list
   const categories = useMemo(
@@ -111,10 +113,19 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             </div>
             <button
               type="button"
-              onClick={() => onAdd(drill.id)}
-              className="w-7 h-7 rounded-lg bg-mustang-red/0 hover:bg-mustang-red border border-mustang-red/30 hover:border-mustang-red text-mustang-red hover:text-white flex items-center justify-center transition-colors shrink-0"
+              onClick={() => {
+                onAdd(drill.id);
+                setAddedId(drill.id);
+                if (addedTimer.current) clearTimeout(addedTimer.current);
+                addedTimer.current = setTimeout(() => setAddedId(null), 1500);
+              }}
+              className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                addedId === drill.id
+                  ? "bg-green-500 border-green-500 text-white"
+                  : "bg-mustang-red/0 hover:bg-mustang-red border-mustang-red/30 hover:border-mustang-red text-mustang-red hover:text-white"
+              }`}
             >
-              <Plus size={14} />
+              {addedId === drill.id ? <Check size={14} /> : <Plus size={14} />}
             </button>
           </li>
         ))}

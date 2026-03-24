@@ -42,9 +42,6 @@ export default function SessionTimeline({
       {/* Empty state */}
       {drills.length === 0 && (
         <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-gray-700 flex items-center justify-center mb-3">
-            <Plus size={20} className="text-gray-600" />
-          </div>
           <p className="text-gray-500 text-sm font-medium">Tap + Add Drill below to start</p>
         </div>
       )}

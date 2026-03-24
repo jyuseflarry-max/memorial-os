@@ -4,10 +4,13 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 /** GET /api/sessions?team_id=X — list all saved sessions for a team */
 export async function GET(request: NextRequest) {
   try {
-    const teamId  = request.nextUrl.searchParams.get("team_id");
+    const teamId   = request.nextUrl.searchParams.get("team_id");
     const supabase = getSupabaseServer();
 
-    let query = supabase.from("sessions").select("id, date, start_time, drills, team_id").order("date", { ascending: true });
+    let query = supabase
+      .from("sessions")
+      .select("id, date, start_time, drills, team_id, label")
+      .order("date", { ascending: true });
     if (teamId) query = query.eq("team_id", teamId);
 
     const { data, error } = await query;
@@ -18,48 +21,53 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/** POST /api/sessions — upsert a session by (date, team_id) */
+/** POST /api/sessions — insert or update a session by (date, team_id, label).
+ *
+ * We use an explicit SELECT → UPDATE/INSERT rather than upsert because the DB
+ * uses partial unique indexes (WHERE team_id IS NULL / IS NOT NULL).  Supabase's
+ * onConflict only accepts column names — it cannot express the WHERE clause needed
+ * to match a partial index, so Postgres rejects the ON CONFLICT specification.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { date, start_time, drills, team_id } = body;
+    const { date, start_time, drills, team_id, label = "" } = body;
 
     if (!date) return Response.json({ error: "date is required" }, { status: 400 });
 
-    const supabase = getSupabaseServer();
-    const { data, error } = await supabase
+    const supabase  = getSupabaseServer();
+    const tidOrNull = team_id ?? null;
+
+    // Find existing row by natural key (team_id may be null)
+    let findQuery = supabase
       .from("sessions")
-      .upsert(
-        { date, start_time, drills, team_id: team_id ?? null, updated_at: new Date().toISOString() },
-        { onConflict: team_id ? "date,team_id" : "date" }
-      )
-      .select()
-      .single();
+      .select("id")
+      .eq("date", date)
+      .eq("label", label);
+    findQuery = tidOrNull
+      ? findQuery.eq("team_id", tidOrNull)
+      : findQuery.is("team_id", null);
 
-    if (error) throw error;
+    const { data: existing } = await findQuery.maybeSingle();
 
-    // ── Write normalized session_drills rows ─────────────────────────────
-    // Skip quick-action pseudo-drills (ids start with "qa-")
-    const sessionId = data.id as string;
-    const drillRows = (drills as Array<{ instanceId: string; drill: { id: string }; duration: number }>)
-      .filter((sd) => !sd.drill.id.startsWith("qa-"))
-      .map((sd, idx) => ({
-        session_id: sessionId,
-        drill_id:   sd.drill.id,
-        date,
-        team_id:    team_id ?? null,
-        duration:   sd.duration,
-        position:   idx,
-      }));
-
-    // Delete old rows for this session then re-insert
-    await supabase.from("session_drills").delete().eq("session_id", sessionId);
-    if (drillRows.length > 0) {
-      const { error: sdErr } = await supabase.from("session_drills").insert(drillRows);
-      if (sdErr) console.error("session_drills insert error:", sdErr.message);
+    let result, err;
+    if (existing?.id) {
+      ({ data: result, error: err } = await supabase
+        .from("sessions")
+        .update({ start_time, drills, updated_at: new Date().toISOString() })
+        .eq("id", existing.id)
+        .select()
+        .single());
+    } else {
+      ({ data: result, error: err } = await supabase
+        .from("sessions")
+        .insert({ date, start_time, drills, team_id: tidOrNull, label, updated_at: new Date().toISOString() })
+        .select()
+        .single());
     }
 
-    return Response.json(data, { status: 201 });
+    if (err) throw err;
+    return Response.json(result, { status: 201 });
   } catch (err: unknown) {
     return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
   }

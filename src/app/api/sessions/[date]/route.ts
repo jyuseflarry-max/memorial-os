@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
-/** GET /api/sessions/[date]?team_id=X — fetch one session by date + team */
+/** GET /api/sessions/[date]?team_id=X&label=Y — fetch one session by date + team + label */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ date: string }> }
@@ -9,9 +9,10 @@ export async function GET(
   try {
     const { date } = await params;
     const teamId   = request.nextUrl.searchParams.get("team_id");
+    const label    = request.nextUrl.searchParams.get("label") ?? "";
     const supabase = getSupabaseServer();
 
-    let query = supabase.from("sessions").select("*").eq("date", date);
+    let query = supabase.from("sessions").select("*").eq("date", date).eq("label", label);
     if (teamId) query = query.eq("team_id", teamId);
     const { data, error } = await query.single();
 
@@ -25,7 +26,7 @@ export async function GET(
   }
 }
 
-/** DELETE /api/sessions/[date]?team_id=X */
+/** DELETE /api/sessions/[date]?team_id=X&label=Y */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ date: string }> }
@@ -33,9 +34,10 @@ export async function DELETE(
   try {
     const { date } = await params;
     const teamId   = request.nextUrl.searchParams.get("team_id");
+    const label    = request.nextUrl.searchParams.get("label") ?? "";
     const supabase = getSupabaseServer();
 
-    let query = supabase.from("sessions").delete().eq("date", date);
+    let query = supabase.from("sessions").delete().eq("date", date).eq("label", label);
     if (teamId) query = query.eq("team_id", teamId);
     const { error } = await query;
     if (error) throw error;
