@@ -6,7 +6,6 @@ import { CalendarDays, Clock, Droplets, FileText, Save, Zap, CheckCircle2, Loade
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillPicker from "@/components/planner/DrillPicker";
 import SessionTimeline from "@/components/planner/SessionTimeline";
-import MissionProfile from "@/components/planner/MissionProfile";
 import CoachScript from "@/components/planner/CoachScript";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
@@ -290,11 +289,6 @@ function PlannerInner() {
             </div>
           </div>
 
-          {/* Live Analytics — full width below on all screens */}
-          <div className="flex flex-col gap-2">
-            <p className="text-gray-400 text-xs font-mono uppercase tracking-wider px-1">Live Analytics</p>
-            <MissionProfile drills={session.drills} />
-          </div>
         </div>
       )}
 
