@@ -55,6 +55,11 @@ export function totalDuration(drills: SessionDrill[]): number {
   return drills.reduce((s, d) => s + d.duration, 0);
 }
 
+/** Projected shots for a single drill instance */
+export function drillShots(sd: SessionDrill): number {
+  return Math.round(sd.drill.shot_density * sd.duration);
+}
+
 /** Total projected shots across all drills */
 export function totalShots(drills: SessionDrill[]): number {
   return drills.reduce((s, d) => s + d.drill.shot_density * d.duration, 0);

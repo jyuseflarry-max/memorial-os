@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { X, ChevronUp, ChevronDown, Minus, Plus, Users, GripVertical } from "lucide-react";
-import { SessionDrill, parseTime, formatTime12 } from "@/types/session";
+import { SessionDrill, parseTime, formatTime12, drillShots } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
@@ -55,7 +55,7 @@ export default function SessionTimeline({
           const drillEnd   = cursor;
           const blockLabel = `${formatTime12(drillStart)} – ${formatTime12(drillEnd)}`;
           const isRest     = sd.drill.category === DrillCategory.RestTransition;
-          const shots      = Math.round(sd.drill.shot_density * sd.duration);
+          const shots      = drillShots(sd);
           const isDragging = dragFromIndex.current === i;
           const isTarget   = dragOverIndex === i && dragFromIndex.current !== i;
           const subLine    = isRest
