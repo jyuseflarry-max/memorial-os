@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { X, Shuffle, Plus, Trash2, Save, ChevronDown, ChevronUp, Users } from "lucide-react";
-import { Player, PlayerStatus } from "@/types/player";
-import { DrillGroup, PlayerGrouping } from "@/types/grouping";
-import { shuffle, distributeEvenly } from "@/lib/grouping-utils";
+import { Player } from "@/types/player";
+import { DrillGroup } from "@/types/grouping";
+import { useGroupingEditor } from "@/hooks/useGroupingEditor";
 
 // ── Player chip ───────────────────────────────────────────────────────────
 
@@ -138,124 +137,30 @@ export default function DrillGroupingModal({
   onApply,
   onClose,
 }: Props) {
-  const activePlayers = players.filter((p) => p.status === PlayerStatus.Active);
-
-  // ── Saved groupings ───────────────────────────────────────────────────
-  const [savedGroupings, setSavedGroupings] = useState<PlayerGrouping[]>([]);
-  const [showSaved, setShowSaved] = useState(true);
-
-  useEffect(() => {
-    const param = teamId ? `?team_id=${teamId}` : "";
-    fetch(`/api/player-groupings${param}`)
-      .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d)) setSavedGroupings(d); })
-      .catch(() => {});
-  }, [teamId]);
-
-  // ── Working state ─────────────────────────────────────────────────────
-  const [groups, setGroups] = useState<DrillGroup[]>(
-    initialGroups ?? []
-  );
-  const [groupingName, setGroupingName] = useState("");
-  const [numGroups, setNumGroups] = useState(2);
-  const [saving, setSaving] = useState(false);
-
-  // Unassigned = active players not in any group
-  const assignedIds = new Set(groups.flatMap((g) => g.playerIds));
-  const unassigned  = activePlayers.filter((p) => !assignedIds.has(p.id));
-
-  // ── Drag state ────────────────────────────────────────────────────────
-  const draggingId  = useRef<string | null>(null);
-  const [dragOverGroup, setDragOverGroup] = useState<number | null>(null); // -1 = unassigned pool
-
-  function handleDragStart(playerId: string) {
-    draggingId.current = playerId;
-  }
-
-  function handleDropOnGroup(toGroupIdx: number) {
-    const pid = draggingId.current;
-    draggingId.current = null;
-    setDragOverGroup(null);
-    if (!pid) return;
-
-    setGroups((prev) => {
-      const next = prev.map((g) => ({ ...g, playerIds: g.playerIds.filter((id) => id !== pid) }));
-      next[toGroupIdx] = { ...next[toGroupIdx], playerIds: [...next[toGroupIdx].playerIds, pid] };
-      return next;
-    });
-  }
-
-  function handleDropOnUnassigned() {
-    const pid = draggingId.current;
-    draggingId.current = null;
-    setDragOverGroup(null);
-    if (!pid) return;
-    // Remove from any group (player goes back to unassigned)
-    setGroups((prev) => prev.map((g) => ({ ...g, playerIds: g.playerIds.filter((id) => id !== pid) })));
-  }
-
-  function handleRemovePlayer(groupIdx: number, playerId: string) {
-    setGroups((prev) => prev.map((g, i) =>
-      i === groupIdx ? { ...g, playerIds: g.playerIds.filter((id) => id !== playerId) } : g
-    ));
-  }
-
-  function handleNameChange(idx: number, name: string) {
-    setGroups((prev) => prev.map((g, i) => (i === idx ? { ...g, name } : g)));
-  }
-
-  function handleDeleteGroup(idx: number) {
-    setGroups((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function handleAddGroup() {
-    const letter = String.fromCharCode(65 + groups.length);
-    setGroups((prev) => [...prev, { name: `Group ${letter}`, playerIds: [] }]);
-  }
-
-  function handleCreateStructure() {
-    const newGroups: DrillGroup[] = Array.from({ length: numGroups }, (_, i) => ({
-      name: `Group ${String.fromCharCode(65 + i)}`,
-      playerIds: [],
-    }));
-    setGroups(newGroups);
-  }
-
-  function handleRandomize() {
-    const allIds = activePlayers.map((p) => p.id);
-    setGroups(distributeEvenly(allIds, groups.length || numGroups));
-  }
-
-  function handleClearAll() {
-    setGroups((prev) => prev.map((g) => ({ ...g, playerIds: [] })));
-  }
-
-  function handleLoadSaved(sg: PlayerGrouping) {
-    setGroups(sg.groups);
-    setGroupingName(sg.name);
-    setShowSaved(false);
-  }
-
-  async function handleSaveAndApply() {
-    setSaving(true);
-    let savedId: string | undefined;
-    if (groupingName.trim()) {
-      try {
-        const res = await fetch("/api/player-groupings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: groupingName.trim(), team_id: teamId, groups }),
-        });
-        const data = await res.json();
-        if (data.id) {
-          savedId = data.id;
-          setSavedGroupings((prev) => [data, ...prev]);
-        }
-      } catch {}
-    }
-    setSaving(false);
-    onApply(groups, savedId);
-  }
+  const {
+    activePlayers,
+    savedGroupings,
+    showSaved,      setShowSaved,
+    groups,
+    groupingName,   setGroupingName,
+    numGroups,      setNumGroups,
+    saving,
+    dragOverGroup,  setDragOverGroup,
+    assignedIds,
+    unassigned,
+    handleDragStart,
+    handleDropOnGroup,
+    handleDropOnUnassigned,
+    handleRemovePlayer,
+    handleNameChange,
+    handleDeleteGroup,
+    handleAddGroup,
+    handleCreateStructure,
+    handleRandomize,
+    handleClearAll,
+    handleLoadSaved,
+    handleSaveAndApply,
+  } = useGroupingEditor({ teamId, players, initialGroups, onApply });
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto p-4" onClick={onClose}>
