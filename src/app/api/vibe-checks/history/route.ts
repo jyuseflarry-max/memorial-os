@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /**
  * GET /api/vibe-checks/history?season_start=YYYY-MM-DD
@@ -29,7 +30,6 @@ export async function GET(request: NextRequest) {
 
     return Response.json(grouped);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }

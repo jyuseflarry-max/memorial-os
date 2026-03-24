@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /**
  * GET /api/strength/maxes?team_id=xxx
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return Response.json(result);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -84,6 +85,6 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }

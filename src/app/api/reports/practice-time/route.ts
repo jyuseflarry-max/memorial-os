@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 export interface SubCategoryRow {
   sub_category: string;
@@ -127,6 +128,6 @@ export async function GET(request: NextRequest) {
 
     return Response.json(report);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }

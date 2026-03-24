@@ -2,10 +2,38 @@
 
 import { useState, useRef } from "react";
 import { X, ChevronUp, ChevronDown, Minus, Plus, Users, GripVertical } from "lucide-react";
-import { SessionDrill, parseTime, formatTime12, drillShots } from "@/types/session";
+import { SessionDrill, parseTime, formatTime12, drillShots, totalDuration } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
+
+// ── Row builder ───────────────────────────────────────────────────────────
+
+interface TimelineRow extends SessionDrill {
+  blockLabel: string;
+  isRest: boolean;
+  shots: number;
+  subLine: string;
+}
+
+function buildTimelineRows(drills: SessionDrill[], startMin: number): TimelineRow[] {
+  let cursor = startMin;
+  return drills.map((sd) => {
+    const drillStart = cursor;
+    cursor += sd.duration;
+    const isRest = sd.drill.category === DrillCategory.RestTransition;
+    const shots  = drillShots(sd);
+    return {
+      ...sd,
+      blockLabel: `${formatTime12(drillStart)} – ${formatTime12(cursor)}`,
+      isRest,
+      shots,
+      subLine: isRest
+        ? "Non-Activity · 0 shots"
+        : `${sd.drill.sub_category || sd.drill.category} · ${sd.drill.shot_type} · ~${shots} shots`,
+    };
+  });
+}
 
 interface Props {
   drills: SessionDrill[];
@@ -28,7 +56,7 @@ export default function SessionTimeline({
   const dragFromIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  const totalMin   = drills.reduce((s, d) => s + d.duration, 0);
+  const totalMin   = totalDuration(drills);
   const startMin   = parseTime(startTime);
   const endLabel   = formatTime12(startMin + totalMin);
   const startLabel = formatTime12(startMin);
@@ -47,20 +75,10 @@ export default function SessionTimeline({
       )}
 
       {/* Drill rows */}
-      {(() => {
-        let cursor = startMin;
-        return drills.map((sd, i) => {
-          const drillStart = cursor;
-          cursor += sd.duration;
-          const drillEnd   = cursor;
-          const blockLabel = `${formatTime12(drillStart)} – ${formatTime12(drillEnd)}`;
-          const isRest     = sd.drill.category === DrillCategory.RestTransition;
-          const shots      = drillShots(sd);
+      {buildTimelineRows(drills, startMin).map((sd, i) => {
+          const { blockLabel, isRest, shots, subLine } = sd;
           const isDragging = dragFromIndex.current === i;
           const isTarget   = dragOverIndex === i && dragFromIndex.current !== i;
-          const subLine    = isRest
-            ? "Non-Activity · 0 shots"
-            : `${sd.drill.sub_category || sd.drill.category} · ${sd.drill.shot_type} · ~${shots} shots`;
 
           return (
             <div key={sd.instanceId}>
@@ -286,8 +304,7 @@ export default function SessionTimeline({
               }`} />
             </div>
           );
-        });
-      })()}
+        })}
 
       {/* Footer total */}
       {drills.length > 0 && (

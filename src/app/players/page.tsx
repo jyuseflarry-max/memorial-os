@@ -15,19 +15,14 @@ import {
   TrafficLight,
   getTrafficLight,
   computeReadiness,
+  TRAFFIC_LIGHT_CONFIG,
 } from "@/types/player";
 import { StatusBadge } from "@/components/player/StatusBadge";
 
-// ── Traffic light config ──────────────────────────────────────────────────
-
-const LIGHT_CONFIG: Record<TrafficLight, { dot: string; label: string; badge: string }> = {
-  green:  { dot: "bg-green-400 shadow-green-400/60",   label: "Ready",   badge: "text-green-400 bg-green-400/10 border-green-400/20" },
-  yellow: { dot: "bg-yellow-400 shadow-yellow-400/60", label: "Monitor", badge: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
-  red:    { dot: "bg-red-400 shadow-red-400/60",        label: "At Risk", badge: "text-red-400 bg-red-400/10 border-red-400/20" },
-};
+// ── Traffic light helpers ─────────────────────────────────────────────────
 
 function TrafficDot({ light }: { light: TrafficLight }) {
-  return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${LIGHT_CONFIG[light].dot}`} />;
+  return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${TRAFFIC_TRAFFIC_LIGHT_CONFIG[light].dot}`} />;
 }
 
 
@@ -113,7 +108,7 @@ function SummaryChips({ players }: { players: Player[] }) {
   return (
     <div className="flex gap-3 flex-wrap">
       {(["green", "yellow", "red"] as TrafficLight[]).map((light) => {
-        const { label, badge } = LIGHT_CONFIG[light];
+        const { label, badge } = TRAFFIC_LIGHT_CONFIG[light];
         return (
           <div key={light} className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${badge}`}>
             <TrafficDot light={light} />
@@ -132,7 +127,7 @@ function SummaryChips({ players }: { players: Player[] }) {
 function PlayerCard({ player, check, history, showTitan }: { player: Player; check: VibeCheckRow | null; history: VibeCheckRow[]; showTitan: boolean }) {
   const avgs = computeAvgs(history);
   const light = getTrafficLight(player);
-  const { label, badge } = LIGHT_CONFIG[light];
+  const { label, badge } = TRAFFIC_LIGHT_CONFIG[light];
 
   return (
     <div className="bg-gray-800 border border-gray-700 hover:border-gray-500 transition-colors rounded-2xl p-4 flex flex-col gap-3">

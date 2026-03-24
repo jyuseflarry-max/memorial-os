@@ -64,3 +64,12 @@ export function drillShots(sd: SessionDrill): number {
 export function totalShots(drills: SessionDrill[]): number {
   return drills.reduce((s, d) => s + d.drill.shot_density * d.duration, 0);
 }
+
+/** A single drill entry returned by the AI planner */
+export interface GeneratedDrill {
+  drill_id: string;
+  duration: number;
+}
+
+/** Persistence state of a session in the planner */
+export type SaveStatus = "idle" | "saving" | "saved" | "unsaved";

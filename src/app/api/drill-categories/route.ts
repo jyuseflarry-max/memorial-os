@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { CATEGORY_PALETTE } from "@/lib/category-colors";
+import { apiError } from "@/lib/api-error";
 
 /**
  * GET /api/drill-categories
@@ -17,8 +18,7 @@ export async function GET() {
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return Response.json(data, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }

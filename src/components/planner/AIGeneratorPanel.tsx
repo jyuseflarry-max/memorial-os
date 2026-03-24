@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Sparkles, Mic, MicOff, Loader2, ChevronDown, ChevronUp, RotateCcw, Check } from "lucide-react";
+import { GeneratedDrill } from "@/types/session";
+import { Drill } from "@/types/drill";
 
 // ── Web Speech API types ──────────────────────────────────────────────────
 
@@ -25,11 +27,6 @@ declare global {
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-export interface GeneratedDrill {
-  drill_id: string;
-  duration: number;
-}
-
 interface APIResponse {
   type: "plan" | "clarification";
   plan?: GeneratedDrill[];
@@ -41,12 +38,13 @@ interface APIResponse {
 interface Props {
   playerCount: number;
   teamName?: string;
+  drills: Drill[];
   onLoadPlan: (plan: GeneratedDrill[]) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-export default function AIGeneratorPanel({ playerCount, teamName, onLoadPlan }: Props) {
+export default function AIGeneratorPanel({ playerCount, teamName, drills, onLoadPlan }: Props) {
   const [open, setOpen]               = useState(false);
   const [prompt, setPrompt]           = useState("");
   const [loading, setLoading]         = useState(false);
@@ -291,12 +289,15 @@ export default function AIGeneratorPanel({ playerCount, teamName, onLoadPlan }: 
 
               {/* Drill list preview */}
               <div className="bg-gray-900 border border-gray-700 rounded-xl divide-y divide-gray-800 text-xs font-mono overflow-hidden">
-                {result.plan.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between px-3 py-2">
-                    <span className="text-gray-400">{item.drill_id.slice(0, 8)}…</span>
-                    <span className="text-white">{item.duration} min</span>
-                  </div>
-                ))}
+                {result.plan.map((item, i) => {
+                  const drill = drills.find((d) => d.id === item.drill_id);
+                  return (
+                    <div key={i} className="flex items-center justify-between px-3 py-2">
+                      <span className="text-gray-400">{drill?.name ?? item.drill_id.slice(0, 8) + "…"}</span>
+                      <span className="text-white">{item.duration} min</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Actions */}

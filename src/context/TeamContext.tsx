@@ -34,30 +34,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       if (!data.error && Array.isArray(data)) {
         setTeams(data);
-        // Re-validate active team still exists
         setActiveTeamState((prev) => {
           const stored = prev?.id ?? (typeof window !== "undefined" ? localStorage.getItem("activeTeamId") : null);
           return data.find((t: Team) => t.id === stored) ?? data[0] ?? null;
         });
       }
     } catch {}
+    setLoading(false);
   }
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res  = await fetch("/api/teams");
-        const data = await res.json();
-        if (!data.error && Array.isArray(data)) {
-          setTeams(data);
-          const stored = typeof window !== "undefined" ? localStorage.getItem("activeTeamId") : null;
-          const found  = data.find((t: Team) => t.id === stored) ?? data[0] ?? null;
-          setActiveTeamState(found);
-        }
-      } catch {}
-      setLoading(false);
-    })();
-  }, []);
+  useEffect(() => { refresh(); }, []);
 
   function setActiveTeam(team: Team) {
     setActiveTeamState(team);

@@ -18,7 +18,7 @@ import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useSettings } from "@/context/SettingsContext";
 import { useSessionEditor } from "@/hooks/useSessionEditor";
 import { SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
-import { totalDuration, totalShots, formatHHMM } from "@/types/session";
+import { totalDuration, totalShots, formatHHMM, GeneratedDrill, SessionDrill } from "@/types/session";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
@@ -68,8 +68,16 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
     activeLabel,
     teamId:           activeTeam?.id ?? null,
     defaultStartTime: settings.default_start_time,
-    vaultDrills,
   });
+
+  function resolveAndLoadPlan(plan: GeneratedDrill[]) {
+    const drills: SessionDrill[] = plan.flatMap(({ drill_id, duration }) => {
+      const drill = vaultDrills.find((d) => d.id === drill_id);
+      if (!drill) return [];
+      return [{ instanceId: crypto.randomUUID(), drill, duration }];
+    });
+    loadGeneratedPlan(drills);
+  }
 
   // UI-only state — which modals / panels are open
   const [groupingDrillId,  setGroupingDrillId]  = useState<string | null>(null);
@@ -83,14 +91,6 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
     () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
     [vaultDrills],
   );
-
-  // Auto-print when ?autoprint=1 (edit mode only)
-  const autoPrint = mode === "edit" && searchParams.get("autoprint") === "1";
-  useEffect(() => {
-    if (!autoPrint || loadingDate) return;
-    const t = setTimeout(() => window.print(), 300);
-    return () => clearTimeout(t);
-  }, [autoPrint, loadingDate]);
 
   const totalMin      = totalDuration(session.drills);
   const totalShotsNum = Math.round(totalShots(session.drills));
@@ -111,7 +111,13 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
             <input
               type="date"
               value={session.date}
-              onChange={(e) => handleDateChange(e.target.value)}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (mode === "edit" && saveStatus === "unsaved" && session.drills.length > 0) {
+                  if (!confirm("You have unsaved changes. Switch dates without saving?")) return;
+                }
+                handleDateChange(newDate);
+              }}
               className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
             />
             <span className="text-gray-500 text-sm">@</span>
@@ -253,7 +259,8 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
             <AIGeneratorPanel
               playerCount={players.length || 10}
               teamName={activeTeam?.name}
-              onLoadPlan={(plan) => { loadGeneratedPlan(plan); setShowAI(false); }}
+              drills={vaultDrills}
+              onLoadPlan={(plan) => { resolveAndLoadPlan(plan); setShowAI(false); }}
             />
           )}
 

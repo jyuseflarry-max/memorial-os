@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { X, Save, Loader2 } from "lucide-react";
 import { Session, SessionSummary } from "@/types/session";
+import { postSession } from "@/lib/session-api";
 
 interface SaveToPlannerModalProps {
   session: Session;
@@ -49,24 +50,15 @@ export default function SaveToPlannerModal({ session, teamId, onClose }: SaveToP
     setSaving(true);
     setError("");
     try {
-      const res = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          start_time: session.startTime,
-          drills:     session.drills,
-          team_id:    teamId,
-          label,
-        }),
-      });
+      const res = await postSession({ ...session, date }, teamId, label);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Save failed");
       }
-      const tp = teamId ? `&team_id=${teamId}` : "";
-      const lp = label ? `&label=${encodeURIComponent(label)}` : "";
-      router.push(`/planner?date=${date}${tp}${lp}`);
+      const qp = new URLSearchParams({ date });
+      if (teamId) qp.set("team_id", teamId);
+      if (label)  qp.set("label", label);
+      router.push(`/planner?${qp}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
       setSaving(false);

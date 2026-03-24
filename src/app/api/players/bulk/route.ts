@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /**
  * POST /api/players/bulk
@@ -31,7 +32,6 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return Response.json({ added: data.length, players: data }, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }

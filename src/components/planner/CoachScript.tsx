@@ -19,7 +19,7 @@ interface ScriptRow extends SessionDrill {
 
 function buildRows(session: Session): ScriptRow[] {
   let cursor = parseTime(session.startTime);
-  const total = session.drills.reduce((s, d) => s + d.duration, 0);
+  const total = totalDuration(session.drills);
   let elapsed = 0;
   return session.drills.map((sd) => {
     const startStr = formatTime12(cursor);
@@ -92,6 +92,7 @@ export default function CoachScript({ session, players = [] }: Props) {
   const generatedOn = new Date().toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric",
   });
+  const timeRangeLabel = `${startLabel} – ${formatTime12(parseTime(session.startTime) + mins)} (${mins} min)`;
 
   const avgIntensity = session.drills.length
     ? (session.drills.reduce((s, d) => s + d.drill.intensity, 0) / session.drills.length).toFixed(1)
@@ -108,9 +109,7 @@ export default function CoachScript({ session, players = [] }: Props) {
         <div className="flex items-center px-6 py-4 border-b border-gray-700 print:hidden">
           <div>
             <p className="text-white font-bold text-base">{dateLabel}</p>
-            <p className="text-gray-400 text-xs font-mono">
-              {startLabel} – {formatTime12(parseTime(session.startTime) + mins)} ({mins} min)
-            </p>
+            <p className="text-gray-400 text-xs font-mono">{timeRangeLabel}</p>
             <p className="text-gray-400 text-xs font-mono">~{shots} shots per player</p>
           </div>
         </div>
@@ -125,7 +124,7 @@ export default function CoachScript({ session, players = [] }: Props) {
         <div className="hidden print:flex items-start justify-between px-0 pt-2 pb-2 border-b-2 border-black">
           <div className="flex items-start gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mustang-logo.png" alt="Memorial Mustangs" width={42} height={42} />
+            <img src={settings.logo_url || "/mustang-logo.png"} alt={settings.program_name} width={42} height={42} />
             <div>
               <p className="font-black text-black text-base leading-tight tracking-tight">
                 {settings.program_name.toUpperCase()}
@@ -140,9 +139,7 @@ export default function CoachScript({ session, players = [] }: Props) {
               PRACTICE PLAN
             </p>
             <p className="text-black font-bold text-xs mt-0.5">{dateLabel}</p>
-            <p className="text-gray-700 text-[10px] font-mono mt-0.5">
-              {startLabel} – {formatTime12(parseTime(session.startTime) + mins)} ({mins} min)
-            </p>
+            <p className="text-gray-700 text-[10px] font-mono mt-0.5">{timeRangeLabel}</p>
             <p className="text-gray-700 text-[10px] font-mono">~{shots} shots per player</p>
           </div>
         </div>

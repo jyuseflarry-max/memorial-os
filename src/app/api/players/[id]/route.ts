@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /** PATCH /api/players/[id] — partial update, returns updated row */
 export async function PATCH(
@@ -21,8 +22,7 @@ export async function PATCH(
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -43,7 +43,6 @@ export async function DELETE(
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }

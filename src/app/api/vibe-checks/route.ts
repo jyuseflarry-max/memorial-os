@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /**
  * GET /api/vibe-checks
@@ -29,8 +30,7 @@ export async function GET(request: NextRequest) {
 
     return Response.json(Object.fromEntries(latest));
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ ok: true }, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: message }, { status: 500 });
+    return apiError(err);
   }
 }

@@ -20,7 +20,10 @@
       "Bash(node -e \"const sharp = require\\(''sharp''\\); sharp\\(''src/app/icon.png''\\).metadata\\(\\).then\\(m => console.log\\(m.width, m.height\\)\\);\")",
       "Bash(npm run:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(psql:*)",
+      "Bash(xargs wc:*)",
+      "Bash(node:*)"
     ]
   }
 }

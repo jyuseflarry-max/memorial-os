@@ -2,13 +2,14 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Pencil, Printer } from "lucide-react";
+import { Loader2, Pencil, Printer, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import CoachScript from "@/components/planner/CoachScript";
 import MissionProfile from "@/components/planner/MissionProfile";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { Session } from "@/types/session";
+import { fetchSession } from "@/lib/session-api";
 
 function PlanViewInner() {
   const params       = useParams();
@@ -23,9 +24,11 @@ function PlanViewInner() {
 
   const autoPrint  = searchParams.get("autoprint") === "1";
 
-  const [session,  setSession]  = useState<Session | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [session,        setSession]        = useState<Session | null>(null);
+  const [loading,        setLoading]        = useState(true);
+  const [notFound,       setNotFound]       = useState(false);
+  const [confirmDelete,  setConfirmDelete]  = useState(false);
+  const [deleting,       setDeleting]       = useState(false);
 
   // If a team_id was passed in the URL, activate that team
   useEffect(() => {
@@ -38,16 +41,10 @@ function PlanViewInner() {
   useEffect(() => {
     if (!date) return;
     setLoading(true);
-    const qp = new URLSearchParams({ label: labelParam });
-    if (teamIdParam) qp.set("team_id", teamIdParam);
-    fetch(`/api/sessions/${date}?${qp}`)
-      .then((r) => r.json())
+    fetchSession(date, labelParam, teamIdParam)
       .then((data) => {
-        if (data && !data.error && data.drills) {
-          setSession({ date, startTime: data.start_time, drills: data.drills });
-        } else {
-          setNotFound(true);
-        }
+        if (data) setSession(data);
+        else setNotFound(true);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -60,9 +57,23 @@ function PlanViewInner() {
   }, [autoPrint, loading]);
 
   function handleEdit() {
-    const tp = teamIdParam ? `&team_id=${teamIdParam}` : "";
-    const lp = labelParam  ? `&label=${encodeURIComponent(labelParam)}` : "";
-    router.push(`/planner?date=${date}${tp}${lp}`);
+    const qp = new URLSearchParams({ date });
+    if (teamIdParam) qp.set("team_id", teamIdParam);
+    if (labelParam)  qp.set("label", labelParam);
+    router.push(`/planner?${qp}`);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const qp = new URLSearchParams({ label: labelParam });
+      if (teamIdParam) qp.set("team_id", teamIdParam);
+      await fetch(`/api/sessions/${date}?${qp}`, { method: "DELETE" });
+      router.push("/view-plans");
+    } catch {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
   }
 
   return (
@@ -87,6 +98,36 @@ function PlanViewInner() {
             >
               <Printer size={13} /> Print
             </button>
+
+            {!confirmDelete ? (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-colors"
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-400 text-xs font-mono">Delete plan?</span>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
+                >
+                  {deleting ? <Loader2 size={12} className="animate-spin" /> : null}
+                  Yes, delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-xs font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

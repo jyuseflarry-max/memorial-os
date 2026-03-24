@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions?team_id=X — list all saved sessions for a team */
 export async function GET(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -69,6 +70,6 @@ export async function POST(request: NextRequest) {
     if (err) throw err;
     return Response.json(result, { status: 201 });
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }

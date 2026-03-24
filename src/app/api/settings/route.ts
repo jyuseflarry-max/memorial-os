@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { DEFAULT_SETTINGS } from "@/types/settings";
+import { apiError } from "@/lib/api-error";
 
 /** GET /api/settings — fetch the singleton program_settings row */
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
     }
     return Response.json(data);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -40,6 +41,6 @@ export async function PUT(request: NextRequest) {
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }

@@ -90,6 +90,13 @@ export function getTrafficLight(player: Player): TrafficLight {
   return "red";
 }
 
+/** Display config for each traffic light — labels and Tailwind color classes */
+export const TRAFFIC_LIGHT_CONFIG: Record<TrafficLight, { dot: string; label: string; badge: string }> = {
+  green:  { dot: "bg-green-400 shadow-green-400/60",   label: "Ready",   badge: "text-green-400 bg-green-400/10 border-green-400/20" },
+  yellow: { dot: "bg-yellow-400 shadow-yellow-400/60", label: "Monitor", badge: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+  red:    { dot: "bg-red-400 shadow-red-400/60",        label: "At Risk", badge: "text-red-400 bg-red-400/10 border-red-400/20" },
+};
+
 /** Convert 4 raw survey inputs into a composite 1-5 vibe score */
 export function computeVibeScore(
   sleepHours: number,

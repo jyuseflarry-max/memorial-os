@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -18,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -31,6 +32,6 @@ export async function DELETE(_: NextRequest, { params }: Params) {
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }

@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
-import { Session, SessionDrill, SessionSummary } from "@/types/session";
+import { Session, SessionDrill, SessionSummary, SaveStatus } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { Drill } from "@/types/drill";
-import { GeneratedDrill } from "@/components/planner/AIGeneratorPanel";
-
-export type SaveStatus = "idle" | "saving" | "saved" | "unsaved";
+import { postSession, fetchSession } from "@/lib/session-api";
 
 interface Params {
   mode:               "new" | "edit";
@@ -15,7 +13,6 @@ interface Params {
   activeLabel:        string;
   teamId:             string | null;
   defaultStartTime:   string;
-  vaultDrills:        Drill[];
 }
 
 /**
@@ -33,7 +30,6 @@ export function useSessionEditor({
   activeLabel,
   teamId,
   defaultStartTime,
-  vaultDrills,
 }: Params) {
   const [session,     setSession]     = useState<Session>({ date: initialDate, startTime: defaultStartTime, drills: [] });
   const [saveStatus,  setSaveStatus]  = useState<SaveStatus>("idle");
@@ -56,12 +52,9 @@ export function useSessionEditor({
   async function loadDate(date: string, label = activeLabel) {
     setLoadingDate(true);
     try {
-      const qp = new URLSearchParams({ label });
-      if (teamId) qp.set("team_id", teamId);
-      const res  = await fetch(`/api/sessions/${date}?${qp}`);
-      const data = await res.json();
-      if (data && !data.error && data.drills) {
-        setSession({ date, startTime: data.start_time, drills: data.drills });
+      const loaded = await fetchSession(date, label, teamId);
+      if (loaded) {
+        setSession(loaded);
         setSaveStatus("saved");
       } else {
         setSession({ date, startTime: defaultStartTime, drills: [] });
@@ -69,7 +62,7 @@ export function useSessionEditor({
       }
 
       // Side-load the day list for the session switcher (fire-and-forget)
-      const listQp = teamId ? `?team_id=${teamId}` : "";
+      const listQp = teamId ? `?${new URLSearchParams({ team_id: teamId })}` : "";
       fetch(`/api/sessions/${date}/list${listQp}`)
         .then((r) => r.json())
         .then((d) => { if (Array.isArray(d)) setDaySessions(d); })
@@ -100,17 +93,7 @@ export function useSessionEditor({
     if (!s) return;
     setSaveStatus("saving");
     try {
-      const res = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date:       s.date,
-          start_time: s.startTime,
-          drills:     s.drills,
-          team_id:    tid,
-          label,
-        }),
-      });
+      const res = await postSession(s, tid, label);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         console.error("Auto-save failed:", body.error ?? res.status);
@@ -142,9 +125,7 @@ export function useSessionEditor({
     mutate((s) => ({ ...s, drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: 2 }] }));
   }
 
-  function addDrill(drillId: string) {
-    const drill = vaultDrills.find((d) => d.id === drillId);
-    if (!drill) return;
+  function addDrill(drill: Drill) {
     mutate((s) => ({
       ...s,
       drills: [...s.drills, { instanceId: crypto.randomUUID(), drill, duration: drill.default_duration ?? 10 }],
@@ -178,22 +159,14 @@ export function useSessionEditor({
 
   function handleDateChange(newDate: string) {
     if (mode === "edit") {
-      if (saveStatus === "unsaved" && session.drills.length > 0) {
-        if (!confirm("You have unsaved changes. Switch dates without saving?")) return;
-      }
       loadDate(newDate);
     } else {
       mutate((s) => ({ ...s, date: newDate }));
     }
   }
 
-  function loadGeneratedPlan(plan: GeneratedDrill[]) {
-    const newDrills: SessionDrill[] = plan.flatMap(({ drill_id, duration }) => {
-      const drill = vaultDrills.find((d) => d.id === drill_id);
-      if (!drill) return [];
-      return [{ instanceId: crypto.randomUUID(), drill, duration }];
-    });
-    mutate((s) => ({ ...s, drills: newDrills }));
+  function loadGeneratedPlan(drills: SessionDrill[]) {
+    mutate((s) => ({ ...s, drills }));
   }
 
   return {

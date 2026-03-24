@@ -7,7 +7,7 @@ import { Drill } from "@/types/drill";
 
 interface Props {
   drills: Drill[];
-  onAdd: (drillId: string) => void;
+  onAdd: (drill: Drill) => void;
   onClose: () => void;
   onNewDrill?: () => void;
 }

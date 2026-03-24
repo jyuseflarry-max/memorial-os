@@ -98,10 +98,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       });
-      if (!res.ok) {
-        await refresh();
-        throw new Error("Update failed — changes reverted");
-      }
+      if (!res.ok) throw new Error("Update failed — changes reverted");
     } catch (err) {
       await refresh();
       throw err;

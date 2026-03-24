@@ -30,13 +30,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const save = useCallback(async (patch: Partial<ProgramSettings>) => {
-    const next = { ...settings, ...patch };
-    setSettings(next);
-    await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
+    const prev = settings;
+    setSettings({ ...settings, ...patch });
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error("Save failed");
+    } catch {
+      setSettings(prev);
+    }
   }, [settings]);
 
   return (

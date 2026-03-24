@@ -7,7 +7,7 @@ import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
 interface Props {
   drills: Drill[];
-  onAdd: (drillId: string) => void;
+  onAdd: (drill: Drill) => void;
   onNewDrill?: () => void;
 }
 
@@ -114,7 +114,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             <button
               type="button"
               onClick={() => {
-                onAdd(drill.id);
+                onAdd(drill);
                 setAddedId(drill.id);
                 if (addedTimer.current) clearTimeout(addedTimer.current);
                 addedTimer.current = setTimeout(() => setAddedId(null), 1500);

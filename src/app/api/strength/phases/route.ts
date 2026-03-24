@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /** GET /api/strength/phases — all phases ordered by created_at desc */
 export async function GET() {
@@ -13,7 +14,7 @@ export async function GET() {
     if (error) throw error;
     return Response.json(data ?? []);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -37,6 +38,6 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return Response.json(data, { status: 201 });
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }

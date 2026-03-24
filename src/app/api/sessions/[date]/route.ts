@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions/[date]?team_id=X&label=Y — fetch one session by date + team + label */
 export async function GET(
@@ -22,7 +23,7 @@ export async function GET(
     }
     return Response.json(data);
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
 
@@ -43,6 +44,6 @@ export async function DELETE(
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {
-    return Response.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return apiError(err);
   }
 }
