@@ -22,7 +22,7 @@ import { StatusBadge } from "@/components/player/StatusBadge";
 // ── Traffic light helpers ─────────────────────────────────────────────────
 
 function TrafficDot({ light }: { light: TrafficLight }) {
-  return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${TRAFFIC_TRAFFIC_LIGHT_CONFIG[light].dot}`} />;
+  return <span className={`w-3 h-3 rounded-full shrink-0 shadow-md ${TRAFFIC_LIGHT_CONFIG[light].dot}`} />;
 }
 
 
