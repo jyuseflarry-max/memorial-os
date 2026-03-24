@@ -120,8 +120,8 @@ export default function CoachScript({ session, players = [] }: Props) {
         />
 
         {/* ── Main header ─────────────────────────────────────────────── */}
-        <div className="hidden print:flex items-center justify-between px-0 pt-2 pb-2 border-b-2 border-black">
-          <div className="flex items-center gap-2">
+        <div className="hidden print:flex items-start justify-between px-0 pt-2 pb-2 border-b-2 border-black">
+          <div className="flex items-start gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mustang-logo.png" alt="Memorial Mustangs" width={42} height={42} />
             <div>
