@@ -219,8 +219,68 @@ export default function DrillVaultPage() {
         })}
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden overflow-x-auto">
+      {/* Mobile card list */}
+      <div className="sm:hidden bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
+        {loading && (
+          <p className="text-gray-500 text-xs font-mono text-center py-10">LOADING…</p>
+        )}
+        {!loading && displayed.length === 0 && (
+          <p className="text-gray-500 text-xs font-mono text-center py-10">
+            {drills.length === 0 ? "NO DRILLS YET — ADD ONE ABOVE" : "NO DRILLS MATCH FILTERS"}
+          </p>
+        )}
+        <div className="divide-y divide-gray-700/30">
+          {displayed.map((drill) => (
+            <div key={drill.id} className="px-4 py-3">
+              {/* Name */}
+              <p className="text-white text-sm font-semibold mb-1">{drill.name}</p>
+              {/* Attributes */}
+              <div className="flex items-center gap-3 mb-2.5">
+                {drill.sub_category && (
+                  <span className="text-gray-400 text-xs font-mono">{drill.sub_category}</span>
+                )}
+                <IntensityPips level={drill.intensity} />
+                <span className="text-gray-400 text-xs font-mono">
+                  {drill.default_duration ?? 10}m
+                </span>
+              </div>
+              {/* Actions */}
+              <div className="flex items-center gap-1">
+                {drill.video_url ? (
+                  <a href={drill.video_url} target="_blank" rel="noopener noreferrer"
+                    className="p-2 rounded-lg text-mustang-red hover:bg-mustang-red/10 border border-gray-700 hover:border-mustang-red/30 transition-colors" title="Watch video">
+                    <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <span className="p-2 rounded-lg text-gray-600 border border-gray-700/50 cursor-default" title="No video">
+                    <Video size={14} />
+                  </span>
+                )}
+                <button onClick={() => setEditing(drill)}
+                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors" title="Edit drill">
+                  <Pencil size={14} />
+                </button>
+                <button onClick={() => duplicateDrill(drill)} disabled={duplicating === drill.id}
+                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors disabled:opacity-40" title="Duplicate drill">
+                  <Copy size={14} />
+                </button>
+                <button
+                  onClick={() => {
+                    if (!confirm(`Delete "${drill.name}"? This cannot be undone.`)) return;
+                    removeFromCache(drill.id);
+                    fetch(`/api/drills/${drill.id}`, { method: "DELETE" }).catch(() => {});
+                  }}
+                  className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors" title="Delete drill">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden overflow-x-auto">
         <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="border-b border-gray-700">
