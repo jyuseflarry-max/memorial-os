@@ -51,7 +51,6 @@ export default function MissionProfile({ drills }: Props) {
   if (drills.length === 0) {
     return (
       <div className="bg-gray-800 border border-gray-700 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 min-h-[200px]">
-        <p className="text-gray-500 text-sm font-medium">Mission Profile</p>
         <p className="text-gray-600 text-xs text-center">
           Add drills to see live analytics
         </p>
@@ -70,8 +69,6 @@ export default function MissionProfile({ drills }: Props) {
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-2xl p-5 flex flex-col gap-5">
-      <p className="text-white font-semibold text-sm">Mission Profile</p>
-
       {/* ── Time Allocation ── */}
       <div className="flex flex-col gap-3">
         <p className="text-gray-400 text-xs font-mono uppercase tracking-wider">

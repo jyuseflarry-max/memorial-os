@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import DrillPicker from "@/components/planner/DrillPicker";
 import SessionTimeline from "@/components/planner/SessionTimeline";
 import CoachScript from "@/components/planner/CoachScript";
+import MissionProfile from "@/components/planner/MissionProfile";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import AIGeneratorPanel, { GeneratedDrill } from "@/components/planner/AIGeneratorPanel";
@@ -294,6 +295,14 @@ function PlannerInner() {
 
       {/* ── Coach's Script ───────────────────────────────────────── */}
       {!loadingDate && <CoachScript session={session} players={players} />}
+
+      {/* ── Live Analytics ───────────────────────────────────────── */}
+      {!loadingDate && session.drills.length > 0 && (
+        <div className="flex flex-col gap-2 mt-6">
+          <p className="text-gray-400 text-xs font-mono uppercase tracking-wider px-1">Live Analytics</p>
+          <MissionProfile drills={session.drills} />
+        </div>
+      )}
 
       {/* ── New Drill Modal ───────────────────────────────────────── */}
       {showNewDrillForm && (
