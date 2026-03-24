@@ -6,6 +6,7 @@ import { TeamProvider } from "@/context/TeamContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { DrillCategoryProvider } from "@/context/DrillCategoryContext";
 import { DrillProvider } from "@/context/DrillContext";
+import { AuthProvider } from "@/context/AuthContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
 
 const geistSans = Geist({
@@ -45,16 +46,18 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased overflow-x-hidden`}
     >
       <body className="min-h-full flex flex-col overflow-x-hidden">
-        <SettingsProvider>
-          <DrillCategoryProvider>
-            <PrintOrientationStyle />
-            <TeamProvider>
-              <PlayerProvider>
-                <DrillProvider>{children}</DrillProvider>
-              </PlayerProvider>
-            </TeamProvider>
-          </DrillCategoryProvider>
-        </SettingsProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <DrillCategoryProvider>
+              <PrintOrientationStyle />
+              <TeamProvider>
+                <PlayerProvider>
+                  <DrillProvider>{children}</DrillProvider>
+                </PlayerProvider>
+              </TeamProvider>
+            </DrillCategoryProvider>
+          </SettingsProvider>
+        </AuthProvider>
       </body>
     </html>
   );
