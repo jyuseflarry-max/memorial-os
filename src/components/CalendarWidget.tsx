@@ -217,23 +217,23 @@ export default function CalendarWidget() {
                 key={iso}
                 type="button"
                 onClick={() => openDay(day)}
-                className={`aspect-square border-b border-r border-gray-700/40 flex flex-col items-center justify-center gap-0.5 transition-colors
+                className={`aspect-square border-b border-r border-gray-700/40 flex flex-col items-start justify-start p-1 transition-colors
                   ${isToday ? "bg-mustang-red/10" : "hover:bg-gray-700/40"}
                   ${idx % 7 === 6 ? "border-r-0" : ""}
                 `}
               >
-                <span className={`text-xs font-mono font-semibold
+                <span className={`text-xs font-mono font-semibold leading-none
                   ${isToday ? "text-mustang-red" : hasPlan ? "text-white" : "text-gray-500"}`}>
                   {day}
                 </span>
                 {hasPlan && (
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 mt-1">
                     {daySessions.map((s) => (
                       <div key={s.id} className={`w-1 h-1 rounded-full ${colorFor(s.team_id).dot}`} />
                     ))}
                   </div>
                 )}
-                {isToday && !hasPlan && <div className="w-1 h-1 rounded-full bg-mustang-red/60" />}
+                {isToday && !hasPlan && <div className="w-1 h-1 rounded-full bg-mustang-red/60 mt-1" />}
               </button>
             );
           })}
