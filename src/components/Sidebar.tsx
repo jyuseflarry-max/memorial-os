@@ -23,6 +23,7 @@ import {
   Gamepad2,
   Flame,
   Trophy,
+  X,
 } from "lucide-react";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
@@ -81,11 +82,13 @@ function NavGroup({
   icon: GroupIcon,
   items,
   pathname,
+  onClose,
 }: {
   label: string;
   icon: React.ElementType;
   items: { label: string; href: string; icon: React.ElementType; staff: boolean }[];
   pathname: string;
+  onClose: () => void;
 }) {
   const hasActive = items.some((i) => i.href === pathname);
   const [open, setOpen] = useState(true);
@@ -117,6 +120,7 @@ function NavGroup({
               <Link
                 key={href}
                 href={href}
+                onClick={onClose}
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   active
                     ? "bg-mustang-red/15 text-mustang-red"
@@ -142,7 +146,7 @@ function NavGroup({
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
   const router   = useRouter();
   const { dbConnected, dbError, loading } = usePlayers();
@@ -151,12 +155,13 @@ export default function Sidebar() {
 
   function handleTeamSelect(team: typeof teams[number]) {
     setActiveTeam(team);
+    onClose();
     if (pathname === "/planner") router.push("/");
   }
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0 print:hidden">
-      {/* Logo / Wordmark */}
+    <aside className="flex flex-col w-64 h-full min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0 overflow-y-auto">
+      {/* Logo / Wordmark + mobile close button */}
       <div className="flex items-center gap-3 mb-8 px-2">
         <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
           {settings.logo_url ? (
@@ -166,10 +171,18 @@ export default function Sidebar() {
             <Image src="/mustang-logo.png" alt="Memorial Mustangs" width={32} height={32} priority />
           )}
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-white font-semibold text-sm leading-tight tracking-wide">{settings.program_name.split(" ")[0]}</p>
           <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">{settings.program_name.split(" ").slice(1).join(" ") || "Basketball OS"}</p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="md:hidden p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors shrink-0"
+          aria-label="Close navigation"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {/* Team switcher */}
@@ -204,6 +217,7 @@ export default function Sidebar() {
             icon={group.icon}
             items={group.items}
             pathname={pathname}
+            onClose={onClose}
           />
         ))}
       </nav>
@@ -212,6 +226,7 @@ export default function Sidebar() {
       <div className="mt-auto px-1 pb-3">
         <Link
           href="/settings"
+          onClick={onClose}
           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             pathname === "/settings"
               ? "bg-mustang-red/15 text-mustang-red"
