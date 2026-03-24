@@ -151,9 +151,9 @@ export default function CoachScript({ session, players = [] }: Props) {
             <thead>
               <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
                 {[
-                  { label: "Time Block",     w: "w-[130px]",          cls: "" },
-                  { label: "Drill",          w: "",                   cls: "" },
+                  { label: "Time",           w: "w-[130px]",          cls: "" },
                   { label: "Remaining",      w: "w-[80px]",           cls: "hidden print:table-cell" },
+                  { label: "Drill",          w: "",                   cls: "" },
                   { label: "",               w: "w-[48px]",           cls: "print:hidden" },
                 ].map(({ label, w, cls }) => (
                   <th
@@ -195,6 +195,11 @@ export default function CoachScript({ session, players = [] }: Props) {
                       )}
                     </td>
 
+                    {/* Time remaining — print only */}
+                    <td className="hidden print:table-cell px-3 py-1.5 align-top font-mono text-xs text-gray-700">
+                      {row.remaining > 0 ? `${row.remaining} min` : <span className="text-gray-400">—</span>}
+                    </td>
+
                     {/* Drill name */}
                     <td className="px-4 py-3 print:py-1.5 print:px-3 align-top">
                       <p className="text-white print:text-black font-semibold print:text-xs">{row.drill.name}</p>
@@ -218,11 +223,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                           })}
                         </div>
                       )}
-                    </td>
-
-                    {/* Time remaining — print only */}
-                    <td className="hidden print:table-cell px-3 py-1.5 align-top font-mono text-xs text-gray-700">
-                      {row.remaining > 0 ? `${row.remaining} min` : <span className="text-gray-400">—</span>}
                     </td>
 
                     {/* Shot counter button — screen only */}
