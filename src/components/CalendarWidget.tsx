@@ -9,7 +9,7 @@ interface SavedSession {
   id: string;
   date: string;
   start_time: string;
-  drills: unknown[];
+  drills: Array<{ duration: number }>;
   team_id: string | null;
 }
 
@@ -45,6 +45,14 @@ function formatTimeShort(time: string) {
   const ampm = h >= 12 ? "p" : "a";
   const hour = h % 12 || 12;
   return m === 0 ? `${hour}${ampm}` : `${hour}:${String(m).padStart(2, "0")}${ampm}`;
+}
+
+function addMinutes(time: string, mins: number) {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const hh = Math.floor(total / 60) % 24;
+  const mm = total % 60;
+  return formatTimeShort(`${hh}:${String(mm).padStart(2, "0")}`);
 }
 
 export default function CalendarWidget() {
@@ -234,13 +242,15 @@ export default function CalendarWidget() {
                   {day}
                 </span>
                 {[...daySessions].sort((a, b) => a.start_time.localeCompare(b.start_time)).map((s) => {
-                  const color = colorFor(s.team_id);
+                  const color    = colorFor(s.team_id);
+                  const totalMin = s.drills.reduce((sum, d) => sum + d.duration, 0);
+                  const end      = totalMin > 0 ? addMinutes(s.start_time, totalMin) : null;
                   return (
                     <span
                       key={s.id}
                       className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${color.text} ${color.bg} border ${color.border} truncate max-w-full`}
                     >
-                      {formatTimeShort(s.start_time)}
+                      {formatTimeShort(s.start_time)}{end ? `–${end}` : ""}
                     </span>
                   );
                 })}
