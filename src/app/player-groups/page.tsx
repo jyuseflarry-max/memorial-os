@@ -9,27 +9,7 @@ import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { Player, PlayerStatus } from "@/types/player";
 import { DrillGroup, PlayerGrouping } from "@/types/grouping";
-
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function distributeEvenly(playerIds: string[], groupCount: number): DrillGroup[] {
-  const shuffled = shuffle(playerIds);
-  const groups: DrillGroup[] = Array.from({ length: groupCount }, (_, i) => ({
-    name: `Group ${String.fromCharCode(65 + i)}`,
-    playerIds: [],
-  }));
-  shuffled.forEach((id, idx) => groups[idx % groupCount].playerIds.push(id));
-  return groups;
-}
+import { shuffle, distributeEvenly } from "@/lib/grouping-utils";
 
 // ── Player chip ───────────────────────────────────────────────────────────
 
