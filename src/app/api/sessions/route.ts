@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions?team_id=X — list all saved sessions for a team */
@@ -36,7 +36,14 @@ export async function POST(request: NextRequest) {
 
     if (!date) return Response.json({ error: "date is required" }, { status: 400 });
 
+    const userClient = await getSupabaseUser();
+    const { data: { user: me } } = await userClient.auth.getUser();
+    if (!me) return apiError("Not authenticated", 401);
+
     const supabase  = getSupabaseServer();
+    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
+    if (!myRecord) return apiError("User record not found", 403);
+
     const tidOrNull = team_id ?? null;
 
     // Find existing row by natural key (team_id may be null)
@@ -62,7 +69,7 @@ export async function POST(request: NextRequest) {
     } else {
       ({ data: result, error: err } = await supabase
         .from("sessions")
-        .insert({ date, start_time, drills, team_id: tidOrNull, label, updated_at: new Date().toISOString() })
+        .insert({ date, start_time, drills, team_id: tidOrNull, label, tenant_id: myRecord.tenant_id, updated_at: new Date().toISOString() })
         .select()
         .single());
     }

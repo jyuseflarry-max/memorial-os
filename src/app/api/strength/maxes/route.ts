@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -72,11 +72,18 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "player_id and recorded_on are required" }, { status: 400 });
     }
 
+    const userClient = await getSupabaseUser();
+    const { data: { user: me } } = await userClient.auth.getUser();
+    if (!me) return apiError("Not authenticated", 401);
+
     const supabase = getSupabaseServer();
+    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
+    if (!myRecord) return apiError("User record not found", 403);
+
     const { data, error } = await supabase
       .from("player_maxes")
       .upsert(
-        { player_id, back_squat, power_clean, bench_press, recorded_on },
+        { player_id, back_squat, power_clean, bench_press, recorded_on, tenant_id: myRecord.tenant_id },
         { onConflict: "player_id,recorded_on" }
       )
       .select()

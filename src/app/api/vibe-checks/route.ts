@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -48,11 +48,17 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "player_id and vibe_score are required" }, { status: 400 });
     }
 
+    const userClient = await getSupabaseUser();
+    const { data: { user: me } } = await userClient.auth.getUser();
+    if (!me) return apiError("Not authenticated", 401);
+
     const supabase = getSupabaseServer();
+    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
+    if (!myRecord) return apiError("User record not found", 403);
 
     // 1. Insert the full vibe check record
     const { error: insertError } = await supabase.from("vibe_checks").insert({
-      player_id, sleep_hours, soreness, stress, mood_energy, vibe_score,
+      player_id, sleep_hours, soreness, stress, mood_energy, vibe_score, tenant_id: myRecord.tenant_id,
     });
     if (insertError) throw insertError;
 

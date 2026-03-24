@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -15,11 +15,19 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "No players provided" }, { status: 400 });
     }
 
+    const userClient = await getSupabaseUser();
+    const { data: { user: me } } = await userClient.auth.getUser();
+    if (!me) return apiError("Not authenticated", 401);
+
     const supabase = getSupabaseServer();
+    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
+    if (!myRecord) return apiError("User record not found", 403);
+
     const now = new Date().toISOString();
 
     const rows = players.map((p: Record<string, unknown>) => ({
       ...p,
+      tenant_id: myRecord.tenant_id,
       latest_vibe_score: 3.0,
       updated_at: now,
     }));
