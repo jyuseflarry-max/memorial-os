@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Pencil, Printer, FileText } from "lucide-react";
+import { Loader2, Pencil, Printer } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import CoachScript from "@/components/planner/CoachScript";
 import MissionProfile from "@/components/planner/MissionProfile";
@@ -84,13 +84,6 @@ function PlanViewInner() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:text-white text-xs font-semibold transition-colors"
             >
               <Printer size={13} /> Print
-            </button>
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:text-white text-xs font-semibold transition-colors"
-            >
-              <FileText size={13} /> Export PDF
             </button>
           </div>
         )}
