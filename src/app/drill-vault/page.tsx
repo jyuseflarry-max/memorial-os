@@ -185,9 +185,9 @@ export default function DrillVaultPage() {
                 </span>
               </div>
               {/* Usage */}
-              <p className="text-[10px] font-mono text-gray-600 mb-2.5">
+              <p className="text-xs font-mono text-gray-400 mb-2.5">
                 {u
-                  ? <>Last used {formatShortDate(u.last_used)} <span className="text-gray-500">({u.use_count})</span></>
+                  ? <>Last used {formatShortDate(u.last_used)} <span className="text-gray-400">({u.use_count})</span></>
                   : "Never used"}
               </p>
               {/* Actions */}
