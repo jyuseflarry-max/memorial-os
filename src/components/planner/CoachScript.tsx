@@ -154,7 +154,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                 {[
                   { label: "Time Block",  w: "w-[130px]" },
                   { label: "Drill",       w: ""           },
-                  { label: "Category",    w: "w-[130px]"  },
                   { label: "Proj. Shots", w: "w-[90px]"   },
                   { label: "",            w: "w-[48px] print:hidden" },
                 ].map(({ label, w }) => (
@@ -188,9 +187,11 @@ export default function CoachScript({ session, players = [] }: Props) {
                       <span className="block text-gray-500 print:text-gray-400 text-[10px]">
                         {row.duration} min
                       </span>
-                      <span className={`block text-[10px] font-semibold mt-0.5 ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
-                        {row.drill.category}
-                      </span>
+                      {row.drill.sub_category && (
+                        <span className={`block text-[10px] font-semibold mt-0.5 ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
+                          {row.drill.sub_category}
+                        </span>
+                      )}
                     </td>
 
                     {/* Drill name */}
@@ -215,14 +216,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                             );
                           })}
                         </div>
-                      )}
-                    </td>
-
-                    {/* Category */}
-                    <td className={`px-4 py-3 text-xs font-semibold font-mono align-top ${CAT_COLOR[row.drill.category] ?? "text-gray-400 print:text-gray-600"}`}>
-                      {row.drill.category}
-                      {row.drill.sub_category && (
-                        <span className="font-normal text-gray-500 print:text-gray-500"> ({row.drill.sub_category})</span>
                       )}
                     </td>
 
@@ -258,10 +251,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                   SESSION TOTALS
                 </td>
                 <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
-                  ~{shots} shots
-                </td>
-                <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
-                  {mins} min
+                  ~{shots} shots · {mins} min
                 </td>
                 <td className="print:hidden" />
               </tr>
