@@ -311,7 +311,7 @@ export default function CalendarWidget() {
             <p className="text-white font-semibold text-sm mb-3">{formatDisplayDate(dayPopover.iso)}</p>
             <p className="text-gray-500 text-xs font-mono mb-3">MULTIPLE PLANS — SELECT ONE:</p>
             <div className="flex flex-col gap-2">
-              {dayPopover.sessions.map((s) => {
+              {[...dayPopover.sessions].sort((a, b) => a.start_time.localeCompare(b.start_time)).map((s) => {
                 const color    = colorFor(s.team_id);
                 const teamName = teams.find((t) => t.id === s.team_id)?.name ?? "Unknown Team";
                 return (
