@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, ExternalLink, Moon, Activity, Brain, Zap, Clock } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useVibeChecks, VibeCheckRow } from "@/hooks/useVibeChecks";
 import {
   Player,
   PlayerStatus,
@@ -14,18 +15,6 @@ import {
   getTrafficLight,
   computeReadiness,
 } from "@/types/player";
-
-// ── Vibe check row type ───────────────────────────────────────────────────
-
-interface VibeCheckRow {
-  player_id: string;
-  sleep_hours: number;
-  soreness: number;
-  stress: number;
-  mood_energy: number;
-  vibe_score: number;
-  submitted_at: string;
-}
 
 // ── Traffic light config ──────────────────────────────────────────────────
 
@@ -259,24 +248,9 @@ export default function PlayersPage() {
   const { players } = useTeamPlayers();
   const { activeTeam } = useTeam();
   const { settings } = useSettings();
-  const [query,   setQuery]   = useState("");
-  const [filter,  setFilter]  = useState<FilterOption>("All");
-  const [checks,  setChecks]  = useState<Record<string, VibeCheckRow>>({});
-  const [history, setHistory] = useState<Record<string, VibeCheckRow[]>>({});
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (settings.season_start) params.set("season_start", settings.season_start);
-    const qs = params.size ? `?${params}` : "";
-    fetch(`/api/vibe-checks${qs}`)
-      .then((r) => r.json())
-      .then((data) => { if (!data.error) setChecks(data); })
-      .catch(() => {});
-    fetch(`/api/vibe-checks/history${qs}`)
-      .then((r) => r.json())
-      .then((data) => { if (!data.error) setHistory(data); })
-      .catch(() => {});
-  }, [settings.season_start]);
+  const [query,  setQuery]  = useState("");
+  const [filter, setFilter] = useState<FilterOption>("All");
+  const { checks, history } = useVibeChecks(settings.season_start);
 
   const filtered = useMemo(() => {
     return players
