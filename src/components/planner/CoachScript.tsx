@@ -108,10 +108,11 @@ export default function CoachScript({ session, players = [] }: Props) {
         {/* ── Screen-only label ────────────────────────────────────────── */}
         <div className="flex items-center px-6 py-4 border-b border-gray-700 print:hidden">
           <div>
-            <p className="text-white font-bold text-base">Coach&apos;s Script</p>
+            <p className="text-white font-bold text-base">{dateLabel}</p>
             <p className="text-gray-400 text-xs font-mono">
-              {dateLabel} · Start {startLabel} · {mins} min · ~{shots} shots
+              {startLabel} – {formatTime12(parseTime(session.startTime) + mins)} ({mins} min)
             </p>
+            <p className="text-gray-400 text-xs font-mono">~{shots} shots per player</p>
           </div>
         </div>
 
@@ -140,9 +141,10 @@ export default function CoachScript({ session, players = [] }: Props) {
               PRACTICE PLAN
             </p>
             <p className="text-black font-bold text-sm mt-1">{dateLabel}</p>
-            <p className="text-gray-500 text-[11px] font-mono mt-0.5">
-              Start {startLabel} · {mins} min · ~{shots} shots · Avg intensity {avgIntensity}/5
+            <p className="text-gray-700 text-[11px] font-mono mt-0.5">
+              {startLabel} – {formatTime12(parseTime(session.startTime) + mins)} ({mins} min)
             </p>
+            <p className="text-gray-700 text-[11px] font-mono">~{shots} shots per player</p>
           </div>
         </div>
 
@@ -244,18 +246,6 @@ export default function CoachScript({ session, players = [] }: Props) {
               })}
             </tbody>
 
-            {/* Totals */}
-            <tfoot>
-              <tr className="border-t-2 border-gray-600 print:border-black">
-                <td colSpan={2} className="px-4 py-2 text-gray-500 print:text-gray-700 text-xs font-mono font-bold">
-                  SESSION TOTALS
-                </td>
-                <td className="px-4 py-2 font-bold font-mono text-xs text-mustang-red print:text-black">
-                  ~{shots} shots · {mins} min
-                </td>
-                <td className="print:hidden" />
-              </tr>
-            </tfoot>
           </table>
         </div>
 
