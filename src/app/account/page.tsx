@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { User, KeyRound, CheckCircle2, AlertCircle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { updateProfile, updatePassword } from "@/actions/account";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
@@ -32,6 +33,8 @@ function Feedback({ state }: { state: { error?: string; success?: string } | nul
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AccountPage() {
+  const searchParams  = useSearchParams();
+  const isWelcome     = searchParams.get("welcome") === "1";
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [profileState, profileAction, profilePending] = useActionState(updateProfile, null);
   const [passwordState, passwordAction, passwordPending] = useActionState(updatePassword, null);
@@ -60,6 +63,17 @@ export default function AccountPage() {
   return (
     <DashboardLayout>
       <div className="max-w-lg mx-auto flex flex-col gap-6">
+        {/* Welcome banner for newly invited users */}
+        {isWelcome && (
+          <div className="flex items-center gap-3 bg-mustang-red/10 border border-mustang-red/20 rounded-2xl px-5 py-4">
+            <PartyPopper size={20} className="text-mustang-red shrink-0" />
+            <div>
+              <p className="text-white font-semibold text-sm">Welcome to the program.</p>
+              <p className="text-gray-400 text-xs mt-0.5">Set your name below so your coaches know it&apos;s you, then head into the app.</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div>
           <h1 className="text-white text-2xl font-bold">My Account</h1>

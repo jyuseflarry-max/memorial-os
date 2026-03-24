@@ -10,6 +10,10 @@ import {
   Wifi,
   WifiOff,
   X,
+  Mail,
+  RefreshCw,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import PlayerForm from "@/components/admin/PlayerForm";
@@ -192,10 +196,64 @@ function BulkImportModal({ onImport, onClose, loading }: {
   );
 }
 
+// ── Invite button ─────────────────────────────────────────────────────────
+
+function InviteButton({ player, onDone }: { player: Player; onDone: () => void }) {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const isResend = !!player.user_id;
+
+  async function handleInvite() {
+    setStatus("sending");
+    try {
+      const res = await fetch(`/api/players/${player.id}/invite`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
+      setStatus("sent");
+      setTimeout(() => { setStatus("idle"); onDone(); }, 2000);
+    } catch {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  }
+
+  if (status === "sent") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
+        <CheckCircle2 size={11} /> Sent
+      </span>
+    );
+  }
+  if (status === "error") {
+    return <span className="text-[10px] font-mono text-red-400">Failed</span>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleInvite}
+      disabled={status === "sending"}
+      title={isResend ? "Resend invite email" : "Send invite email"}
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold uppercase tracking-wide transition-colors disabled:opacity-50 ${
+        isResend
+          ? "bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600"
+          : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25"
+      }`}
+    >
+      {status === "sending" ? (
+        <Loader2 size={10} className="animate-spin" />
+      ) : isResend ? (
+        <RefreshCw size={10} />
+      ) : (
+        <Mail size={10} />
+      )}
+      {isResend ? "Resend" : "Invite"}
+    </button>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function RosterPage() {
-  const { players, loading, dbConnected, dbError, addPlayer, updatePlayer, deletePlayer, bulkImport } =
+  const { players, loading, dbConnected, dbError, addPlayer, updatePlayer, deletePlayer, bulkImport, refresh } =
     useTeamPlayers();
   const { activeTeam } = useTeam();
 
@@ -301,7 +359,7 @@ export default function RosterPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">
-              {["#", "Name", "Status", "Actions"].map((h) => (
+              {["#", "Name", "Status", "App Access", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
                   {h}
                 </th>
@@ -311,14 +369,14 @@ export default function RosterPage() {
           <tbody>
             {loading && players.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   LOADING…
                 </td>
               </tr>
             )}
             {!loading && sorted.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   ROSTER IS EMPTY — ADD THE FIRST PLAYER
                 </td>
               </tr>
@@ -336,6 +394,20 @@ export default function RosterPage() {
                   )}
                 </td>
                 <td className="px-4 py-3"><StatusBadge status={player.status} /></td>
+                <td className="px-4 py-3">
+                  {!player.email ? (
+                    <span className="text-[10px] font-mono text-gray-600">No email</span>
+                  ) : player.user_id ? (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
+                        <CheckCircle2 size={11} /> Member
+                      </span>
+                      <InviteButton player={player} onDone={refresh} />
+                    </div>
+                  ) : (
+                    <InviteButton player={player} onDone={refresh} />
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setEditing(player)} title="Edit player"

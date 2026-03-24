@@ -1,11 +1,19 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { login } from "@/actions/auth";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, AlertCircle } from "lucide-react";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  invite_expired: "That invite link has expired. Ask your coach to resend it.",
+  missing_code:   "Invalid link. Please use the link from your invite email.",
+};
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, null);
+  const searchParams = useSearchParams();
+  const urlError     = searchParams.get("error");
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
@@ -58,10 +66,11 @@ export default function LoginPage() {
               />
             </div>
 
-            {state?.error && (
-              <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
-                {state.error}
-              </p>
+            {(state?.error || urlError) && (
+              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
+                <AlertCircle size={15} className="shrink-0" />
+                {urlError ? (ERROR_MESSAGES[urlError] ?? "Something went wrong.") : state?.error}
+              </div>
             )}
 
             <button
