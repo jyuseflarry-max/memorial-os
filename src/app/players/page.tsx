@@ -8,6 +8,7 @@ import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useVibeChecks, VibeCheckRow } from "@/hooks/useVibeChecks";
+import { VibeAvgs, computeAvgs } from "@/types/vibe-check";
 import {
   Player,
   PlayerStatus,
@@ -139,24 +140,6 @@ function SummaryChips({ players }: { players: Player[] }) {
 }
 
 // ── Average helper ────────────────────────────────────────────────────────
-
-interface VibeAvgs {
-  sleep_hours: number;
-  soreness: number;
-  stress: number;
-  mood_energy: number;
-}
-
-function computeAvgs(rows: VibeCheckRow[]): VibeAvgs | null {
-  if (rows.length < 2) return null; // need at least 2 entries to show an avg line
-  const n = rows.length;
-  return {
-    sleep_hours: rows.reduce((s, r) => s + r.sleep_hours, 0) / n,
-    soreness:    rows.reduce((s, r) => s + r.soreness,    0) / n,
-    stress:      rows.reduce((s, r) => s + r.stress,      0) / n,
-    mood_energy: rows.reduce((s, r) => s + r.mood_energy, 0) / n,
-  };
-}
 
 // ── Player card ───────────────────────────────────────────────────────────
 
