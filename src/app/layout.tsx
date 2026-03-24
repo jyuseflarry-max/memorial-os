@@ -4,6 +4,7 @@ import "./globals.css";
 import { PlayerProvider } from "@/context/PlayerContext";
 import { TeamProvider } from "@/context/TeamContext";
 import { SettingsProvider } from "@/context/SettingsContext";
+import { DrillCategoryProvider } from "@/context/DrillCategoryContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
 
 const geistSans = Geist({
@@ -44,10 +45,12 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <SettingsProvider>
-          <PrintOrientationStyle />
-          <TeamProvider>
-            <PlayerProvider>{children}</PlayerProvider>
-          </TeamProvider>
+          <DrillCategoryProvider>
+            <PrintOrientationStyle />
+            <TeamProvider>
+              <PlayerProvider>{children}</PlayerProvider>
+            </TeamProvider>
+          </DrillCategoryProvider>
         </SettingsProvider>
       </body>
     </html>

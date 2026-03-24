@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, Plus, GripVertical } from "lucide-react";
 import { Drill } from "@/types/drill";
-import { getCatColors } from "@/lib/category-colors";
+import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
 interface Props {
   drills: Drill[];
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
+  const { getCatColor } = useDrillCategories();
   const [query,      setQuery]      = useState("");
   const [filterCat,  setFilterCat]  = useState("All");
   const [filterSub,  setFilterSub]  = useState("All");
@@ -118,7 +119,14 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{drill.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border ${getCatColors(drill.category).badge}`}>
+                <span
+                  className="text-[10px] font-semibold px-1.5 py-px rounded-full border"
+                  style={{
+                    color: getCatColor(drill.category),
+                    backgroundColor: hexToRgba(getCatColor(drill.category), 0.1),
+                    borderColor: hexToRgba(getCatColor(drill.category), 0.2),
+                  }}
+                >
                   {drill.category}
                 </span>
                 {drill.sub_category && (

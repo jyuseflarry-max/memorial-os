@@ -4,12 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { Save, CheckCircle2, Loader2, Upload, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useSettings } from "@/context/SettingsContext";
+import { useDrillCategories } from "@/context/DrillCategoryContext";
 import { seasonOptions, currentSeasonLabel } from "@/types/settings";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
 export default function SettingsPage() {
   const { settings, loading, save } = useSettings();
+  const { categories: drillCategories, addCategory, removeCategory, updateColor } = useDrillCategories();
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIsRest, setNewCatIsRest] = useState(false);
+  const [addingCat, setAddingCat] = useState(false);
   const [form, setForm] = useState(settings);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -283,6 +288,114 @@ export default function SettingsPage() {
                 </div>
               );
             })}
+          </section>
+
+          {/* Drill Categories */}
+          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
+            <div className="border-b border-gray-700 pb-3">
+              <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono">Drill Categories</h2>
+              <p className="text-[10px] font-mono text-gray-500 mt-1">Each category gets a unique color used across the Planner, Vault, and Analytics.</p>
+            </div>
+
+            {/* Category list */}
+            <div className="flex flex-col gap-2">
+              {drillCategories.map((cat) => (
+                <div key={cat.id} className="flex items-center gap-3">
+                  {/* Color swatch / picker */}
+                  <label
+                    className="w-8 h-8 rounded-lg border-2 border-gray-600 cursor-pointer shrink-0 overflow-hidden"
+                    style={{ backgroundColor: cat.color }}
+                    title="Click to change color"
+                  >
+                    <input
+                      type="color"
+                      value={cat.color}
+                      onChange={(e) => updateColor(cat.id, e.target.value)}
+                      className="opacity-0 w-0 h-0"
+                    />
+                  </label>
+
+                  {/* Name */}
+                  <span className="text-white text-sm flex-1 truncate">{cat.name}</span>
+
+                  {/* REST badge */}
+                  {cat.is_rest && (
+                    <span className="text-[10px] font-mono font-semibold px-1.5 py-px rounded bg-sky-900/60 text-sky-400 border border-sky-700/40 shrink-0">
+                      REST
+                    </span>
+                  )}
+
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!confirm(`Delete category "${cat.name}"? This cannot be undone.`)) return;
+                      removeCategory(cat.id);
+                    }}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
+                    title="Delete category"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {drillCategories.length === 0 && (
+                <p className="text-gray-600 text-xs font-mono">No categories yet. Add one below.</p>
+              )}
+            </div>
+
+            {/* New category form */}
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-700 flex-wrap">
+              <input
+                type="text"
+                placeholder="Category name…"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newCatName.trim()) {
+                    e.preventDefault();
+                    setAddingCat(true);
+                    addCategory(newCatName.trim(), newCatIsRest).finally(() => {
+                      setNewCatName("");
+                      setNewCatIsRest(false);
+                      setAddingCat(false);
+                    });
+                  }
+                }}
+                className="flex-1 min-w-32 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+              />
+
+              {/* is_rest toggle */}
+              <button
+                type="button"
+                onClick={() => setNewCatIsRest((v) => !v)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors shrink-0 ${
+                  newCatIsRest
+                    ? "bg-sky-900/60 border-sky-700/60 text-sky-400"
+                    : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                }`}
+              >
+                REST
+              </button>
+
+              <button
+                type="button"
+                disabled={!newCatName.trim() || addingCat}
+                onClick={() => {
+                  if (!newCatName.trim()) return;
+                  setAddingCat(true);
+                  addCategory(newCatName.trim(), newCatIsRest).finally(() => {
+                    setNewCatName("");
+                    setNewCatIsRest(false);
+                    setAddingCat(false);
+                  });
+                }}
+                className="px-4 py-2 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 text-white text-xs font-semibold transition-colors shrink-0"
+              >
+                {addingCat ? "Adding…" : "Add"}
+              </button>
+            </div>
           </section>
 
           {/* Colors */}

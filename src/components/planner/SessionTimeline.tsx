@@ -5,7 +5,7 @@ import { X, ChevronUp, ChevronDown, Minus, Plus, Users, GripVertical } from "luc
 import { SessionDrill, parseTime, formatTime12 } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { DrillCategory } from "@/types/drill";
-import { getCatColors } from "@/lib/category-colors";
+import { useDrillCategories } from "@/context/DrillCategoryContext";
 
 interface Props {
   drills: SessionDrill[];
@@ -26,6 +26,7 @@ export default function SessionTimeline({
   onDropDrill,
   onGroupsClick,
 }: Props) {
+  const { getCatColor } = useDrillCategories();
   const [isDragOver, setIsDragOver] = useState(false);
   const dragFromIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -143,7 +144,7 @@ export default function SessionTimeline({
                 {/* Drag handle — spans full card height */}
                 <div className="flex flex-col items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing self-start pt-0.5">
                   <GripVertical size={14} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  <span className={`w-2 h-2 rounded-full ${getCatColors(sd.drill.category).dot}`} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(sd.drill.category) }} />
                 </div>
 
                 {/* ── Card body: 2-row on mobile, 1-row on sm+ ── */}

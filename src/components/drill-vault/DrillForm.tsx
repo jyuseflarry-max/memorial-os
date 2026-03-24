@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import { Drill, ShotType, IntensityLevel, SessionPosition } from "@/types/drill";
+import { useDrillCategories } from "@/context/DrillCategoryContext";
 
 interface Props {
   initialDrill?: Drill;
-  categories: string[];
   subCategories: string[];
   onSave: (drill: Drill) => void;
   onDelete?: (id: string) => void;
@@ -28,7 +28,8 @@ function blankForm(drill?: Drill) {
   };
 }
 
-export default function DrillForm({ initialDrill, categories, subCategories, onSave, onDelete, onClose }: Props) {
+export default function DrillForm({ initialDrill, subCategories, onSave, onDelete, onClose }: Props) {
+  const { categories } = useDrillCategories();
   const editing = !!initialDrill;
   const [form, setForm]         = useState(blankForm(initialDrill));
   const [saving, setSaving]     = useState(false);
@@ -86,11 +87,6 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
   const labelCls = "block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider";
   const inputCls = "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
 
-  const suggestions = Array.from(new Set([
-    "Offense", "Defense", "Transition", "Special Teams", "Rest/Transition",
-    ...categories,
-  ])).sort();
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -145,18 +141,16 @@ export default function DrillForm({ initialDrill, categories, subCategories, onS
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Category</label>
-              <input
+              <select
                 required
-                type="text"
-                list="drill-categories"
-                placeholder="e.g. Offense"
                 className={inputCls}
                 value={form.category}
                 onChange={(e) => set("category", e.target.value)}
-              />
-              <datalist id="drill-categories">
-                {suggestions.map((c) => <option key={c} value={c} />)}
-              </datalist>
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className={labelCls}>

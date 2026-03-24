@@ -9,7 +9,7 @@ import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
 import { Drill } from "@/types/drill";
-import { getCatColors } from "@/lib/category-colors";
+import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
 interface DrillUsage { last_used: string; use_count: number; }
 
@@ -37,7 +37,19 @@ function IntensityPips({ level }: { level: number }) {
 // ── Category badge ────────────────────────────────────────────────────────
 
 function CategoryBadge({ cat }: { cat: string }) {
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getCatColors(cat).badge}`}>{cat}</span>;
+  const { getCatColor } = useDrillCategories();
+  return (
+    <span
+      className="text-xs font-semibold px-2 py-0.5 rounded-full border"
+      style={{
+        color: getCatColor(cat),
+        backgroundColor: hexToRgba(getCatColor(cat), 0.1),
+        borderColor: hexToRgba(getCatColor(cat), 0.2),
+      }}
+    >
+      {cat}
+    </span>
+  );
 }
 
 // ── Sortable column header ────────────────────────────────────────────────
@@ -295,7 +307,6 @@ export default function DrillVaultPage() {
 
       {showNewForm && (
         <DrillForm
-          categories={categories}
           subCategories={subCategories}
           onSave={(drill: Drill) => addToCache(drill)}
           onClose={() => setShowNewForm(false)}
@@ -304,7 +315,6 @@ export default function DrillVaultPage() {
       {editing && (
         <DrillForm
           initialDrill={editing}
-          categories={categories}
           subCategories={subCategories}
           onSave={(drill: Drill) => updateInCache(drill)}
           onDelete={(id: string) => removeFromCache(id)}

@@ -34,10 +34,6 @@ function PlannerInner() {
   const [groupingDrillId, setGroupingDrillId] = useState<string | null>(null);
   const [showNewDrillForm, setShowNewDrillForm] = useState(false);
 
-  const drillCategories = useMemo(
-    () => Array.from(new Set(vaultDrills.map((d) => d.category))).sort(),
-    [vaultDrills]
-  );
   const drillSubCategories = useMemo(
     () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
     [vaultDrills]
@@ -307,7 +303,6 @@ function PlannerInner() {
       {/* ── New Drill Modal ───────────────────────────────────────── */}
       {showNewDrillForm && (
         <DrillForm
-          categories={drillCategories}
           subCategories={drillSubCategories}
           onSave={(drill) => {
             addToCache(drill);

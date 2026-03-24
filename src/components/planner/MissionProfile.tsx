@@ -1,7 +1,7 @@
 "use client";
 
 import { SessionDrill, totalShots } from "@/types/session";
-import { getCatColors } from "@/lib/category-colors";
+import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
 interface Props {
   drills: SessionDrill[];
@@ -35,6 +35,8 @@ function computeProfile(drills: SessionDrill[]) {
 // ── Component ─────────────────────────────────────────────────────────────
 
 export default function MissionProfile({ drills }: Props) {
+  const { getCatColor } = useDrillCategories();
+
   if (drills.length === 0) {
     return (
       <div className="bg-gray-800 border border-gray-700 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 min-h-[200px]">
@@ -67,8 +69,8 @@ export default function MissionProfile({ drills }: Props) {
           {sortedCats.map(([cat, minutes]) => (
             <div
               key={cat}
-              className={`h-full transition-all duration-300 ${getCatColors(cat).bar}`}
-              style={{ width: `${(minutes / totalTime) * 100}%` }}
+              className="h-full transition-all duration-300"
+              style={{ width: `${(minutes / totalTime) * 100}%`, backgroundColor: getCatColor(cat) }}
             />
           ))}
         </div>
@@ -80,12 +82,12 @@ export default function MissionProfile({ drills }: Props) {
             return (
               <div key={cat} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${getCatColors(cat).dot}`} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(cat) }} />
                   <span className="text-gray-300 text-xs">{cat}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 text-xs font-mono">{minutes}m</span>
-                  <span className={`text-xs font-bold font-mono ${getCatColors(cat).text}`}>
+                  <span className="text-xs font-bold font-mono" style={{ color: getCatColor(cat) }}>
                     {pct}%
                   </span>
                 </div>
@@ -120,7 +122,7 @@ export default function MissionProfile({ drills }: Props) {
           <div key={subCatName} className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${getCatColors(data.category).dot}`} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getCatColor(data.category) }} />
                 <span className="text-gray-300 text-xs">{subCatName}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -130,8 +132,8 @@ export default function MissionProfile({ drills }: Props) {
             </div>
             <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${getCatColors(data.category).bar}`}
-                style={{ width: `${(data.time / maxSubTime) * 100}%` }}
+                className="h-full rounded-full"
+                style={{ width: `${(data.time / maxSubTime) * 100}%`, backgroundColor: getCatColor(data.category) }}
               />
             </div>
           </div>

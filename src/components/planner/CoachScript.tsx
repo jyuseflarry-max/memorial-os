@@ -6,7 +6,7 @@ import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalSho
 import { DrillCategory } from "@/types/drill";
 import { Player } from "@/types/player";
 import ShotCounterModal from "@/components/planner/ShotCounterModal";
-import { getCatColors } from "@/lib/category-colors";
+import { useDrillCategories } from "@/context/DrillCategoryContext";
 
 // ── Row builder ───────────────────────────────────────────────────────────
 
@@ -69,6 +69,7 @@ function NotesLines({ count = 3 }: { count?: number }) {
 interface Props { session: Session; players?: Player[] }
 
 export default function CoachScript({ session, players = [] }: Props) {
+  const { getCatColor } = useDrillCategories();
   const [countingDrill, setCountingDrill] = useState<SessionDrill | null>(null);
 
   if (session.drills.length === 0) return null;
@@ -179,7 +180,10 @@ export default function CoachScript({ session, players = [] }: Props) {
                         {row.duration} min
                       </span>
                       {row.drill.sub_category && (
-                        <span className={`block text-[10px] font-semibold mt-0.5 ${getCatColors(row.drill.category).text} print:opacity-80`}>
+                        <span
+                          className="block text-[10px] font-semibold mt-0.5 print:opacity-80"
+                          style={{ color: getCatColor(row.drill.category) }}
+                        >
                           {row.drill.sub_category}
                         </span>
                       )}
