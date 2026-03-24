@@ -322,7 +322,7 @@ export default function CalendarWidget() {
                       <p className={`text-sm font-semibold ${color.text}`}>
                         {teamName}{s.label ? ` · ${s.label}` : ""}
                       </p>
-                      <p className="text-gray-500 text-xs font-mono">{s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}</p>
+                      <p className="text-gray-500 text-xs font-mono">{s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {formatTime12(s.start_time)}</p>
                     </div>
                   </button>
                 );
