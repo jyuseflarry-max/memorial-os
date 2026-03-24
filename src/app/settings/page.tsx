@@ -385,7 +385,7 @@ export default function SettingsPage() {
                   if (e.key === "Enter" && newCatName.trim()) {
                     e.preventDefault();
                     setAddingCat(true);
-                    addCategory(newCatName.trim(), newCatIsRest).finally(() => {
+                    addCategory(newCatName.trim(), newCatIsRest).catch(() => {}).finally(() => {
                       setNewCatName("");
                       setNewCatIsRest(false);
                       setAddingCat(false);
@@ -414,7 +414,7 @@ export default function SettingsPage() {
                 onClick={() => {
                   if (!newCatName.trim()) return;
                   setAddingCat(true);
-                  addCategory(newCatName.trim(), newCatIsRest).finally(() => {
+                  addCategory(newCatName.trim(), newCatIsRest).catch(() => {}).finally(() => {
                     setNewCatName("");
                     setNewCatIsRest(false);
                     setAddingCat(false);

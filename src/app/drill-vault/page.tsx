@@ -105,15 +105,16 @@ export default function DrillVaultPage() {
     if (!name) return;
     setCatSaving(true);
     setCatError(null);
-    const result = await addCategory(name);
-    setCatSaving(false);
-    if (!result) {
-      setCatError("Failed to save — name may already exist.");
-      return;
+    try {
+      await addCategory(name);
+      setNewCatName("");
+      setShowCatForm(false);
+      setFilterCat(name);
+    } catch (err) {
+      setCatError(err instanceof Error ? err.message : "Failed to save category.");
+    } finally {
+      setCatSaving(false);
     }
-    setNewCatName("");
-    setShowCatForm(false);
-    setFilterCat(name);
   }
 
   return (

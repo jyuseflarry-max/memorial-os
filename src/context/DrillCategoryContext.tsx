@@ -14,7 +14,7 @@ interface DrillCategoryCtx {
   loading: boolean;
   getCatColor: (name: string) => string; // hex, fallback "#9ca3af"
   isRestCat: (name: string) => boolean;
-  addCategory: (name: string, isRest?: boolean) => Promise<DrillCategoryRow | null>;
+  addCategory: (name: string, isRest?: boolean) => Promise<DrillCategoryRow>;
   removeCategory: (id: string) => Promise<void>;
   updateColor: (id: string, color: string) => Promise<void>;
 }
@@ -24,7 +24,7 @@ const DrillCategoryContext = createContext<DrillCategoryCtx>({
   loading: true,
   getCatColor: () => "#9ca3af",
   isRestCat: () => false,
-  addCategory: async () => null,
+  addCategory: async () => { throw new Error("not ready"); },
   removeCategory: async () => {},
   updateColor: async () => {},
 });
@@ -53,20 +53,17 @@ export function DrillCategoryProvider({ children }: { children: ReactNode }) {
     return cat?.is_rest ?? false;
   }
 
-  async function addCategory(name: string, isRest = false): Promise<DrillCategoryRow | null> {
-    try {
-      const res = await fetch("/api/drill-categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, is_rest: isRest }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to add category");
-      setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-      return data as DrillCategoryRow;
-    } catch {
-      return null;
-    }
+  async function addCategory(name: string, isRest = false): Promise<DrillCategoryRow> {
+    const res = await fetch("/api/drill-categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, is_rest: isRest }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to add category");
+    const row = data as DrillCategoryRow;
+    setCategories((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
+    return row;
   }
 
   async function removeCategory(id: string): Promise<void> {
