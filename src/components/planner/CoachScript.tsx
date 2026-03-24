@@ -7,6 +7,7 @@ import { DrillCategory } from "@/types/drill";
 import { Player } from "@/types/player";
 import ShotCounterModal from "@/components/planner/ShotCounterModal";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
+import { useSettings } from "@/context/SettingsContext";
 
 // ── Row builder ───────────────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ interface Props { session: Session; players?: Player[] }
 
 export default function CoachScript({ session, players = [] }: Props) {
   const { getCatColor } = useDrillCategories();
+  const { settings } = useSettings();
   const [countingDrill, setCountingDrill] = useState<SessionDrill | null>(null);
 
   if (session.drills.length === 0) return null;
@@ -129,7 +131,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                 MEMORIAL HIGH SCHOOL
               </p>
               <p className="text-gray-600 text-[10px] font-mono uppercase tracking-widest">
-                Mustangs Basketball · 2025–26 Season
+                Mustangs Basketball · {settings.current_season} Season
               </p>
             </div>
           </div>
