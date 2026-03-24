@@ -1,0 +1,80 @@
+"use client";
+
+import { useActionState } from "react";
+import { login } from "@/actions/auth";
+import { ChevronRight } from "lucide-react";
+
+export default function LoginPage() {
+  const [state, action, pending] = useActionState(login, null);
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
+      {/* Wordmark */}
+      <div className="flex items-center gap-2 mb-8">
+        <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
+        </div>
+        <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
+          Basketball OS
+        </span>
+      </div>
+
+      <div className="w-full max-w-sm">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-5">
+          <div>
+            <h1 className="text-white text-2xl font-bold">Sign in</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              Access your program dashboard.
+            </p>
+          </div>
+
+          <form action={action} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
+                Email
+              </label>
+              <input
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                placeholder="coach@school.edu"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
+                Password
+              </label>
+              <input
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {state?.error && (
+              <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
+                {state.error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex items-center justify-center gap-2 w-full min-h-[52px] rounded-2xl bg-mustang-red disabled:opacity-50 text-white font-semibold text-base transition-colors mt-1"
+            >
+              {pending ? "Signing in…" : "Sign in"} <ChevronRight size={18} />
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  );
+}

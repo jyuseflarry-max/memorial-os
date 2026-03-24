@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   RadioTower,
@@ -25,7 +25,11 @@ import {
   X,
   Sparkles,
   ListChecks,
+  LogOut,
+  CircleUser,
 } from "lucide-react";
+import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
+import { logout } from "@/actions/auth";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -154,6 +158,13 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { dbConnected, dbError, loading } = usePlayers();
   const { teams, activeTeam, setActiveTeam } = useTeam();
   const { settings } = useSettings();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    getSupabaseBrowser().auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserEmail(user.email ?? null);
+    });
+  }, []);
 
   function handleTeamSelect(team: typeof teams[number]) {
     setActiveTeam(team);
@@ -225,7 +236,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       </nav>
 
       {/* Settings link */}
-      <div className="mt-auto px-1 pb-3">
+      <div className="mt-auto px-1 pb-1">
         <Link
           href="/settings"
           onClick={onClose}
@@ -239,6 +250,33 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           Settings
         </Link>
       </div>
+
+      {/* User account section */}
+      {userEmail && (
+        <div className="px-1 pb-3 flex flex-col gap-0.5">
+          <Link
+            href="/account"
+            onClick={onClose}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              pathname === "/account"
+                ? "bg-mustang-red/15 text-mustang-red"
+                : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+            }`}
+          >
+            <CircleUser size={14} className={pathname === "/account" ? "text-mustang-red" : "text-gray-600"} />
+            <span className="flex-1 truncate">{userEmail}</span>
+          </Link>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-800 hover:text-red-400 transition-colors"
+            >
+              <LogOut size={14} className="text-gray-600" />
+              Sign out
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Footer — live DB status */}
       <div className="px-2 pt-4 border-t border-gray-800 flex flex-col gap-2">
