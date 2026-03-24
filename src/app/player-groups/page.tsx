@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus, Pencil, Trash2, Copy, Users, X, Shuffle, Save,
 } from "lucide-react";
@@ -9,7 +9,7 @@ import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { Player, PlayerStatus } from "@/types/player";
 import { DrillGroup, PlayerGrouping } from "@/types/grouping";
-import { distributeEvenly } from "@/lib/grouping-utils";
+import { useGroupState } from "@/hooks/useGroupState";
 import { PlayerChip, GroupDropZone } from "@/components/grouping/GroupingParts";
 
 // ── Editor modal ──────────────────────────────────────────────────────────
@@ -24,60 +24,17 @@ function GroupingEditor({
   onSave: (g: PlayerGrouping) => void;
   onClose: () => void;
 }) {
-  const [name,     setName]     = useState(initial?.name ?? "");
-  const [groups,   setGroups]   = useState<DrillGroup[]>(initial?.groups ?? []);
-  const [numGroups, setNumGroups] = useState(2);
-  const [saving,   setSaving]   = useState(false);
-  const [dragOverGroup, setDragOverGroup] = useState<number | null>(null);
-  const draggingId = useRef<string | null>(null);
+  const [name,   setName]   = useState(initial?.name ?? "");
+  const [saving, setSaving] = useState(false);
 
-  const assignedIds = new Set(groups.flatMap((g) => g.playerIds));
-  const unassigned  = activePlayers.filter((p) => !assignedIds.has(p.id));
-
-  function handleDragStart(pid: string) { draggingId.current = pid; }
-
-  function handleDropOnGroup(toIdx: number) {
-    const pid = draggingId.current; draggingId.current = null; setDragOverGroup(null);
-    if (!pid) return;
-    setGroups((prev) => {
-      const next = prev.map((g) => ({ ...g, playerIds: g.playerIds.filter((id) => id !== pid) }));
-      next[toIdx] = { ...next[toIdx], playerIds: [...next[toIdx].playerIds, pid] };
-      return next;
-    });
-  }
-
-  function handleDropOnUnassigned() {
-    const pid = draggingId.current; draggingId.current = null; setDragOverGroup(null);
-    if (!pid) return;
-    setGroups((prev) => prev.map((g) => ({ ...g, playerIds: g.playerIds.filter((id) => id !== pid) })));
-  }
-
-  function handleRemovePlayer(gi: number, pid: string) {
-    setGroups((prev) => prev.map((g, i) => i === gi ? { ...g, playerIds: g.playerIds.filter((id) => id !== pid) } : g));
-  }
-
-  function handleNameChange(idx: number, n: string) {
-    setGroups((prev) => prev.map((g, i) => i === idx ? { ...g, name: n } : g));
-  }
-
-  function handleDeleteGroup(idx: number) {
-    setGroups((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function handleAddGroup() {
-    const letter = String.fromCharCode(65 + groups.length);
-    setGroups((prev) => [...prev, { name: `Group ${letter}`, playerIds: [] }]);
-  }
-
-  function handleCreateStructure() {
-    setGroups(Array.from({ length: numGroups }, (_, i) => ({
-      name: `Group ${String.fromCharCode(65 + i)}`, playerIds: [],
-    })));
-  }
-
-  function handleRandomize() {
-    setGroups(distributeEvenly(activePlayers.map((p) => p.id), groups.length || numGroups));
-  }
+  const {
+    groups, numGroups, setNumGroups,
+    dragOverGroup, setDragOverGroup,
+    assignedIds, unassigned,
+    handleDragStart, handleDropOnGroup, handleDropOnUnassigned,
+    handleRemovePlayer, handleNameChange, handleDeleteGroup,
+    handleAddGroup, handleCreateStructure, handleRandomize, handleClearAll,
+  } = useGroupState({ initialGroups: initial?.groups ?? [], activePlayers });
 
   async function handleSave() {
     if (!name.trim()) return;
@@ -160,7 +117,7 @@ function GroupingEditor({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white text-xs font-semibold transition-colors">
                   <Shuffle size={13} /> Randomize
                 </button>
-                <button type="button" onClick={() => setGroups((prev) => prev.map((g) => ({ ...g, playerIds: [] })))}
+                <button type="button" onClick={handleClearAll}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white text-xs font-semibold transition-colors">
                   <X size={13} /> Clear All
                 </button>
