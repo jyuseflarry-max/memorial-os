@@ -188,7 +188,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
 
   function handlePrint(session: SavedSession) {
     const teamParam = session.team_id ? `&team_id=${session.team_id}` : "";
-    window.open(`/planner?date=${session.date}${teamParam}&autoprint=1`, "_blank");
+    router.push(`/view-plans/${session.date}?autoprint=1${teamParam}`);
   }
 
   function handleEmail(session: SavedSession) {
