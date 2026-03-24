@@ -233,14 +233,6 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
           </div>
         </div>
 
-        {/* Column headers */}
-        {!loading && sorted.length > 0 && (
-          <div className="grid grid-cols-[1fr_auto] px-6 py-2 border-b border-gray-700/50">
-            <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Plan</span>
-            <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Actions</span>
-          </div>
-        )}
-
         {/* List */}
         <div className="divide-y divide-gray-700/30">
           {loading && (
@@ -261,76 +253,68 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
             return (
               <div
                 key={s.id}
-                className={`flex items-center gap-3 px-6 py-3 transition-colors ${
+                className={`px-4 py-3 transition-colors ${
                   isToday ? "bg-mustang-red/5" : "hover:bg-gray-700/20"
                 }`}
               >
-                {/* Date bar */}
-                <div className="w-1.5 self-stretch rounded-full shrink-0 mt-0.5" style={{
-                  backgroundColor: isToday ? "rgb(220 38 38)" : isFuture ? "rgb(96 165 250 / 0.6)" : "rgb(75 85 99)",
-                }} />
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white text-sm font-medium">{formatDate(s.date)}</p>
-                    {isToday && (
-                      <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
-                    )}
-                    {isFuture && (
-                      <span className="text-[9px] font-mono text-blue-400 bg-blue-400/10 border border-blue-400/20 px-1.5 py-0.5 rounded-full">UPCOMING</span>
-                    )}
-                  </div>
-                  <p className="text-gray-500 text-xs font-mono">
-                    {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {formatTime12(s.start_time)}
+                {/* Date + time row */}
+                <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{
+                    backgroundColor: isToday ? "rgb(220 38 38)" : isFuture ? "rgb(96 165 250)" : "rgb(107 114 128)",
+                  }} />
+                  <p className={`text-sm font-semibold ${isToday ? "text-mustang-red" : "text-white"}`}>
+                    {formatDate(s.date)}
                   </p>
+                  <span className="text-gray-500 text-xs font-mono">{formatTime12(s.start_time)}</span>
+                  {isToday && (
+                    <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
+                  )}
+                  {isFuture && (
+                    <span className="text-[9px] font-mono text-blue-400 bg-blue-400/10 border border-blue-400/20 px-1.5 py-0.5 rounded-full">UPCOMING</span>
+                  )}
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {showViewButton && (
                     <button type="button"
                       onClick={() => {
                         const tp = s.team_id ? `?team_id=${s.team_id}` : "";
                         router.push(`/view-plans/${s.date}${tp}`);
                       }}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
                       <Eye size={12} /> View
                     </button>
                   )}
-
                   <button type="button"
                     onClick={() => {
                       const tp = s.team_id ? `&team_id=${s.team_id}` : "";
                       router.push(`/planner?date=${s.date}${tp}`);
                     }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
                     <Pencil size={12} /> Edit
                   </button>
-
-                  <div className="flex items-center gap-0.5">
-                    <button type="button" title="Copy to another date"
-                      onClick={() => setCopying(s)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
-                      <Copy size={13} />
-                    </button>
-                    <button type="button" title="Print / Save as PDF"
-                      onClick={() => handlePrint(s)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
-                      <Printer size={13} />
-                    </button>
-                    <button type="button" title="Email plan"
-                      onClick={() => handleEmail(s)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
-                      <Mail size={13} />
-                    </button>
-                    <button type="button" title="Delete plan"
-                      disabled={deleting === s.id}
-                      onClick={() => handleDelete(s)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                  <button type="button"
+                    onClick={() => setCopying(s)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Copy size={12} /> Copy
+                  </button>
+                  <button type="button"
+                    onClick={() => handlePrint(s)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Printer size={12} /> Print
+                  </button>
+                  <button type="button"
+                    onClick={() => handleEmail(s)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Mail size={12} /> Email
+                  </button>
+                  <button type="button"
+                    disabled={deleting === s.id}
+                    onClick={() => handleDelete(s)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors disabled:opacity-40">
+                    <Trash2 size={12} /> Trash
+                  </button>
                 </div>
               </div>
             );

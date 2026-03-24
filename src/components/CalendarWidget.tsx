@@ -33,6 +33,13 @@ function formatDisplayDate(iso: string) {
   });
 }
 
+function formatTime12(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
 export default function CalendarWidget() {
   const router = useRouter();
   const today  = isoToday();
@@ -252,8 +259,7 @@ export default function CalendarWidget() {
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-xs font-medium">{formatDisplayDate(s.date)}</p>
                     <p className="text-gray-500 text-[10px] font-mono">
-                      {s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {s.start_time}
-                      {teamName ? ` · ${teamName}` : ""}
+                      {teamName ? `${teamName} · ` : ""}{formatTime12(s.start_time)}
                     </p>
                   </div>
                   {s.date === today && (
