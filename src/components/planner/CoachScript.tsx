@@ -13,15 +13,20 @@ import { useDrillCategories } from "@/context/DrillCategoryContext";
 interface ScriptRow extends SessionDrill {
   startStr: string;
   endStr: string;
+  remaining: number;
 }
 
 function buildRows(session: Session): ScriptRow[] {
   let cursor = parseTime(session.startTime);
+  const total = session.drills.reduce((s, d) => s + d.duration, 0);
+  let elapsed = 0;
   return session.drills.map((sd) => {
     const startStr = formatTime12(cursor);
-    cursor += sd.duration;
-    const endStr = formatTime12(cursor);
-    return { ...sd, startStr, endStr };
+    cursor  += sd.duration;
+    elapsed += sd.duration;
+    const endStr   = formatTime12(cursor);
+    const remaining = total - elapsed;
+    return { ...sd, startStr, endStr, remaining };
   });
 }
 
@@ -146,13 +151,14 @@ export default function CoachScript({ session, players = [] }: Props) {
             <thead>
               <tr className="border-b border-gray-700 print:border-gray-400 print:bg-gray-100">
                 {[
-                  { label: "Time Block",  w: "w-[130px]" },
-                  { label: "Drill",       w: ""           },
-                  { label: "",            w: "w-[48px] print:hidden" },
-                ].map(({ label, w }) => (
+                  { label: "Time Block",     w: "w-[130px]",          cls: "" },
+                  { label: "Drill",          w: "",                   cls: "" },
+                  { label: "Remaining",      w: "w-[80px]",           cls: "hidden print:table-cell" },
+                  { label: "",               w: "w-[48px]",           cls: "print:hidden" },
+                ].map(({ label, w, cls }) => (
                   <th
                     key={label || "action"}
-                    className={`${w} px-4 py-2 print:py-1 print:px-3 text-left text-[10px] font-mono uppercase tracking-wider
+                    className={`${w} ${cls} px-4 py-2 print:py-1 print:px-3 text-left text-[10px] font-mono uppercase tracking-wider
                                 text-gray-500 print:text-gray-700 print:border-b print:border-gray-400`}
                   >
                     {label}
@@ -212,6 +218,11 @@ export default function CoachScript({ session, players = [] }: Props) {
                           })}
                         </div>
                       )}
+                    </td>
+
+                    {/* Time remaining — print only */}
+                    <td className="hidden print:table-cell px-3 py-1.5 align-top font-mono text-xs text-gray-700">
+                      {row.remaining > 0 ? `${row.remaining} min` : <span className="text-gray-400">—</span>}
                     </td>
 
                     {/* Shot counter button — screen only */}
