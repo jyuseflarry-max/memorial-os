@@ -275,45 +275,45 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1">
                   {showViewButton && (
-                    <button type="button"
+                    <button type="button" title="View plan"
                       onClick={() => {
                         const tp = s.team_id ? `?team_id=${s.team_id}` : "";
                         router.push(`/view-plans/${s.date}${tp}`);
                       }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                      <Eye size={12} /> View
+                      className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                      <Eye size={14} />
                     </button>
                   )}
-                  <button type="button"
+                  <button type="button" title="Edit plan"
                     onClick={() => {
                       const tp = s.team_id ? `&team_id=${s.team_id}` : "";
                       router.push(`/planner?date=${s.date}${tp}`);
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Pencil size={12} /> Edit
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Pencil size={14} />
                   </button>
-                  <button type="button"
+                  <button type="button" title="Copy to another date"
                     onClick={() => setCopying(s)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Copy size={12} /> Copy
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Copy size={14} />
                   </button>
-                  <button type="button"
+                  <button type="button" title="Print / Save as PDF"
                     onClick={() => handlePrint(s)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Printer size={12} /> Print
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Printer size={14} />
                   </button>
-                  <button type="button"
+                  <button type="button" title="Email plan"
                     onClick={() => handleEmail(s)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Mail size={12} /> Email
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                    <Mail size={14} />
                   </button>
-                  <button type="button"
+                  <button type="button" title="Delete plan"
                     disabled={deleting === s.id}
                     onClick={() => handleDelete(s)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors disabled:opacity-40">
-                    <Trash2 size={12} /> Trash
+                    className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors disabled:opacity-40">
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
