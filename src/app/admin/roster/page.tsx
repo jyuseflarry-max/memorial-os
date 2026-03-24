@@ -353,13 +353,13 @@ export default function RosterPage() {
                 <td className="px-4 py-3"><StatusBadge status={player.status} /></td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setEditing(player)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white text-xs font-medium transition-colors">
-                      <Pencil size={11} /> Edit
+                    <button type="button" onClick={() => setEditing(player)} title="Edit player"
+                      className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors">
+                      <Pencil size={14} />
                     </button>
-                    <button type="button" onClick={() => setDeleting(player)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 text-xs font-medium transition-colors">
-                      <Trash2 size={11} /> Delete
+                    <button type="button" onClick={() => setDeleting(player)} title="Delete player"
+                      className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 transition-colors">
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </td>
