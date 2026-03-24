@@ -40,6 +40,13 @@ function formatTime12(time: string) {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+function formatTimeShort(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "p" : "a";
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour}${ampm}` : `${hour}:${String(m).padStart(2, "0")}${ampm}`;
+}
+
 export default function CalendarWidget() {
   const router = useRouter();
   const today  = isoToday();
@@ -217,7 +224,7 @@ export default function CalendarWidget() {
                 key={iso}
                 type="button"
                 onClick={() => openDay(day)}
-                className={`aspect-square border-b border-r border-gray-700/40 flex flex-col items-start justify-start p-1 transition-colors
+                className={`aspect-square border-b border-r border-gray-700/40 flex flex-col items-start justify-start p-1 gap-0.5 transition-colors
                   ${isToday ? "bg-mustang-red/10" : "hover:bg-gray-700/40"}
                   ${idx % 7 === 6 ? "border-r-0" : ""}
                 `}
@@ -226,14 +233,18 @@ export default function CalendarWidget() {
                   ${isToday ? "text-mustang-red" : hasPlan ? "text-white" : "text-gray-500"}`}>
                   {day}
                 </span>
-                {hasPlan && (
-                  <div className="flex items-center gap-0.5 mt-1">
-                    {daySessions.map((s) => (
-                      <div key={s.id} className={`w-1 h-1 rounded-full ${colorFor(s.team_id).dot}`} />
-                    ))}
-                  </div>
-                )}
-                {isToday && !hasPlan && <div className="w-1 h-1 rounded-full bg-mustang-red/60 mt-1" />}
+                {[...daySessions].sort((a, b) => a.start_time.localeCompare(b.start_time)).map((s) => {
+                  const color = colorFor(s.team_id);
+                  return (
+                    <span
+                      key={s.id}
+                      className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${color.text} ${color.bg} border ${color.border} truncate max-w-full`}
+                    >
+                      {formatTimeShort(s.start_time)}
+                    </span>
+                  );
+                })}
+                {isToday && !hasPlan && <div className="w-1 h-1 rounded-full bg-mustang-red/60 mt-0.5" />}
               </button>
             );
           })}
