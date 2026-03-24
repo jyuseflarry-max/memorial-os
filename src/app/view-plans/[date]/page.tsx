@@ -8,6 +8,7 @@ import CoachScript from "@/components/planner/CoachScript";
 import MissionProfile from "@/components/planner/MissionProfile";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
+import { useAuth } from "@/context/AuthContext";
 import { Session } from "@/types/session";
 import { fetchSession } from "@/lib/session-api";
 
@@ -21,6 +22,7 @@ function PlanViewInner() {
   const router = useRouter();
   const { activeTeam, teams, setActiveTeam } = useTeam();
   const { players } = useTeamPlayers();
+  const { isPlayer } = useAuth();
 
   const autoPrint  = searchParams.get("autoprint") === "1";
 
@@ -84,13 +86,16 @@ function PlanViewInner() {
         </div>
         {session && (
           <div className="flex items-center gap-2 shrink-0 mt-1">
-            <button
-              type="button"
-              onClick={handleEdit}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white text-xs font-semibold transition-colors"
-            >
-              <Pencil size={13} /> Edit
-            </button>
+            {/* Edit and Delete are staff-only — players can view but not modify */}
+            {!isPlayer && (
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white text-xs font-semibold transition-colors"
+              >
+                <Pencil size={13} /> Edit
+              </button>
+            )}
             <button
               type="button"
               onClick={() => window.print()}
@@ -99,34 +104,36 @@ function PlanViewInner() {
               <Printer size={13} /> Print
             </button>
 
-            {!confirmDelete ? (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-colors"
-              >
-                <Trash2 size={13} /> Delete
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-400 text-xs font-mono">Delete plan?</span>
+            {!isPlayer && (
+              !confirmDelete ? (
                 <button
                   type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-colors"
                 >
-                  {deleting ? <Loader2 size={12} className="animate-spin" /> : null}
-                  Yes, delete
+                  <Trash2 size={13} /> Delete
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-xs font-semibold transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-400 text-xs font-mono">Delete plan?</span>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
+                  >
+                    {deleting ? <Loader2 size={12} className="animate-spin" /> : null}
+                    Yes, delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-xs font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )
             )}
           </div>
         )}

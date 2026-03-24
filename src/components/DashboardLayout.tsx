@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
 import PlayerShell from "./PlayerShell";
 import { useAuth } from "@/context/AuthContext";
+
+// Routes players are allowed to visit. Everything else redirects to /.
+const PLAYER_ALLOWED = ["/", "/view-plans", "/vibe-check", "/reports", "/account", "/schedules"];
 
 export default function DashboardLayout({
   children,
@@ -12,9 +16,19 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { isPlayer, loading } = useAuth();
+  const pathname   = usePathname();
+  const router     = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Players get the mobile shell — no sidebar, bottom nav instead.
+  // Redirect players away from staff/admin/coach-only pages.
+  useEffect(() => {
+    if (!isPlayer) return;
+    const allowed = PLAYER_ALLOWED.some(
+      (r) => pathname === r || pathname.startsWith(r + "/")
+    );
+    if (!allowed) router.replace("/");
+  }, [isPlayer, pathname, router]);
+
   // Show nothing while auth is loading to avoid a layout flash.
   if (loading) return null;
   if (isPlayer) return <PlayerShell>{children}</PlayerShell>;
