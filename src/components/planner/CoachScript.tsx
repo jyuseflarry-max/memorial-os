@@ -203,22 +203,38 @@ export default function CoachScript({ session, players = [] }: Props) {
                     {/* Drill name */}
                     <td className="px-4 py-3 print:py-1.5 print:px-3 align-top">
                       <p className="text-white print:text-black font-semibold print:text-xs">{row.drill.name}</p>
-                      {/* Player groups — print only */}
+                      {/* Player groups */}
                       {row.groups && row.groups.length > 0 && (
-                        <div className="hidden print:block mt-1.5 pt-1.5 border-t border-gray-200 space-y-0.5">
+                        <div className="mt-2 pt-2 border-t border-gray-700 print:border-gray-200 space-y-1.5 print:space-y-0.5">
                           {row.groups.map((g, gi) => {
-                            const names = g.playerIds
+                            const playerNames = g.playerIds
                               .map((id) => {
                                 const p = players.find((pl) => pl.id === id);
                                 return p ? displayName(p, players) : null;
                               })
-                              .filter(Boolean)
-                              .join(", ");
+                              .filter(Boolean) as string[];
                             return (
-                              <p key={gi} className="text-[9px] font-mono text-gray-700 leading-tight">
-                                <span className="font-bold">{g.name}:</span>{" "}
-                                {names || <em className="font-normal text-gray-400">No players assigned</em>}
-                              </p>
+                              <div key={gi}>
+                                {/* Screen */}
+                                <div className="print:hidden">
+                                  <p className="text-[10px] font-mono font-semibold text-gray-500 uppercase tracking-wider mb-1">{g.name}</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {playerNames.length > 0
+                                      ? playerNames.map((name) => (
+                                          <span key={name} className="text-[10px] font-mono text-gray-300 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-md leading-none">
+                                            {name}
+                                          </span>
+                                        ))
+                                      : <span className="text-[10px] font-mono text-gray-600 italic">No players assigned</span>
+                                    }
+                                  </div>
+                                </div>
+                                {/* Print */}
+                                <p className="hidden print:block text-[9px] font-mono text-gray-700 leading-tight">
+                                  <span className="font-bold">{g.name}:</span>{" "}
+                                  {playerNames.join(", ") || <em className="font-normal text-gray-400">No players assigned</em>}
+                                </p>
+                              </div>
                             );
                           })}
                         </div>
