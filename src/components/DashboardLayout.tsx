@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -65,9 +66,7 @@ export default function DashboardLayout({
           >
             <Menu size={20} />
           </button>
-          <span className="text-white font-semibold text-sm tracking-wide">
-            Memorial Basketball OS
-          </span>
+          <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-7 w-auto object-contain rounded" />
         </div>
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 print:p-6 min-w-0">

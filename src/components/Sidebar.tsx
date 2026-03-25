@@ -285,6 +285,14 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
+      {/* Coach's OS platform attribution — always visible */}
+      <div className="px-2 pb-3">
+        <div className="border-t border-gray-800/60 pt-3 flex flex-col items-center gap-1">
+          <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest">Powered by</p>
+          <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={140} height={56} className="w-full max-w-[140px] h-auto object-contain rounded opacity-70 hover:opacity-100 transition-opacity" />
+        </div>
+      </div>
+
       {/* Footer — live DB status */}
       <div className="px-2 pt-4 border-t border-gray-800 flex flex-col gap-2">
         {loading && !dbConnected ? (

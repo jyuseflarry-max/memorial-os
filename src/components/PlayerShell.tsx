@@ -64,6 +64,10 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
 
       {/* Bottom navigation */}
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-gray-950 border-t border-gray-800">
+        <div className="flex items-center justify-center py-1 border-b border-gray-800/60">
+          <p className="text-[8px] font-mono text-gray-700 uppercase tracking-widest mr-1.5">Powered by</p>
+          <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={72} height={28} className="h-4 w-auto object-contain rounded opacity-50" />
+        </div>
         <div className="flex">
           {TABS.map(({ label, href, icon: Icon }) => {
             const active = pathname === href;
