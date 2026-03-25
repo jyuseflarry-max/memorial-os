@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   title: "The Coach's OS",
   description: "The Coach's Operating System — AI-powered practice planning, player readiness, and program management for every sport.",
   icons: { icon: "/thecoachsOS.jpg", apple: "/thecoachsOS.jpg" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { Suspense, useActionState, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -32,7 +32,7 @@ function Feedback({ state }: { state: { error?: string; success?: string } | nul
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default function AccountPage() {
+function AccountPageInner() {
   const searchParams  = useSearchParams();
   const isWelcome     = searchParams.get("welcome") === "1";
   const [account, setAccount] = useState<AccountInfo | null>(null);
@@ -177,5 +177,13 @@ export default function AccountPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={null}>
+      <AccountPageInner />
+    </Suspense>
   );
 }
