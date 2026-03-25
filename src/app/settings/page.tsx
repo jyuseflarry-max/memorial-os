@@ -30,6 +30,16 @@ export default function SettingsPage() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  // Module toggles auto-save immediately so the sidebar updates without
+  // requiring the user to scroll down and click Save.
+  async function toggleModule(mod: string) {
+    const current = form.enabled_modules ?? [];
+    const isEnabled = current.includes(mod);
+    const next = isEnabled ? current.filter((m) => m !== mod) : [...current, mod];
+    patch("enabled_modules", next);
+    await save({ enabled_modules: next });
+  }
+
   async function handleSave() {
     setStatus("saving");
     await save({
@@ -76,7 +86,7 @@ export default function SettingsPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center py-24">
-          <Loader2 size={24} className="text-mustang-red animate-spin" />
+          <Loader2 size={24} className="text-coaches-red animate-spin" />
         </div>
       </DashboardLayout>
     );
@@ -101,7 +111,7 @@ export default function SettingsPage() {
                 ? "bg-green-600/20 border border-green-600/40 text-green-400"
                 : status === "saving"
                 ? "bg-gray-700 border border-gray-600 text-gray-400 cursor-not-allowed opacity-60"
-                : "bg-mustang-red hover:bg-mustang-red-dark text-white"
+                : "bg-coaches-red hover:bg-coaches-red-dark text-white"
             }`}
           >
             {status === "saving" ? (
@@ -129,7 +139,7 @@ export default function SettingsPage() {
                 type="text"
                 value={form.program_name}
                 onChange={(e) => patch("program_name", e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors"
                 placeholder="Memorial Basketball OS"
               />
               <p className="text-[10px] font-mono text-gray-600">Shown in the sidebar header and printed plans.</p>
@@ -189,7 +199,7 @@ export default function SettingsPage() {
               <select
                 value={form.current_season}
                 onChange={(e) => patch("current_season", e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit appearance-none pr-8"
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors font-mono w-fit appearance-none pr-8"
                 style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}
               >
                 {seasonOptions().map((s) => (
@@ -210,7 +220,7 @@ export default function SettingsPage() {
                 type="date"
                 value={form.season_start ?? ""}
                 onChange={(e) => patch("season_start", e.target.value || null)}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-fit"
+                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors font-mono w-fit"
               />
               <p className="text-[10px] font-mono text-gray-600">
                 Drill usage (Last Used, use count) and reports will only include data on or after this date.
@@ -229,7 +239,7 @@ export default function SettingsPage() {
                     onClick={() => patch("print_orientation", opt)}
                     className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${
                       form.print_orientation === opt
-                        ? "bg-mustang-red border-mustang-red text-white"
+                        ? "bg-coaches-red border-coaches-red text-white"
                         : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
                     }`}
                   >
@@ -250,7 +260,7 @@ export default function SettingsPage() {
             {/* Default Start Time */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Default Practice Start Time</label>
-              <label className="relative inline-flex items-center cursor-pointer bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 focus-within:border-mustang-red transition-colors w-fit">
+              <label className="relative inline-flex items-center cursor-pointer bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 focus-within:border-coaches-red transition-colors w-fit">
                 <span className="text-sm text-white font-mono pointer-events-none">
                   {formatHHMM(form.default_start_time)}
                 </span>
@@ -279,7 +289,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => patch("hudl_titan", !form.hudl_titan)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                  form.hudl_titan ? "bg-mustang-red" : "bg-gray-600"
+                  form.hudl_titan ? "bg-coaches-red" : "bg-gray-600"
                 }`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.hudl_titan ? "translate-x-6" : "translate-x-1"}`} />
@@ -300,16 +310,9 @@ export default function SettingsPage() {
                   <span className="text-sm text-white font-medium">{mod}</span>
                   <button
                     type="button"
-                    onClick={() =>
-                      patch(
-                        "enabled_modules",
-                        enabled
-                          ? (form.enabled_modules ?? []).filter((m) => m !== mod)
-                          : [...(form.enabled_modules ?? []), mod]
-                      )
-                    }
+                    onClick={() => toggleModule(mod)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      enabled ? "bg-mustang-red" : "bg-gray-600"
+                      enabled ? "bg-coaches-red" : "bg-gray-600"
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
@@ -392,7 +395,7 @@ export default function SettingsPage() {
                     });
                   }
                 }}
-                className="flex-1 min-w-32 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+                className="flex-1 min-w-32 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors"
               />
 
               {/* is_rest toggle */}
@@ -420,7 +423,7 @@ export default function SettingsPage() {
                     setAddingCat(false);
                   });
                 }}
-                className="px-4 py-2 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 text-white text-xs font-semibold transition-colors shrink-0"
+                className="px-4 py-2 rounded-lg bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 text-white text-xs font-semibold transition-colors shrink-0"
               >
                 {addingCat ? "Adding…" : "Add"}
               </button>
@@ -464,7 +467,7 @@ export default function SettingsPage() {
                       value={form[key]}
                       onChange={(e) => handleHexInput(key, e.target.value)}
                       maxLength={7}
-                      className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-36"
+                      className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors font-mono w-36"
                       placeholder="#000000"
                     />
                     <p className="text-[10px] font-mono text-gray-600">{desc}</p>

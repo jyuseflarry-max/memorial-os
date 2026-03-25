@@ -75,6 +75,29 @@ export async function POST(request: NextRequest) {
     }
 
     if (err) throw err;
+
+    // Sync session_drills — delete old rows then re-insert from JSON blob.
+    // This keeps usage tracking and reports accurate on every save/update.
+    if (result) {
+      await supabase.from("session_drills").delete().eq("session_id", result.id);
+
+      type DrillInstance = { drill?: { id?: string }; duration?: number };
+      const drillRows = ((drills ?? []) as DrillInstance[])
+        .filter((sd) => sd?.drill?.id)
+        .map((sd) => ({
+          session_id: result.id,
+          drill_id:   sd.drill!.id!,
+          date,
+          team_id:    tidOrNull,
+          duration:   sd.duration ?? 0,
+          tenant_id:  myRecord.tenant_id,
+        }));
+
+      if (drillRows.length > 0) {
+        await supabase.from("session_drills").insert(drillRows);
+      }
+    }
+
     return Response.json(result, { status: 201 });
   } catch (err: unknown) {
     return apiError(err);

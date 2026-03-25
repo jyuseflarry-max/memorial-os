@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus, Edit2, Trash2, ExternalLink, FileText, Video,
   X, Save, Loader2, Trophy, ClipboardList, Target,
-  Upload, CheckCircle2, AlertCircle,
+  Upload, CheckCircle2, AlertCircle, MapPin, Sparkles,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
@@ -51,7 +51,7 @@ const LOCATION_STYLES: Record<LocationType, string> = {
 
 const GAME_TYPE_STYLES: Record<GameType, string> = {
   "non-district": "bg-gray-700/60 text-gray-400 border-gray-600",
-  district:       "bg-mustang-red/15 text-mustang-red border-mustang-red/30",
+  district:       "bg-coaches-red/15 text-coaches-red border-coaches-red/30",
   scrimmage:      "bg-amber-500/15 text-amber-400 border-amber-500/30",
   tournament:     "bg-purple-500/15 text-purple-400 border-purple-500/30",
   playoffs:       "bg-orange-500/15 text-orange-400 border-orange-500/30",
@@ -84,7 +84,7 @@ function ResultChip({ game }: { game: Game }) {
   const them = game.score_them!;
   const isWin = result === "win";
   return (
-    <span className={`font-mono text-sm font-bold ${isWin ? "text-emerald-400" : "text-mustang-red"}`}>
+    <span className={`font-mono text-sm font-bold ${isWin ? "text-emerald-400" : "text-coaches-red"}`}>
       {isWin ? "W" : "L"} {us}–{them}
     </span>
   );
@@ -194,7 +194,7 @@ function BoxScoreUpload({
             type="button"
             onClick={handleRemove}
             disabled={uploadState === "uploading"}
-            className="text-xs font-semibold text-gray-500 hover:text-mustang-red transition-colors shrink-0"
+            className="text-xs font-semibold text-gray-500 hover:text-coaches-red transition-colors shrink-0"
           >
             Remove
           </button>
@@ -268,7 +268,8 @@ function GameModal({
 
     const payload = {
       ...draft,
-      game_time:      draft.game_time || null,
+      game_time:      draft.time_tbd ? null : (draft.game_time || null),
+      time_tbd:       draft.time_tbd ?? false,
       highlights_url: draft.highlights_url || null,
       box_score_url:  draft.box_score_url  || null,
       game_writeup:   draft.game_writeup   || null,
@@ -289,7 +290,7 @@ function GameModal({
     onSave(data);
   }
 
-  const inputCls = "bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors font-mono w-full";
+  const inputCls = "bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors font-mono w-full";
   const labelCls = "text-[10px] font-mono text-gray-500 uppercase tracking-wider";
 
   return (
@@ -315,12 +316,31 @@ function GameModal({
                 <label className={labelCls}>Date *</label>
                 <input type="date" value={draft.game_date} onChange={(e) => patch("game_date", e.target.value)} className={inputCls} />
               </div>
-              <div className="flex flex-col gap-1 w-32">
+              <div className="flex flex-col gap-1 w-44">
                 <label className={labelCls}>Time</label>
-                <label className={`${inputCls} relative inline-flex items-center cursor-pointer`}>
-                  <span className="pointer-events-none">{draft.game_time ? formatHHMM(draft.game_time) : <span className="text-gray-500">—</span>}</span>
-                  <input type="time" value={draft.game_time ?? ""} onChange={(e) => patch("game_time", e.target.value || null)} className="absolute inset-0 opacity-0 cursor-pointer w-full" />
-                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="time"
+                    value={draft.game_time ?? ""}
+                    disabled={draft.time_tbd}
+                    onChange={(e) => patch("game_time", e.target.value || null)}
+                    className={`${inputCls} flex-1 disabled:opacity-40 disabled:cursor-not-allowed`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      patch("time_tbd", !draft.time_tbd);
+                      if (!draft.time_tbd) patch("game_time", null);
+                    }}
+                    className={`shrink-0 px-2.5 py-2 rounded-lg text-xs font-mono font-bold border transition-colors ${
+                      draft.time_tbd
+                        ? "bg-coaches-red border-coaches-red text-white"
+                        : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-white"
+                    }`}
+                  >
+                    TBD
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -331,6 +351,17 @@ function GameModal({
                 value={draft.opponent}
                 onChange={(e) => patch("opponent", e.target.value)}
                 placeholder="e.g. EISD Lamar HS"
+                className={inputCls}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Venue / Address <span className="normal-case tracking-normal text-gray-600">(for directions)</span></label>
+              <input
+                type="text"
+                value={draft.venue ?? ""}
+                onChange={(e) => patch("venue", e.target.value || null)}
+                placeholder="e.g. Mustang Gym, 1234 Main St, Houston TX"
                 className={inputCls}
               />
             </div>
@@ -358,7 +389,7 @@ function GameModal({
                     onClick={() => patch("location_type", loc)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors capitalize ${
                       draft.location_type === loc
-                        ? "bg-mustang-red border-mustang-red text-white"
+                        ? "bg-coaches-red border-coaches-red text-white"
                         : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
                     }`}
                   >
@@ -378,7 +409,7 @@ function GameModal({
                     onClick={() => patch("game_type", t)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                       draft.game_type === t
-                        ? "bg-mustang-red border-mustang-red text-white"
+                        ? "bg-coaches-red border-coaches-red text-white"
                         : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
                     }`}
                   >
@@ -455,7 +486,7 @@ function GameModal({
                 onChange={(e) => patch("game_writeup", e.target.value || null)}
                 placeholder="Recap of the game — key plays, standout performances, areas to improve…"
                 rows={5}
-                className="bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors resize-none w-full"
+                className="bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors resize-none w-full"
               />
             </div>
           </div>
@@ -474,7 +505,7 @@ function GameModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-mustang-red hover:bg-mustang-red-dark text-white transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-coaches-red hover:bg-coaches-red-dark text-white transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
             {saving ? "Saving…" : "Save Game"}
@@ -489,11 +520,13 @@ function GameModal({
 
 function GameRow({
   game,
+  primaryColor,
   onEdit,
   onDelete,
   onViewWriteup,
 }: {
   game: Game;
+  primaryColor: string;
   onEdit: () => void;
   onDelete: () => void;
   onViewWriteup: () => void;
@@ -501,95 +534,120 @@ function GameRow({
   const { short, weekday } = fmtDate(game.game_date);
   const result = gameResult(game);
 
+  const opponentCls = game.game_type === "district"
+    ? "text-white text-sm font-bold uppercase tracking-wide truncate"
+    : game.game_type === "tournament"
+    ? "text-white text-sm font-medium italic truncate"
+    : "text-white text-sm font-medium truncate";
+
+  const rowBg = game.location_type === "home"
+    ? { backgroundColor: primaryColor + "18" }
+    : undefined;
+
+  const venueUrl = game.venue
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(game.venue)}`
+    : null;
+
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-800/30 transition-colors group">
+    <div
+      className="flex items-start gap-3 px-4 py-3.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-800/30 transition-colors group"
+      style={rowBg}
+    >
       {/* Date */}
-      <div className="w-24 shrink-0">
+      <div className="w-24 shrink-0 pt-0.5">
         <p className="text-white font-mono text-sm font-semibold">{short}</p>
-        <p className="text-gray-600 font-mono text-[10px]">{weekday}{game.game_time ? ` · ${fmt12h(game.game_time)}` : ""}</p>
+        <p className="text-gray-600 font-mono text-[10px]">{weekday}{game.time_tbd ? " · TBD" : game.game_time ? ` · ${fmt12h(game.game_time)}` : ""}</p>
       </div>
 
-      {/* Opponent */}
+      {/* Opponent + sub-info */}
       <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-medium truncate">{game.opponent}</p>
+        <p className={opponentCls}>{game.opponent}</p>
+
+        {/* Venue */}
+        {game.venue && venueUrl && (
+          <a
+            href={venueUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] font-mono text-gray-500 hover:text-coaches-blue transition-colors mt-0.5 truncate"
+          >
+            <MapPin size={9} />
+            {game.venue}
+          </a>
+        )}
+
+        {/* Content links — always visible, dimmed when no content */}
+        <div className="flex items-center gap-2.5 mt-1.5">
+          <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default" title="Scouting Report (coming soon)">
+            <Target size={10} /> Scout
+          </span>
+          {game.highlights_url ? (
+            <a
+              href={game.highlights_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] font-mono text-sky-400 hover:text-sky-300 transition-colors"
+            >
+              <Video size={10} /> Highlights
+            </a>
+          ) : (
+            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
+              <Video size={10} /> Highlights
+            </span>
+          )}
+          {game.box_score_url ? (
+            <a
+              href={game.box_score_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              <ExternalLink size={10} /> Box Score
+            </a>
+          ) : (
+            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
+              <ExternalLink size={10} /> Box Score
+            </span>
+          )}
+          {game.box_score_url ? (
+            <button
+              onClick={onViewWriteup}
+              className={`flex items-center gap-1 text-[10px] font-mono transition-colors ${
+                game.game_writeup
+                  ? "text-amber-400 hover:text-amber-300"
+                  : "text-gray-600 hover:text-gray-400"
+              }`}
+            >
+              <Sparkles size={10} /> AI Story
+            </button>
+          ) : (
+            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
+              <Sparkles size={10} /> AI Story
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Location */}
-      <div className="w-20 shrink-0 hidden sm:block">
+      <div className="w-20 shrink-0 hidden sm:block pt-0.5">
         <LocationBadge type={game.location_type} />
       </div>
 
       {/* Game type */}
-      <div className="w-28 shrink-0 hidden md:block">
+      <div className="w-28 shrink-0 hidden md:block pt-0.5">
         <TypeBadge type={game.game_type} />
       </div>
 
       {/* Result */}
-      <div className="w-20 shrink-0 text-right">
+      <div className="w-20 shrink-0 text-right pt-0.5">
         <ResultChip game={game} />
         {result === "upcoming" && (
           <p className="text-[9px] font-mono text-gray-700 uppercase tracking-wider">Upcoming</p>
         )}
       </div>
 
-      {/* Action icons */}
-      <div className="flex items-center gap-1 shrink-0 ml-1">
-        {/* Scouting report — placeholder until section is built */}
-        <span
-          title="Scouting Report (coming soon)"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-700 cursor-not-allowed"
-        >
-          <Target size={14} />
-        </span>
-
-        {/* Highlights */}
-        {game.highlights_url ? (
-          <a
-            href={game.highlights_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Watch Highlights"
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-sky-400 hover:bg-sky-400/10 transition-colors"
-          >
-            <Video size={14} />
-          </a>
-        ) : (
-          <span title="No highlights" className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-700">
-            <Video size={14} />
-          </span>
-        )}
-
-        {/* Box Score */}
-        {game.box_score_url ? (
-          <a
-            href={game.box_score_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="View Box Score"
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-          >
-            <ExternalLink size={14} />
-          </a>
-        ) : (
-          <span title="No box score" className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-700">
-            <ExternalLink size={14} />
-          </span>
-        )}
-
-        {/* Writeup */}
-        <button
-          onClick={onViewWriteup}
-          title={game.game_writeup ? "View Game Writeup" : "No writeup yet"}
-          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
-            game.game_writeup
-              ? "text-amber-400 hover:bg-amber-400/10"
-              : "text-gray-700 hover:text-gray-500"
-          }`}
-        >
-          <FileText size={14} />
-        </button>
-
-        {/* Edit / Delete — show on hover */}
+      {/* Edit / Delete — show on hover */}
+      <div className="flex items-center gap-1 shrink-0 pt-0.5">
         <button
           onClick={onEdit}
           title="Edit game"
@@ -600,7 +658,7 @@ function GameRow({
         <button
           onClick={onDelete}
           title="Delete game"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-mustang-red hover:bg-mustang-red/10 transition-colors opacity-0 group-hover:opacity-100"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-coaches-red hover:bg-coaches-red/10 transition-colors opacity-0 group-hover:opacity-100"
         >
           <Trash2 size={13} />
         </button>
@@ -660,12 +718,13 @@ export default function GameSchedulePage() {
     activeSeason === "all" ? games : games.filter((g) => g.season === activeSeason),
   [games, activeSeason]);
 
-  // Record summary for visible games
+  // Record summary for visible games — scrimmages excluded from all record counts
   const { wins, losses, districtW, districtL, upcoming } = useMemo(() => {
     let wins = 0, losses = 0, districtW = 0, districtL = 0, upcoming = 0;
     for (const g of visibleGames) {
       const result = gameResult(g);
       if (result === "upcoming") { upcoming++; continue; }
+      if (g.game_type === "scrimmage") continue; // scrimmages never affect record
       if (result === "win") { wins++; if (g.game_type === "district") districtW++; }
       else { losses++; if (g.game_type === "district") districtL++; }
     }
@@ -714,7 +773,7 @@ export default function GameSchedulePage() {
         </div>
         <button
           onClick={() => setModal({ type: "add" })}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
         >
           <Plus size={15} />
           Add Game
@@ -730,7 +789,7 @@ export default function GameSchedulePage() {
             onClick={() => setActiveSeason(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors font-mono ${
               activeSeason === s
-                ? "bg-mustang-red border-mustang-red text-white"
+                ? "bg-coaches-red border-coaches-red text-white"
                 : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
             }`}
           >
@@ -746,7 +805,7 @@ export default function GameSchedulePage() {
             onClick={() => setActiveSeason("all")}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors font-mono ${
               activeSeason === "all"
-                ? "bg-mustang-red border-mustang-red text-white"
+                ? "bg-coaches-red border-coaches-red text-white"
                 : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
             }`}
           >
@@ -757,16 +816,17 @@ export default function GameSchedulePage() {
 
       {/* Record summary */}
       {visibleGames.length > 0 && (
+        <>
         <div className="flex gap-3 mb-6 flex-wrap">
           <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3">
-            <Trophy size={16} className="text-mustang-red" />
+            <Trophy size={16} className="text-coaches-red" />
             <div>
               <p className="text-white font-bold font-mono text-lg">{wins}–{losses}</p>
               <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Overall Record</p>
             </div>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3">
-            <ClipboardList size={16} className="text-mustang-red" />
+            <ClipboardList size={16} className="text-coaches-red" />
             <div>
               <p className="text-white font-bold font-mono text-lg">{districtW}–{districtL}</p>
               <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">District Record</p>
@@ -780,6 +840,10 @@ export default function GameSchedulePage() {
             </div>
           </div>
         </div>
+        <p className="text-[10px] font-mono text-gray-600 -mt-3 mb-3">
+          * Scrimmages are not counted in the record.
+        </p>
+        </>
       )}
 
       {/* Column headers */}
@@ -789,15 +853,8 @@ export default function GameSchedulePage() {
           <div className="flex-1">Opponent</div>
           <div className="w-20 shrink-0 hidden sm:block">Location</div>
           <div className="w-28 shrink-0 hidden md:block">Type</div>
-          <div className="w-20 shrink-0 text-right">Score</div>
-          <div className="shrink-0 ml-1 flex gap-1">
-            <span className="w-7 text-center" title="Scouting">Scout</span>
-            <span className="w-7 text-center" title="Highlights">Film</span>
-            <span className="w-7 text-center" title="Box Score">Box</span>
-            <span className="w-7 text-center" title="Writeup">Notes</span>
-            <span className="w-7" />
-            <span className="w-7" />
-          </div>
+          <div className="w-20 shrink-0 text-right">Result</div>
+          <div className="w-16 shrink-0" />
         </div>
       )}
 
@@ -805,7 +862,7 @@ export default function GameSchedulePage() {
       <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
         {loading && (
           <div className="py-16 flex items-center justify-center">
-            <Loader2 size={20} className="animate-spin text-mustang-red" />
+            <Loader2 size={20} className="animate-spin text-coaches-red" />
           </div>
         )}
         {!loading && error && (
@@ -835,6 +892,7 @@ export default function GameSchedulePage() {
               <GameRow
                 key={game.id}
                 game={game}
+                primaryColor={settings.primary_color}
                 onEdit={() => setModal({ type: "edit", game })}
                 onDelete={() => setConfirmDelete(game)}
                 onViewWriteup={() => setWriteupGame(game)}
@@ -844,12 +902,6 @@ export default function GameSchedulePage() {
         ))}
       </div>
 
-      {/* Legend */}
-      {visibleGames.length > 0 && (
-        <p className="text-[10px] font-mono text-gray-700 mt-3 text-right">
-          Scout · Film · Box · Notes — colored icon = content available · hover row to edit
-        </p>
-      )}
 
       {/* Add / Edit modal */}
       {modal && (
@@ -884,7 +936,7 @@ export default function GameSchedulePage() {
               </button>
               <button
                 onClick={() => handleDelete(confirmDelete)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-mustang-red hover:bg-mustang-red-dark text-white transition-colors"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-coaches-red hover:bg-coaches-red-dark text-white transition-colors"
               >
                 Delete
               </button>

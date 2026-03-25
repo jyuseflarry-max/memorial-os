@@ -23,7 +23,12 @@
       "Bash(npx vercel:*)",
       "Bash(psql:*)",
       "Bash(xargs wc:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find /c/Users/larryj/memorial-os/src -name middleware.ts -o -name auth* -o -name *auth*)",
+      "Bash(git restore:*)",
+      "Bash(xargs grep:*)",
+      "Bash(dir:*)",
+      "Bash(xargs sed:*)"
     ]
   }
 }

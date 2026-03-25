@@ -59,7 +59,7 @@ export default function DrillGroupingModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
-            <Users size={18} className="text-mustang-red" />
+            <Users size={18} className="text-coaches-red" />
             <div>
               <p className="text-white font-semibold">Player Groups</p>
               <p className="text-gray-500 text-xs font-mono">{drillName}</p>
@@ -96,7 +96,7 @@ export default function DrillGroupingModal({
                       <button
                         type="button"
                         onClick={() => handleLoadSaved(sg)}
-                        className="text-xs font-semibold text-mustang-red hover:text-orange-300 transition-colors px-2 py-1 rounded-lg hover:bg-mustang-red/10"
+                        className="text-xs font-semibold text-coaches-red hover:text-orange-300 transition-colors px-2 py-1 rounded-lg hover:bg-coaches-red/10"
                       >
                         Use
                       </button>
@@ -120,13 +120,13 @@ export default function DrillGroupingModal({
                     max={10}
                     value={numGroups}
                     onChange={(e) => setNumGroups(Math.max(1, Math.min(10, Number(e.target.value))))}
-                    className="w-20 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-mustang-red transition-colors"
+                    className="w-20 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-coaches-red transition-colors"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={handleCreateStructure}
-                  className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                 >
                   <Plus size={14} /> Create Groups
                 </button>
@@ -170,7 +170,7 @@ export default function DrillGroupingModal({
                 onDragOver={(e) => { e.preventDefault(); setDragOverGroup(-1); }}
                 onDrop={(e) => { e.preventDefault(); handleDropOnUnassigned(); }}
                 className={`rounded-xl border-2 p-3 transition-colors ${
-                  dragOverGroup === -1 ? "border-mustang-red bg-mustang-red/5" : "border-gray-700 bg-gray-800/40"
+                  dragOverGroup === -1 ? "border-coaches-red bg-coaches-red/5" : "border-gray-700 bg-gray-800/40"
                 }`}
               >
                 <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider mb-2">
@@ -221,7 +221,7 @@ export default function DrillGroupingModal({
                   placeholder="e.g. Shooting Groups, Scrimmage Teams…"
                   value={groupingName}
                   onChange={(e) => setGroupingName(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-coaches-red transition-colors"
                 />
               </div>
             </>
@@ -242,7 +242,7 @@ export default function DrillGroupingModal({
               type="button"
               disabled={saving}
               onClick={handleSaveAndApply}
-              className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
             >
               <Save size={14} />
               {saving ? "Saving…" : "Apply to Drill"}

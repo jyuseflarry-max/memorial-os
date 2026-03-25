@@ -30,7 +30,7 @@ function daysAgo(n: number): string {
 // ── Category bar colors (index-based) ────────────────────────────────────
 
 const BAR_COLORS = [
-  "bg-mustang-red",
+  "bg-coaches-red",
   "bg-sky-400",
   "bg-emerald-400",
   "bg-amber-400",
@@ -41,7 +41,7 @@ const BAR_COLORS = [
 ];
 
 const BAR_COLORS_LIGHT = [
-  "bg-mustang-red/30",
+  "bg-coaches-red/30",
   "bg-sky-400/30",
   "bg-emerald-400/30",
   "bg-amber-400/30",
@@ -223,7 +223,7 @@ export default function ReportsPage() {
               onClick={() => setPreset(p.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                 preset === p.id
-                  ? "bg-mustang-red border-mustang-red text-white"
+                  ? "bg-coaches-red border-coaches-red text-white"
                   : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
               }`}
             >
@@ -268,14 +268,14 @@ export default function ReportsPage() {
       {report && (
         <div className="flex gap-4 mb-6 flex-wrap">
           <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3">
-            <Clock size={16} className="text-mustang-red" />
+            <Clock size={16} className="text-coaches-red" />
             <div>
               <p className="text-white font-bold font-mono text-lg">{fmtMinutes(report.total_minutes)}</p>
               <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Total Practice Time</p>
             </div>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3">
-            <BarChart3 size={16} className="text-mustang-red" />
+            <BarChart3 size={16} className="text-coaches-red" />
             <div>
               <p className="text-white font-bold font-mono text-lg">{report.total_sessions}</p>
               <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Sessions</p>

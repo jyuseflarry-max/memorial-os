@@ -52,7 +52,7 @@ export default function TodayPracticeCard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ClipboardList size={20} className="text-mustang-red" />
+          <ClipboardList size={20} className="text-coaches-red" />
           <div>
             <h2 className="text-white font-semibold text-lg">Today&apos;s Practice</h2>
             {activeTeam && <p className="text-gray-500 text-xs font-mono -mt-0.5">{activeTeam.name.toUpperCase()}</p>}
@@ -78,7 +78,7 @@ export default function TodayPracticeCard() {
           <button
             type="button"
             onClick={() => router.push("/planner")}
-            className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
           >
             Build Today&apos;s Plan <ArrowRight size={14} />
           </button>
@@ -96,7 +96,7 @@ export default function TodayPracticeCard() {
               { icon: ShieldCheck, label: dateLabel },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-1.5 bg-gray-700/60 border border-gray-600 rounded-full px-3 py-1 text-xs text-gray-300">
-                <Icon size={12} className="text-mustang-red" />
+                <Icon size={12} className="text-coaches-red" />
                 {label}
               </div>
             ))}
@@ -126,7 +126,7 @@ export default function TodayPracticeCard() {
           <button
             type="button"
             onClick={() => router.push(`/planner?date=${today}`)}
-            className="flex items-center justify-center gap-2 text-xs font-mono text-gray-500 hover:text-mustang-red transition-colors border-t border-gray-700 pt-4 -mb-1"
+            className="flex items-center justify-center gap-2 text-xs font-mono text-gray-500 hover:text-coaches-red transition-colors border-t border-gray-700 pt-4 -mb-1"
           >
             Edit in Planner <ArrowRight size={12} />
           </button>

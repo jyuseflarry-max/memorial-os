@@ -75,7 +75,7 @@ export default function ManageTeamsPage() {
     } catch {}
   }
 
-  const inputCls = "bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
+  const inputCls = "bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors";
 
   return (
     <DashboardLayout>
@@ -167,7 +167,7 @@ export default function ManageTeamsPage() {
           <button
             type="submit"
             disabled={adding}
-            className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
           >
             <Plus size={15} />
             {adding ? "Adding…" : "Add Team"}

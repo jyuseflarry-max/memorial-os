@@ -44,13 +44,13 @@ const LIFTS: { key: Lift; label: string; unit: string }[] = [
 ];
 
 const LIFT_COLORS: Record<Lift, string> = {
-  back_squat:  "bg-mustang-red",
+  back_squat:  "bg-coaches-red",
   power_clean: "bg-sky-400",
   bench_press: "bg-emerald-400",
 };
 
 const LIFT_TEXT: Record<Lift, string> = {
-  back_squat:  "text-mustang-red",
+  back_squat:  "text-coaches-red",
   power_clean: "text-sky-400",
   bench_press: "text-emerald-400",
 };
@@ -88,7 +88,7 @@ function HistoryModal({ playerName, playerId, onClose }: {
     if (vals.length < 2) return null;
     const diff = vals[0] - vals[1];
     if (diff > 0) return <TrendingUp  size={13} className="text-emerald-400" />;
-    if (diff < 0) return <TrendingDown size={13} className="text-mustang-red" />;
+    if (diff < 0) return <TrendingDown size={13} className="text-coaches-red" />;
     return <Minus size={13} className="text-gray-500" />;
   }
 
@@ -114,7 +114,7 @@ function HistoryModal({ playerName, playerId, onClose }: {
         <div className="p-5">
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 size={18} className="animate-spin text-mustang-red" />
+              <Loader2 size={18} className="animate-spin text-coaches-red" />
             </div>
           ) : rows.length === 0 ? (
             <p className="text-gray-600 font-mono text-xs text-center py-8">NO RECORDS YET</p>
@@ -269,8 +269,8 @@ export default function ArmoryPage() {
     `w-full bg-gray-900 border rounded-lg px-2 py-2 text-sm font-mono text-white text-center
      focus:outline-none transition-colors
      ${status === "error"
-       ? "border-mustang-red focus:border-mustang-red"
-       : "border-gray-700 focus:border-mustang-red"
+       ? "border-coaches-red focus:border-coaches-red"
+       : "border-gray-700 focus:border-coaches-red"
      }`;
 
   return (
@@ -311,7 +311,7 @@ export default function ArmoryPage() {
 
         {loading ? (
           <div className="py-16 flex items-center justify-center">
-            <Loader2 size={20} className="animate-spin text-mustang-red" />
+            <Loader2 size={20} className="animate-spin text-coaches-red" />
           </div>
         ) : players.length === 0 ? (
           <div className="py-16 text-center text-gray-600 font-mono text-xs">
@@ -344,7 +344,7 @@ export default function ArmoryPage() {
                     <span className="text-emerald-400 text-[9px] font-mono shrink-0">SAVED</span>
                   )}
                   {row.status === "error" && (
-                    <span className="text-mustang-red text-[9px] font-mono shrink-0">ERROR</span>
+                    <span className="text-coaches-red text-[9px] font-mono shrink-0">ERROR</span>
                   )}
                 </div>
 

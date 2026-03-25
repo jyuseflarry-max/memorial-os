@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
+import { ChevronLeft, ChevronRight, Dumbbell, Swords } from "lucide-react";
 import { useTeam } from "@/context/TeamContext";
+import { Game, GAME_TYPE_LABELS } from "@/types/game";
 
 interface SavedSession {
   id: string;
@@ -15,7 +16,7 @@ interface SavedSession {
 }
 
 const TEAM_COLORS = [
-  { dot: "bg-mustang-red",   text: "text-mustang-red",   border: "border-mustang-red/30",   bg: "bg-mustang-red/10"   },
+  { dot: "bg-coaches-red",   text: "text-coaches-red",   border: "border-coaches-red/30",   bg: "bg-coaches-red/10"   },
   { dot: "bg-sky-400",       text: "text-sky-400",       border: "border-sky-400/30",       bg: "bg-sky-400/10"       },
   { dot: "bg-emerald-400",   text: "text-emerald-400",   border: "border-emerald-400/30",   bg: "bg-emerald-400/10"   },
   { dot: "bg-amber-400",     text: "text-amber-400",     border: "border-amber-400/30",     bg: "bg-amber-400/10"     },
@@ -56,6 +57,22 @@ function addMinutes(time: string, mins: number) {
   return formatTimeShort(`${hh}:${String(mm).padStart(2, "0")}`);
 }
 
+function locationLabel(g: Game) {
+  if (g.location_type === "home") return "H";
+  if (g.location_type === "away") return "A";
+  return "N";
+}
+
+function gameColorCls(g: Game) {
+  if (g.game_type === "scrimmage") return { text: "text-gray-400", bg: "bg-gray-400/10", border: "border-gray-400/30" };
+  if (g.location_type === "home")  return { text: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30" };
+  return { text: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30" };
+}
+
+type DayEvent =
+  | { kind: "session"; data: SavedSession }
+  | { kind: "game";    data: Game };
+
 export default function CalendarWidget() {
   const router = useRouter();
   const today  = isoToday();
@@ -63,10 +80,20 @@ export default function CalendarWidget() {
 
   const [year,  setYear]  = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
-  const [sessions, setSessions]   = useState<SavedSession[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [dayPopover, setDayPopover] = useState<{ iso: string; sessions: SavedSession[] } | null>(null);
+  const [sessions, setSessions] = useState<SavedSession[]>([]);
+  const [games,    setGames]    = useState<Game[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [dayPopover, setDayPopover] = useState<{ iso: string; events: DayEvent[] } | null>(null);
   const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [tooltip, setTooltip] = useState<{ ev: DayEvent; x: number; y: number } | null>(null);
+
+  const showTooltip = useCallback((ev: DayEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setTooltip({ ev, x: rect.left, y: rect.bottom + 6 });
+  }, []);
+
+  const hideTooltip = useCallback(() => setTooltip(null), []);
 
   const teamColorMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -81,9 +108,14 @@ export default function CalendarWidget() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/sessions")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setSessions(data); })
+    Promise.all([
+      fetch("/api/sessions").then((r) => r.json()),
+      fetch("/api/games").then((r) => r.json()),
+    ])
+      .then(([sessionData, gameData]) => {
+        if (Array.isArray(sessionData)) setSessions(sessionData);
+        if (Array.isArray(gameData))    setGames(gameData);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -92,14 +124,22 @@ export default function CalendarWidget() {
     teamFilter === "all" ? sessions : sessions.filter((s) => s.team_id === teamFilter),
   [sessions, teamFilter]);
 
-  const sessionsByDate = useMemo(() => {
-    const map: Record<string, SavedSession[]> = {};
+  const filteredGames = useMemo(() =>
+    teamFilter === "all" ? games : games.filter((g) => g.team_id === teamFilter),
+  [games, teamFilter]);
+
+  const eventsByDate = useMemo(() => {
+    const map: Record<string, DayEvent[]> = {};
     filteredSessions.forEach((s) => {
       if (!map[s.date]) map[s.date] = [];
-      map[s.date].push(s);
+      map[s.date].push({ kind: "session", data: s });
+    });
+    filteredGames.forEach((g) => {
+      if (!map[g.game_date]) map[g.game_date] = [];
+      map[g.game_date].push({ kind: "game", data: g });
     });
     return map;
-  }, [filteredSessions]);
+  }, [filteredSessions, filteredGames]);
 
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -131,29 +171,47 @@ export default function CalendarWidget() {
   }
 
   function openDay(day: number) {
-    const date = cellDate(day);
-    const daySessions = sessionsByDate[date] ?? [];
-    if (daySessions.length === 1) {
-      router.push(sessionUrl(daySessions[0]));
-    } else if (daySessions.length > 1) {
-      setDayPopover({ iso: date, sessions: daySessions });
+    const date   = cellDate(day);
+    const events = eventsByDate[date] ?? [];
+    if (events.length === 0) {
+      router.push("/build-a-plan");
+    } else if (events.length === 1) {
+      const ev = events[0];
+      if (ev.kind === "session") router.push(sessionUrl(ev.data));
+      else router.push("/schedules/game");
     } else {
-      router.push(`/build-a-plan`);
+      setDayPopover({ iso: date, events });
     }
   }
 
-  function openSession(s: SavedSession) {
-    router.push(sessionUrl(s));
+  function openEvent(ev: DayEvent) {
+    if (ev.kind === "session") router.push(sessionUrl(ev.data));
+    else router.push("/schedules/game");
     setDayPopover(null);
   }
 
-  // Month sessions list
-  const monthSessions = filteredSessions
-    .filter((s) => {
-      const [y, m] = s.date.split("-").map(Number);
-      return y === year && m === month + 1;
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
+  // Month event list (sessions + games combined, sorted by date then time)
+  const monthEvents: DayEvent[] = useMemo(() => {
+    const sessionEvents: DayEvent[] = filteredSessions
+      .filter((s) => {
+        const [y, m] = s.date.split("-").map(Number);
+        return y === year && m === month + 1;
+      })
+      .map((s) => ({ kind: "session", data: s }));
+
+    const gameEvents: DayEvent[] = filteredGames
+      .filter((g) => {
+        const [y, m] = g.game_date.split("-").map(Number);
+        return y === year && m === month + 1;
+      })
+      .map((g) => ({ kind: "game", data: g }));
+
+    return [...sessionEvents, ...gameEvents].sort((a, b) => {
+      const dateA = a.kind === "session" ? a.data.date : a.data.game_date;
+      const dateB = b.kind === "session" ? b.data.date : b.data.game_date;
+      return dateA.localeCompare(dateB);
+    });
+  }, [filteredSessions, filteredGames, year, month]);
 
   return (
     <>
@@ -185,10 +243,7 @@ export default function CalendarWidget() {
                 type="button"
                 onClick={() => setTeamFilter(team.id)}
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
-                style={active ? {
-                  color: "white",
-                  borderColor: "transparent",
-                } : {
+                style={active ? { color: "white", borderColor: "transparent" } : {
                   color: "rgb(156 163 175)",
                   backgroundColor: "transparent",
                   borderColor: "rgb(55 65 81)",
@@ -230,10 +285,16 @@ export default function CalendarWidget() {
         <div className="grid grid-cols-7">
           {cells.map((day, idx) => {
             if (!day) return <div key={`e-${idx}`} className="aspect-square border-b border-r border-gray-700/40 last:border-r-0" />;
-            const iso         = cellDate(day);
-            const isToday     = iso === today;
-            const daySessions = sessionsByDate[iso] ?? [];
-            const hasPlan     = daySessions.length > 0;
+            const iso       = cellDate(day);
+            const isToday   = iso === today;
+            const events    = eventsByDate[iso] ?? [];
+            const hasEvents = events.length > 0;
+
+            const sortedEvents = [...events].sort((a, b) => {
+              const timeA = a.kind === "session" ? a.data.start_time : (a.data.game_time ?? "00:00");
+              const timeB = b.kind === "session" ? b.data.start_time : (b.data.game_time ?? "00:00");
+              return timeA.localeCompare(timeB);
+            });
 
             return (
               <button
@@ -241,64 +302,105 @@ export default function CalendarWidget() {
                 type="button"
                 onClick={() => openDay(day)}
                 className={`aspect-square border-b border-r border-gray-700/40 flex flex-col items-start justify-start p-1 gap-0.5 transition-colors
-                  ${isToday ? "bg-mustang-red/10" : "hover:bg-gray-700/40"}
+                  ${isToday ? "bg-coaches-red/10" : "hover:bg-gray-700/40"}
                   ${idx % 7 === 6 ? "border-r-0" : ""}
                 `}
               >
                 <span className={`text-xs font-mono font-semibold leading-none
-                  ${isToday ? "text-mustang-red" : hasPlan ? "text-white" : "text-gray-500"}`}>
+                  ${isToday ? "text-coaches-red" : hasEvents ? "text-white" : "text-gray-500"}`}>
                   {day}
                 </span>
-                {[...daySessions].sort((a, b) => a.start_time.localeCompare(b.start_time)).map((s) => {
-                  const color    = colorFor(s.team_id);
-                  const totalMin = s.drills.reduce((sum, d) => sum + d.duration, 0);
-                  const end      = totalMin > 0 ? addMinutes(s.start_time, totalMin) : null;
-                  return (
-                    <span
-                      key={s.id}
-                      className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${color.text} ${color.bg} border ${color.border} truncate max-w-full`}
-                    >
-                      {formatTimeShort(s.start_time)}{end ? `–${end}` : ""}
-                    </span>
-                  );
+                {sortedEvents.map((ev, i) => {
+                  if (ev.kind === "session") {
+                    const s        = ev.data;
+                    const color    = colorFor(s.team_id);
+                    const totalMin = s.drills.reduce((sum, d) => sum + d.duration, 0);
+                    const end      = totalMin > 0 ? addMinutes(s.start_time, totalMin) : null;
+                    return (
+                      <span key={`s-${s.id}`}
+                        onMouseEnter={(e) => showTooltip(ev, e)}
+                        onMouseLeave={hideTooltip}
+                        className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${color.text} ${color.bg} border ${color.border} truncate max-w-full`}>
+                        {formatTimeShort(s.start_time)}{end ? `–${end}` : ""}
+                      </span>
+                    );
+                  } else {
+                    const g     = ev.data;
+                    const gcls  = gameColorCls(g);
+                    const label = g.time_tbd ? "TBD" : g.game_time ? formatTimeShort(g.game_time) : "";
+                    return (
+                      <span key={`g-${g.id}-${i}`}
+                        onMouseEnter={(e) => showTooltip(ev, e)}
+                        onMouseLeave={hideTooltip}
+                        className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${gcls.text} ${gcls.bg} border ${gcls.border} truncate max-w-full`}>
+                        {label ? `${label} ` : ""}{g.opponent} {locationLabel(g)}
+                      </span>
+                    );
+                  }
                 })}
-                {isToday && !hasPlan && <div className="w-1 h-1 rounded-full bg-mustang-red/60 mt-0.5" />}
+                {isToday && !hasEvents && <div className="w-1 h-1 rounded-full bg-coaches-red/60 mt-0.5" />}
               </button>
             );
           })}
         </div>
 
-        {/* Month sessions list */}
-        {!loading && monthSessions.length > 0 && (
+        {/* Month event list */}
+        {!loading && monthEvents.length > 0 && (
           <div className="border-t border-gray-700">
-            <p className="text-[9px] font-mono text-gray-500 uppercase tracking-wider px-4 pt-2.5 pb-1">{MONTHS[month]} Plans</p>
-            {monthSessions.map((s) => {
-              const color    = colorFor(s.team_id);
-              const teamName = teams.find((t) => t.id === s.team_id)?.name;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => openSession(s)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left"
-                >
-                  <div className={`w-7 h-7 rounded-lg ${color.bg} border ${color.border} flex items-center justify-center shrink-0`}>
-                    <Dumbbell size={12} className={color.text} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-xs font-medium">
-                      {formatDisplayDate(s.date)}
-                      {s.label && <span className="ml-1.5 text-[9px] font-mono text-gray-400 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-full">{s.label}</span>}
-                    </p>
-                    <p className="text-gray-500 text-[10px] font-mono">
-                      {teamName ? `${teamName} · ` : ""}{formatTime12(s.start_time)}
-                    </p>
-                  </div>
-                  {s.date === today && (
-                    <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
-                  )}
-                </button>
-              );
+            <p className="text-[9px] font-mono text-gray-500 uppercase tracking-wider px-4 pt-2.5 pb-1">{MONTHS[month]} Schedule</p>
+            {monthEvents.map((ev, i) => {
+              if (ev.kind === "session") {
+                const s      = ev.data;
+                const color  = colorFor(s.team_id);
+                const teamName = teams.find((t) => t.id === s.team_id)?.name;
+                return (
+                  <button key={`sl-${s.id}`} type="button" onClick={() => openEvent(ev)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left">
+                    <div className={`w-7 h-7 rounded-lg ${color.bg} border ${color.border} flex items-center justify-center shrink-0`}>
+                      <Dumbbell size={12} className={color.text} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium">
+                        {formatDisplayDate(s.date)}
+                        {s.label && <span className="ml-1.5 text-[9px] font-mono text-gray-400 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-full">{s.label}</span>}
+                      </p>
+                      <p className="text-gray-500 text-[10px] font-mono">
+                        {teamName ? `${teamName} · ` : ""}Practice · {formatTime12(s.start_time)}
+                      </p>
+                    </div>
+                    {s.date === today && (
+                      <span className="text-[9px] font-mono text-coaches-red bg-coaches-red/10 border border-coaches-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
+                    )}
+                  </button>
+                );
+              } else {
+                const g    = ev.data;
+                const gcls = gameColorCls(g);
+                const teamName = teams.find((t) => t.id === g.team_id)?.name;
+                const timeStr  = g.time_tbd ? "TBD" : g.game_time ? formatTime12(g.game_time) : "Time TBD";
+                return (
+                  <button key={`gl-${g.id}-${i}`} type="button" onClick={() => openEvent(ev)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left">
+                    <div className={`w-7 h-7 rounded-lg ${gcls.bg} border ${gcls.border} flex items-center justify-center shrink-0`}>
+                      <Swords size={12} className={gcls.text} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium">
+                        {formatDisplayDate(g.game_date)}
+                        <span className={`ml-1.5 text-[9px] font-mono px-1.5 py-0.5 rounded-full ${gcls.text} ${gcls.bg} border ${gcls.border}`}>
+                          {GAME_TYPE_LABELS[g.game_type]}
+                        </span>
+                      </p>
+                      <p className="text-gray-500 text-[10px] font-mono">
+                        {teamName ? `${teamName} · ` : ""}vs {g.opponent} · {locationLabel(g)} · {timeStr}
+                      </p>
+                    </div>
+                    {g.game_date === today && (
+                      <span className="text-[9px] font-mono text-coaches-red bg-coaches-red/10 border border-coaches-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
+                    )}
+                  </button>
+                );
+              }
             })}
           </div>
         )}
@@ -307,25 +409,39 @@ export default function CalendarWidget() {
       {/* Day popover */}
       {dayPopover && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDayPopover(null)}>
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-4 min-w-[240px] shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-4 min-w-[260px] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <p className="text-white font-semibold text-sm mb-3">{formatDisplayDate(dayPopover.iso)}</p>
-            <p className="text-gray-500 text-xs font-mono mb-3">MULTIPLE PLANS — SELECT ONE:</p>
             <div className="flex flex-col gap-2">
-              {[...dayPopover.sessions].sort((a, b) => a.start_time.localeCompare(b.start_time)).map((s) => {
-                const color    = colorFor(s.team_id);
-                const teamName = teams.find((t) => t.id === s.team_id)?.name ?? "Unknown Team";
-                return (
-                  <button key={s.id} type="button" onClick={() => openSession(s)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${color.border} ${color.bg} hover:opacity-90 transition-opacity text-left`}>
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
-                    <div>
-                      <p className={`text-sm font-semibold ${color.text}`}>
-                        {teamName}{s.label ? ` · ${s.label}` : ""}
-                      </p>
-                      <p className="text-gray-500 text-xs font-mono">{s.drills.length} drill{s.drills.length !== 1 ? "s" : ""} · {formatTime12(s.start_time)}</p>
-                    </div>
-                  </button>
-                );
+              {dayPopover.events.map((ev, i) => {
+                if (ev.kind === "session") {
+                  const s        = ev.data;
+                  const color    = colorFor(s.team_id);
+                  const teamName = teams.find((t) => t.id === s.team_id)?.name ?? "Practice";
+                  return (
+                    <button key={`sp-${s.id}`} type="button" onClick={() => openEvent(ev)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${color.border} ${color.bg} hover:opacity-90 transition-opacity text-left`}>
+                      <Dumbbell size={14} className={color.text} />
+                      <div>
+                        <p className={`text-sm font-semibold ${color.text}`}>{teamName}{s.label ? ` · ${s.label}` : ""}</p>
+                        <p className="text-gray-500 text-xs font-mono">Practice · {formatTime12(s.start_time)}</p>
+                      </div>
+                    </button>
+                  );
+                } else {
+                  const g        = ev.data;
+                  const gcls     = gameColorCls(g);
+                  const timeStr  = g.time_tbd ? "TBD" : g.game_time ? formatTime12(g.game_time) : "Time TBD";
+                  return (
+                    <button key={`gp-${g.id}-${i}`} type="button" onClick={() => openEvent(ev)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${gcls.border} ${gcls.bg} hover:opacity-90 transition-opacity text-left`}>
+                      <Swords size={14} className={gcls.text} />
+                      <div>
+                        <p className={`text-sm font-semibold ${gcls.text}`}>vs {g.opponent}</p>
+                        <p className="text-gray-500 text-xs font-mono">{GAME_TYPE_LABELS[g.game_type]} · {locationLabel(g)} · {timeStr}</p>
+                      </div>
+                    </button>
+                  );
+                }
               })}
             </div>
             <button type="button" onClick={() => setDayPopover(null)}
@@ -335,6 +451,68 @@ export default function CalendarWidget() {
           </div>
         </div>
       )}
+
+      {/* Hover tooltip */}
+      {tooltip && (() => {
+        const ev = tooltip.ev;
+        // Clamp so tooltip doesn't overflow right edge of viewport
+        const x = Math.min(tooltip.x, (typeof window !== "undefined" ? window.innerWidth : 800) - 220);
+        if (ev.kind === "session") {
+          const s        = ev.data;
+          const color    = colorFor(s.team_id);
+          const teamName = teams.find((t) => t.id === s.team_id)?.name;
+          const totalMin = s.drills.reduce((sum, d) => sum + d.duration, 0);
+          const end      = totalMin > 0 ? addMinutes(s.start_time, totalMin) : null;
+          return (
+            <div
+              className="fixed z-[60] pointer-events-none"
+              style={{ left: x, top: tooltip.y }}
+            >
+              <div className={`min-w-[180px] max-w-[220px] rounded-xl border ${color.border} ${color.bg} backdrop-blur-sm p-3 shadow-2xl`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Dumbbell size={12} className={color.text} />
+                  <p className={`text-xs font-semibold ${color.text}`}>Practice</p>
+                </div>
+                {teamName && <p className="text-white text-xs font-medium">{teamName}</p>}
+                <p className="text-gray-400 text-[10px] font-mono">{formatDisplayDate(s.date)}</p>
+                <p className="text-gray-400 text-[10px] font-mono">
+                  {formatTime12(s.start_time)}{end ? ` – ${end}` : ""}{totalMin > 0 ? ` (${totalMin} min)` : ""}
+                </p>
+                {s.label && <p className="text-gray-500 text-[10px] font-mono mt-0.5">{s.label}</p>}
+              </div>
+            </div>
+          );
+        } else {
+          const g       = ev.data;
+          const gcls    = gameColorCls(g);
+          const teamName = teams.find((t) => t.id === g.team_id)?.name;
+          const timeStr  = g.time_tbd ? "TBD" : g.game_time ? formatTime12(g.game_time) : "Time TBD";
+          const scored   = g.score_us !== null && g.score_them !== null;
+          return (
+            <div
+              className="fixed z-[60] pointer-events-none"
+              style={{ left: x, top: tooltip.y }}
+            >
+              <div className={`min-w-[180px] max-w-[220px] rounded-xl border ${gcls.border} ${gcls.bg} backdrop-blur-sm p-3 shadow-2xl`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Swords size={12} className={gcls.text} />
+                  <p className={`text-xs font-semibold ${gcls.text}`}>{GAME_TYPE_LABELS[g.game_type]}</p>
+                </div>
+                <p className="text-white text-xs font-medium">vs {g.opponent}</p>
+                {teamName && <p className="text-gray-400 text-[10px] font-mono">{teamName}</p>}
+                <p className="text-gray-400 text-[10px] font-mono">{formatDisplayDate(g.game_date)}</p>
+                <p className="text-gray-400 text-[10px] font-mono">{timeStr} · {g.location_type === "home" ? "Home" : g.location_type === "away" ? "Away" : "Neutral"}</p>
+                {g.venue && <p className="text-gray-500 text-[10px] font-mono truncate">{g.venue}</p>}
+                {scored && (
+                  <p className={`text-[10px] font-mono font-semibold mt-1 ${(g.score_us ?? 0) > (g.score_them ?? 0) ? "text-emerald-400" : "text-red-400"}`}>
+                    {(g.score_us ?? 0) > (g.score_them ?? 0) ? "W" : "L"} {g.score_us}–{g.score_them}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        }
+      })()}
     </>
   );
 }

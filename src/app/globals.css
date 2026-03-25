@@ -7,6 +7,8 @@
   --color-coaches-blue:      #4a9eca;
   --color-coaches-blue-dark: #3a7fa8;
   --color-coaches-navy:      #0a0f1e;
+  --color-coaches-red:       #e63946;  /* platform action / interactive elements */
+  --color-coaches-red-dark:  #c1121f;  /* hover / pressed state */
 
   /* Mustang tenant colours (Memorial Basketball) */
   --color-mustang-red:       #ED1C24;

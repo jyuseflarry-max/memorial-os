@@ -91,7 +91,7 @@ function PlanViewInner() {
               <button
                 type="button"
                 onClick={handleEdit}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-xs font-semibold transition-colors"
               >
                 <Pencil size={13} /> Edit
               </button>
@@ -141,7 +141,7 @@ function PlanViewInner() {
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="text-mustang-red animate-spin" />
+          <Loader2 size={24} className="text-coaches-red animate-spin" />
         </div>
       )}
 

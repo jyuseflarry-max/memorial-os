@@ -2,33 +2,35 @@
 
 import { useState } from "react";
 import { X, Trash2 } from "lucide-react";
-import { Drill, ShotType, IntensityLevel, SessionPosition } from "@/types/drill";
+import { Drill, ShotType, IntensityLevel, SessionPosition, INTENSITY_TIERS, DRILL_OBJECTIVES, COURT_SPACES, DRILL_LEVELS } from "@/types/drill";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
 
 interface Props {
   initialDrill?: Drill;
-  subCategories: string[];
   onSave: (drill: Drill) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
 }
 
+
 function blankForm(drill?: Drill) {
   return {
     name:             drill?.name             ?? "",
-    category:         drill?.category         ?? "Offense",
-    sub_category:     drill?.sub_category     ?? "",
+    categories:       drill?.categories       ?? [] as string[],
     shot_density:     drill?.shot_density     ?? 2,
     shot_type:        drill?.shot_type        ?? ShotType.ThreePoint,
-    intensity:        (drill?.intensity       ?? 3) as IntensityLevel,
+    intensity:        (drill?.intensity       ?? 1) as IntensityLevel,
     default_duration: drill?.default_duration ?? 10,
     session_position: (drill?.session_position ?? "") as SessionPosition | "",
     coaching_notes:   drill?.coaching_notes   ?? "",
     video_url:        drill?.video_url        ?? "",
+    level:            drill?.level            ?? null as number | null,
+    space:            drill?.space            ?? null as number | null,
+    objectives:       drill?.objectives        ?? [] as string[],
   };
 }
 
-export default function DrillForm({ initialDrill, subCategories, onSave, onDelete, onClose }: Props) {
+export default function DrillForm({ initialDrill, onSave, onDelete, onClose }: Props) {
   const { categories } = useDrillCategories();
   const editing = !!initialDrill;
   const [form, setForm]         = useState(blankForm(initialDrill));
@@ -51,6 +53,7 @@ export default function DrillForm({ initialDrill, subCategories, onSave, onDelet
         ...form,
         session_position: form.session_position || null,
         coaching_notes:   form.coaching_notes   || null,
+        objectives:       form.objectives,
       };
       const res  = await fetch(url, {
         method,
@@ -85,7 +88,7 @@ export default function DrillForm({ initialDrill, subCategories, onSave, onDelet
   }
 
   const labelCls = "block text-xs font-mono text-gray-400 mb-1 uppercase tracking-wider";
-  const inputCls = "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors";
+  const inputCls = "w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-blue transition-colors";
 
   return (
     <div
@@ -137,37 +140,30 @@ export default function DrillForm({ initialDrill, subCategories, onSave, onDelet
             />
           </div>
 
-          {/* Category + Sub-Category */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Category</label>
-              <select
-                required
-                className={inputCls}
-                value={form.category}
-                onChange={(e) => set("category", e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>
-                Sub-Category{" "}
-                <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                list="drill-sub-categories"
-                placeholder="e.g. Closeouts"
-                className={inputCls}
-                value={form.sub_category}
-                onChange={(e) => set("sub_category", e.target.value)}
-              />
-              <datalist id="drill-sub-categories">
-                {subCategories.map((s) => <option key={s} value={s} />)}
-              </datalist>
+          {/* Categories */}
+          <div>
+            <label className={labelCls}>
+              Categories{" "}
+              <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => {
+                const active = form.categories.includes(c.name);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => set("categories", active ? form.categories.filter((x) => x !== c.name) : [...form.categories, c.name])}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      active
+                        ? "bg-coaches-blue/20 border-coaches-blue/50 text-coaches-blue"
+                        : "bg-gray-700/60 border-gray-600 text-gray-400 hover:border-gray-400"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -216,7 +212,7 @@ export default function DrillForm({ initialDrill, subCategories, onSave, onDelet
                 step={0.1}
                 className={inputCls}
                 value={form.shot_density}
-                onChange={(e) => set("shot_density", parseFloat(e.target.value))}
+                onChange={(e) => set("shot_density", parseFloat(e.target.value) || 0)}
               />
             </div>
             <div>
@@ -237,22 +233,105 @@ export default function DrillForm({ initialDrill, subCategories, onSave, onDelet
           <div>
             <label className={labelCls}>Intensity</label>
             <div className="flex gap-2">
-              {([1, 2, 3, 4, 5] as IntensityLevel[]).map((n) => (
+              {([1, 2, 3] as IntensityLevel[]).map((n) => (
                 <button
                   key={n}
                   type="button"
                   onClick={() => set("intensity", n)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                  className={`flex-1 py-2.5 rounded-lg text-xs font-semibold border transition-colors flex flex-col items-center gap-0.5 ${
                     form.intensity === n
-                      ? "bg-mustang-red border-mustang-red text-white"
+                      ? "bg-coaches-blue border-coaches-blue text-white"
                       : "bg-gray-700/60 border-gray-600 text-gray-400 hover:border-gray-400"
                   }`}
                 >
-                  {n}
+                  <div className="flex gap-1">
+                    {[1, 2, 3].map((pip) => (
+                      <span key={pip} className={`w-2 h-2 rounded-full ${pip <= n ? "bg-current" : "bg-gray-600"}`} />
+                    ))}
+                  </div>
+                  <span>{n} · {INTENSITY_TIERS[n]}</span>
                 </button>
               ))}
             </div>
-            <p className="text-gray-600 text-[10px] font-mono mt-1">1 = recovery · 5 = all-out</p>
+          </div>
+
+          {/* Objectives */}
+          <div>
+            <label className={labelCls}>
+              Objectives{" "}
+              <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {DRILL_OBJECTIVES.map((o) => {
+                const active = form.objectives.includes(o);
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => set("objectives", active ? form.objectives.filter((x) => x !== o) : [...form.objectives, o])}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      active
+                        ? "bg-purple-500/20 border-purple-400/50 text-purple-300"
+                        : "bg-gray-700/60 border-gray-600 text-gray-400 hover:border-gray-400"
+                    }`}
+                  >
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Drill Level */}
+          <div>
+            <label className={labelCls}>
+              Drill Level{" "}
+              <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
+            </label>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => set("level", form.level === n ? null : n)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                    form.level === n
+                      ? "bg-coaches-blue border-coaches-blue text-white"
+                      : "bg-gray-700/60 border-gray-600 text-gray-400 hover:border-gray-400"
+                  }`}
+                  title={DRILL_LEVELS[n]}
+                >
+                  L{n}
+                </button>
+              ))}
+            </div>
+            <p className="text-gray-600 text-[10px] font-mono mt-1">
+              {form.level ? `L${form.level} · ${DRILL_LEVELS[form.level]}` : "Click a level to assign · click again to clear"}
+            </p>
+          </div>
+
+          {/* Space */}
+          <div>
+            <label className={labelCls}>
+              Space{" "}
+              <span className="text-gray-600 normal-case tracking-normal">(optional)</span>
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {COURT_SPACES.map(({ label, units }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => set("space", form.space === units ? null : units)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                    form.space === units
+                      ? "bg-coaches-blue border-coaches-blue text-white"
+                      : "bg-gray-700/60 border-gray-600 text-gray-400 hover:border-gray-400"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Coaching Notes */}
@@ -294,7 +373,7 @@ export default function DrillForm({ initialDrill, subCategories, onSave, onDelet
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              className="flex-1 py-2.5 rounded-lg bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
             >
               {saving ? "Saving…" : editing ? "Save Changes" : "Save Drill"}
             </button>

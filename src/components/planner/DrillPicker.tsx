@@ -20,7 +20,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
 
   // Unique categories derived from drill list
   const categories = useMemo(
-    () => Array.from(new Set(drills.map((d) => d.category))).sort(),
+    () => Array.from(new Set(drills.flatMap((d) => d.categories ?? []))).sort(),
     [drills]
   );
 
@@ -29,9 +29,8 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
     return drills.filter((d) => {
       const matchesSearch = !q ||
         d.name.toLowerCase().includes(q) ||
-        d.category.toLowerCase().includes(q) ||
-        d.sub_category.toLowerCase().includes(q);
-      const matchesCat = filterCat === "All" || d.category === filterCat;
+        (d.categories ?? []).some((c) => c.toLowerCase().includes(q));
+      const matchesCat = filterCat === "All" || (d.categories ?? []).includes(filterCat);
       return matchesSearch && matchesCat;
     });
   }, [drills, query, filterCat]);
@@ -46,7 +45,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             <button
               type="button"
               onClick={onNewDrill}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-mustang-red/10 hover:bg-mustang-red border border-mustang-red/30 hover:border-mustang-red text-mustang-red hover:text-white text-[11px] font-semibold transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-coaches-red/10 hover:bg-coaches-red border border-coaches-red/30 hover:border-coaches-red text-coaches-red hover:text-white text-[11px] font-semibold transition-colors"
             >
               <Plus size={11} />
               New
@@ -62,7 +61,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             placeholder="Search drills…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
+            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-coaches-red transition-colors"
           />
         </div>
 
@@ -75,7 +74,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
               onClick={() => setFilterCat(cat)}
               className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
                 filterCat === cat
-                  ? "bg-mustang-red border-mustang-red text-white"
+                  ? "bg-coaches-red border-coaches-red text-white"
                   : "bg-gray-700/40 border-gray-600 text-gray-400 hover:text-white"
               }`}
             >
@@ -96,19 +95,19 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{drill.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span
-                  className="text-[10px] font-semibold px-1.5 py-px rounded-full border"
-                  style={{
-                    color: getCatColor(drill.category),
-                    backgroundColor: hexToRgba(getCatColor(drill.category), 0.1),
-                    borderColor: hexToRgba(getCatColor(drill.category), 0.2),
-                  }}
-                >
-                  {drill.category}
-                </span>
-                {drill.sub_category && (
-                  <span className="text-gray-500 text-[10px] font-mono truncate">{drill.sub_category}</span>
-                )}
+                {(drill.categories ?? []).map((cat) => (
+                  <span
+                    key={cat}
+                    className="text-[10px] font-semibold px-1.5 py-px rounded-full border"
+                    style={{
+                      color: getCatColor(cat),
+                      backgroundColor: hexToRgba(getCatColor(cat), 0.1),
+                      borderColor: hexToRgba(getCatColor(cat), 0.2),
+                    }}
+                  >
+                    {cat}
+                  </span>
+                ))}
               </div>
             </div>
             <button
@@ -122,7 +121,7 @@ export default function DrillPicker({ drills, onAdd, onNewDrill }: Props) {
               className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
                 addedId === drill.id
                   ? "bg-green-500 border-green-500 text-white"
-                  : "bg-mustang-red/0 hover:bg-mustang-red border-mustang-red/30 hover:border-mustang-red text-mustang-red hover:text-white"
+                  : "bg-coaches-red/0 hover:bg-coaches-red border-coaches-red/30 hover:border-coaches-red text-coaches-red hover:text-white"
               }`}
             >
               {addedId === drill.id ? <Check size={14} /> : <Plus size={14} />}

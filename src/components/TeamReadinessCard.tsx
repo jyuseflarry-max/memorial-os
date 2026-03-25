@@ -26,7 +26,7 @@ export default function TeamReadinessCard() {
   const barColor = (v: number) => {
     if (v >= 65) return "bg-green-500";
     if (v >= 35) return "bg-yellow-400";
-    return "bg-mustang-red";
+    return "bg-coaches-red";
   };
 
   return (
@@ -34,7 +34,7 @@ export default function TeamReadinessCard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity size={20} className="text-mustang-red" />
+          <Activity size={20} className="text-coaches-red" />
           <h2 className="text-white font-semibold text-lg">
             Team Readiness&nbsp;
             <span className="text-gray-400 font-normal text-sm">— Vibe Check</span>

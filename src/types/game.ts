@@ -7,6 +7,7 @@ export interface Game {
   season: string;            // e.g. "2025-2026"
   game_date: string;         // YYYY-MM-DD
   game_time: string | null;  // HH:MM (24-hr)
+  time_tbd: boolean;
   opponent: string;
   location_type: LocationType;
   game_type: GameType;
@@ -15,6 +16,7 @@ export interface Game {
   highlights_url: string | null;
   box_score_url: string | null;
   game_writeup: string | null;
+  venue: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +42,7 @@ export const EMPTY_DRAFT: GameDraft = {
   season:         "",
   game_date:      "",
   game_time:      null,
+  time_tbd:       false,
   opponent:       "",
   location_type:  "home",
   game_type:      "non-district",
@@ -48,4 +51,5 @@ export const EMPTY_DRAFT: GameDraft = {
   highlights_url: null,
   box_score_url:  null,
   game_writeup:   null,
+  venue:          null,
 };

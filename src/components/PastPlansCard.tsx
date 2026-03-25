@@ -15,7 +15,7 @@ interface SavedSession {
   label: string;
   start_time: string;
   drills: Array<{
-    drill: { id?: string; name: string; category: string; sub_category?: string };
+    drill: { id?: string; name: string; categories?: string[] };
     duration: number;
   }>;
   team_id: string | null;
@@ -55,9 +55,7 @@ function buildEmailBody(session: SavedSession, teamName: string): string {
     const start = formatTime12FromMin(cursor);
     cursor += sd.duration;
     const end = formatTime12FromMin(cursor);
-    const cat = sd.drill.sub_category
-      ? `${sd.drill.category} / ${sd.drill.sub_category}`
-      : sd.drill.category;
+    const cat = (sd.drill.categories ?? []).join(", ") || "—";
     return `  ${String(i + 1).padStart(2, "0")}. ${sd.drill.name}\n      ${start} – ${end} (${sd.duration} min) · ${cat}`;
   });
 
@@ -106,7 +104,7 @@ function CopyModal({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-mustang-red transition-colors mb-4"
+          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-coaches-red transition-colors mb-4"
         />
         <div className="flex gap-2">
           <button type="button" onClick={onClose}
@@ -114,7 +112,7 @@ function CopyModal({
             Cancel
           </button>
           <button type="button" disabled={!date} onClick={() => { if (date) onConfirm(date); }}
-            className="flex-1 px-4 py-2 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
+            className="flex-1 px-4 py-2 rounded-lg bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
             Copy
           </button>
         </div>
@@ -210,7 +208,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
-            <ClipboardList size={18} className="text-mustang-red" />
+            <ClipboardList size={18} className="text-coaches-red" />
             <h2 className="text-white font-semibold">Practice Plans</h2>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -221,7 +219,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
             <select
               value={perPage}
               onChange={(e) => setPerPage(Number(e.target.value))}
-              className="bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-xs font-mono text-gray-300 focus:outline-none focus:border-mustang-red transition-colors"
+              className="bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-xs font-mono text-gray-300 focus:outline-none focus:border-coaches-red transition-colors"
             >
               <option value={10}>10 / page</option>
               <option value={20}>20 / page</option>
@@ -260,7 +258,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
               <div
                 key={s.id}
                 className={`px-4 py-3 transition-colors ${
-                  isToday ? "bg-mustang-red/5" : "hover:bg-gray-700/20"
+                  isToday ? "bg-coaches-red/5" : "hover:bg-gray-700/20"
                 }`}
               >
                 {/* Date + time row */}
@@ -268,7 +266,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                   <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{
                     backgroundColor: isToday ? "rgb(220 38 38)" : isFuture ? "rgb(96 165 250)" : "rgb(107 114 128)",
                   }} />
-                  <p className={`text-sm font-semibold ${isToday ? "text-mustang-red" : "text-white"}`}>
+                  <p className={`text-sm font-semibold ${isToday ? "text-coaches-red" : "text-white"}`}>
                     {formatDate(s.date)}
                   </p>
                   {s.label && (
@@ -276,7 +274,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                   )}
                   <span className="text-gray-500 text-xs font-mono">{formatTime12(s.start_time)}</span>
                   {isToday && (
-                    <span className="text-[9px] font-mono text-mustang-red bg-mustang-red/10 border border-mustang-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
+                    <span className="text-[9px] font-mono text-coaches-red bg-coaches-red/10 border border-coaches-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
                   )}
                   {isFuture && (
                     <span className="text-[9px] font-mono text-blue-400 bg-blue-400/10 border border-blue-400/20 px-1.5 py-0.5 rounded-full">UPCOMING</span>
@@ -366,7 +364,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                       onClick={() => setPage(item as number)}
                       className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${
                         page === item
-                          ? "bg-mustang-red text-white"
+                          ? "bg-coaches-red text-white"
                           : "text-gray-400 hover:text-white hover:bg-gray-700"
                       }`}
                     >

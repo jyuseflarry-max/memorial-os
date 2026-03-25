@@ -128,7 +128,7 @@ function LivePreview({ blocks }: { blocks: Block[] }) {
                   {b.sets}×{b.reps}
                 </td>
                 <td className="px-4 py-2.5 text-center">
-                  <span className="font-mono font-bold text-mustang-red">{b.percentage}%</span>
+                  <span className="font-mono font-bold text-coaches-red">{b.percentage}%</span>
                 </td>
                 {PREVIEW_MAXES.map((m) => (
                   <td key={m} className="px-3 py-2.5 text-center">
@@ -171,7 +171,7 @@ function BlockRow({
     onChange({ ...block, exercise_id: ex.id, exercise_name: ex.name, max_ref: ex.max_ref });
   }
 
-  const inputCls = "bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-mustang-red transition-colors w-full";
+  const inputCls = "bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-coaches-red transition-colors w-full";
 
   // Group exercises by category for the select
   const grouped = exercises.reduce<Record<string, Exercise[]>>((acc, ex) => {
@@ -232,7 +232,7 @@ function BlockRow({
                 step={5}
                 value={block.percentage}
                 onChange={(e) => set("percentage", Math.min(110, Math.max(5, parseInt(e.target.value) || 75)))}
-                className="w-14 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-mustang-red font-mono font-bold text-center focus:outline-none focus:border-mustang-red"
+                className="w-14 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-coaches-red font-mono font-bold text-center focus:outline-none focus:border-coaches-red"
               />
               <button
                 type="button"
@@ -252,7 +252,7 @@ function BlockRow({
               max={20}
               value={block.sets}
               onChange={(e) => set("sets", Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-16 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white font-mono text-center focus:outline-none focus:border-mustang-red transition-colors"
+              className="w-16 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white font-mono text-center focus:outline-none focus:border-coaches-red transition-colors"
             />
           </div>
 
@@ -265,7 +265,7 @@ function BlockRow({
               max={50}
               value={block.reps}
               onChange={(e) => set("reps", Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-16 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white font-mono text-center focus:outline-none focus:border-mustang-red transition-colors"
+              className="w-16 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white font-mono text-center focus:outline-none focus:border-coaches-red transition-colors"
             />
           </div>
         </div>
@@ -273,7 +273,7 @@ function BlockRow({
         {/* Remove */}
         <button
           onClick={onRemove}
-          className="mt-6 w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-mustang-red hover:bg-mustang-red/10 transition-colors shrink-0"
+          className="mt-6 w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-coaches-red hover:bg-coaches-red/10 transition-colors shrink-0"
         >
           <X size={13} />
         </button>
@@ -436,7 +436,7 @@ export default function DesignerPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-24">
-          <Loader2 size={22} className="animate-spin text-mustang-red" />
+          <Loader2 size={22} className="animate-spin text-coaches-red" />
         </div>
       ) : (
         <div className="flex gap-5 items-start">
@@ -457,7 +457,7 @@ export default function DesignerPage() {
 
             {/* New phase form */}
             {showNewForm && (
-              <div className="bg-gray-800 border border-mustang-red/40 rounded-xl p-3 flex flex-col gap-2 mb-1">
+              <div className="bg-gray-800 border border-coaches-red/40 rounded-xl p-3 flex flex-col gap-2 mb-1">
                 <input
                   autoFocus
                   type="text"
@@ -465,7 +465,7 @@ export default function DesignerPage() {
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setShowNewForm(false); }}
                   placeholder="Phase name…"
-                  className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors w-full"
+                  className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors w-full"
                 />
                 <div className="flex gap-2">
                   <button
@@ -475,7 +475,7 @@ export default function DesignerPage() {
                   <button
                     onClick={handleCreate}
                     disabled={!newName.trim() || creatingNew}
-                    className="flex-1 py-1.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark text-white text-xs font-semibold disabled:opacity-50 transition-colors"
+                    className="flex-1 py-1.5 rounded-lg bg-coaches-red hover:bg-coaches-red-dark text-white text-xs font-semibold disabled:opacity-50 transition-colors"
                   >
                     {creatingNew ? <Loader2 size={11} className="animate-spin mx-auto" /> : "Create"}
                   </button>
@@ -493,12 +493,12 @@ export default function DesignerPage() {
                   onClick={() => selectPhase(phase)}
                   className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-colors flex items-center justify-between gap-2 ${
                     activeId === phase.id
-                      ? "bg-mustang-red/15 border border-mustang-red/30 text-white"
+                      ? "bg-coaches-red/15 border border-coaches-red/30 text-white"
                       : "text-gray-400 hover:bg-gray-800 hover:text-white border border-transparent"
                   }`}
                 >
                   <span className="truncate">{phase.name}</span>
-                  {activeId === phase.id && <ChevronRight size={12} className="text-mustang-red shrink-0" />}
+                  {activeId === phase.id && <ChevronRight size={12} className="text-coaches-red shrink-0" />}
                 </button>
               ))
             )}
@@ -522,13 +522,13 @@ export default function DesignerPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     {saveStatus === "saving" && <Loader2 size={13} className="animate-spin text-gray-500" />}
                     {saveStatus === "saved"  && <CheckCircle2 size={13} className="text-emerald-400" />}
-                    {saveStatus === "error"  && <AlertCircle  size={13} className="text-mustang-red" />}
+                    {saveStatus === "error"  && <AlertCircle  size={13} className="text-coaches-red" />}
                     <span className="text-[10px] font-mono text-gray-600">
                       {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Error" : "Auto-saved"}
                     </span>
                     <button
                       onClick={handleDeletePhase}
-                      className="ml-2 text-gray-600 hover:text-mustang-red transition-colors"
+                      className="ml-2 text-gray-600 hover:text-coaches-red transition-colors"
                       title="Delete phase"
                     >
                       <Trash2 size={14} />
@@ -600,8 +600,8 @@ export default function DesignerPage() {
                 <p className="text-gray-600 font-mono text-xs mb-4">Create a phase to get started</p>
                 <button
                   onClick={() => setShowNewForm(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-mustang-red
-                             hover:bg-mustang-red-dark text-white text-sm font-semibold transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-coaches-red
+                             hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
                 >
                   <Plus size={14} /> New Phase
                 </button>

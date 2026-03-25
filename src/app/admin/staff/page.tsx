@@ -18,7 +18,7 @@ interface StaffMember {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  Admin:   "text-mustang-red bg-mustang-red/10 border-mustang-red/20",
+  Admin:   "text-coaches-red bg-coaches-red/10 border-coaches-red/20",
   Coach:   "text-blue-400 bg-blue-400/10 border-blue-400/20",
   Manager: "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
@@ -70,7 +70,7 @@ function AddStaffModal({ onAdd, onClose }: {
             <input
               type="text" required value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-mustang-red transition-colors"
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
               placeholder="Coach Johnson"
             />
           </div>
@@ -80,7 +80,7 @@ function AddStaffModal({ onAdd, onClose }: {
             <input
               type="email" required value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-mustang-red transition-colors"
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
               placeholder="coach@school.edu"
             />
           </div>
@@ -89,7 +89,7 @@ function AddStaffModal({ onAdd, onClose }: {
             <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Role</label>
             <select
               value={role} onChange={(e) => setRole(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-mustang-red transition-colors"
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
             >
               <option value="Coach">Coach</option>
               <option value="Manager">Manager</option>
@@ -108,7 +108,7 @@ function AddStaffModal({ onAdd, onClose }: {
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-mustang-red disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+              className="flex-1 py-2.5 rounded-xl bg-coaches-red disabled:opacity-50 text-white text-sm font-semibold transition-colors">
               {saving ? "Sending…" : "Send Invite"}
             </button>
           </div>
@@ -188,7 +188,7 @@ export default function StaffPage() {
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
         >
           <UserPlus size={16} /> Invite Staff
         </button>
@@ -236,7 +236,7 @@ export default function StaffPage() {
                   <div className="flex items-center gap-2">
                     <p className="text-white font-medium">{member.full_name ?? "—"}</p>
                     {member.role === "Admin" && (
-                      <ShieldCheck size={13} className="text-mustang-red shrink-0" />
+                      <ShieldCheck size={13} className="text-coaches-red shrink-0" />
                     )}
                   </div>
                 </td>

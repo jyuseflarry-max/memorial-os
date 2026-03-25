@@ -23,7 +23,7 @@ export default function ViewPlansPage() {
         </div>
         <Link
           href="/build-a-plan"
-          className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg shrink-0"
+          className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg shrink-0"
         >
           <Plus size={16} />
           New Plan

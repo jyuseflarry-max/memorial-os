@@ -149,7 +149,7 @@ export default function ShotCounterModal({ drill, defaultPlayerCount, onClose, o
             <button
               onClick={startCounting}
               className="w-full py-4 rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-2 transition-colors"
-              style={{ backgroundColor: "var(--color-mustang-red)" }}
+              style={{ backgroundColor: "var(--color-coaches-red)" }}
             >
               <Target size={20} />
               Start Counting
@@ -173,7 +173,7 @@ export default function ShotCounterModal({ drill, defaultPlayerCount, onClose, o
             <button
               onClick={() => setShots((s) => s + 1)}
               className="w-full rounded-2xl flex flex-col items-center justify-center gap-1 py-10 active:scale-95 transition-transform select-none"
-              style={{ backgroundColor: "var(--color-mustang-red)" }}
+              style={{ backgroundColor: "var(--color-coaches-red)" }}
             >
               <span className="text-7xl font-black text-white tabular-nums leading-none">{shots}</span>
               <span className="text-white/70 text-sm font-semibold uppercase tracking-widest">tap to count</span>
@@ -247,7 +247,7 @@ export default function ShotCounterModal({ drill, defaultPlayerCount, onClose, o
                     ? "bg-green-600/20 border border-green-600/40 text-green-400"
                     : "text-white"
                 }`}
-                style={saved ? undefined : { backgroundColor: "var(--color-mustang-red)" }}
+                style={saved ? undefined : { backgroundColor: "var(--color-coaches-red)" }}
               >
                 {saving ? (
                   <><Loader2 size={14} className="animate-spin" /> Saving…</>

@@ -153,8 +153,8 @@ export default function AIGeneratorPanel({ playerCount, teamName, drills, onLoad
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-mustang-red/20 border border-mustang-red/40 flex items-center justify-center shrink-0">
-            <Sparkles size={12} className="text-mustang-red" />
+          <div className="w-6 h-6 rounded-md bg-coaches-red/20 border border-coaches-red/40 flex items-center justify-center shrink-0">
+            <Sparkles size={12} className="text-coaches-red" />
           </div>
           <span className="text-sm font-semibold text-white">AI Practice Generator</span>
           <span className="text-[10px] font-mono text-gray-500 bg-gray-700 px-1.5 py-0.5 rounded">
@@ -185,7 +185,7 @@ export default function AIGeneratorPanel({ playerCount, teamName, drills, onLoad
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generate();
                   }}
                   placeholder={`Describe the practice you want to build…\n\ne.g. "90 minutes focusing on defense — specifically closeouts and help rotations — plus transition offense. Everyone should get at least 200 shots."`}
-                  className="w-full bg-gray-900 border border-gray-700 focus:border-mustang-red/60 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none resize-none leading-relaxed transition-colors"
+                  className="w-full bg-gray-900 border border-gray-700 focus:border-coaches-red/60 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none resize-none leading-relaxed transition-colors"
                 />
                 <p className="absolute bottom-2 right-3 text-[10px] font-mono text-gray-700 pointer-events-none">
                   ⌘↵ to generate
@@ -213,7 +213,7 @@ export default function AIGeneratorPanel({ playerCount, teamName, drills, onLoad
                   type="button"
                   onClick={() => generate()}
                   disabled={loading || !prompt.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 text-white text-sm font-semibold transition-colors"
                 >
                   {loading ? (
                     <>
@@ -251,13 +251,13 @@ export default function AIGeneratorPanel({ playerCount, teamName, drills, onLoad
                   onChange={(e) => setClarifyInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleClarifySubmit()}
                   placeholder="Your answer…"
-                  className="flex-1 bg-gray-900 border border-gray-700 focus:border-mustang-red/60 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors"
+                  className="flex-1 bg-gray-900 border border-gray-700 focus:border-coaches-red/60 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors"
                 />
                 <button
                   type="button"
                   onClick={handleClarifySubmit}
                   disabled={!clarifyInput.trim()}
-                  className="px-4 py-2 rounded-xl bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+                  className="px-4 py-2 rounded-xl bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 text-white text-sm font-semibold transition-colors"
                 >
                   Continue
                 </button>
@@ -309,7 +309,7 @@ export default function AIGeneratorPanel({ playerCount, teamName, drills, onLoad
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                     loaded
                       ? "bg-green-600/20 border border-green-600/40 text-green-400"
-                      : "bg-mustang-red hover:bg-mustang-red-dark text-white"
+                      : "bg-coaches-red hover:bg-coaches-red-dark text-white"
                   }`}
                 >
                   {loaded ? (

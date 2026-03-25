@@ -174,7 +174,7 @@ function ShotCounterInner() {
                   <select
                     value={selectedId}
                     onChange={(e) => setSelectedId(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors appearance-none pr-8"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors appearance-none pr-8"
                   >
                     <option value="">— Choose a drill —</option>
                     {drills.map((d) => (
@@ -225,7 +225,7 @@ function ShotCounterInner() {
             <button
               onClick={handleStart}
               disabled={!selectedId}
-              className="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white font-bold text-base transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+              className="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white font-bold text-base transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-2"
             >
               <Play size={18} fill="currentColor" />
               Start Drill
@@ -245,8 +245,8 @@ function ShotCounterInner() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-mustang-red animate-pulse" />
-              <span className="text-mustang-red font-mono text-xs font-bold uppercase tracking-widest">Live</span>
+              <span className="w-2 h-2 rounded-full bg-coaches-red animate-pulse" />
+              <span className="text-coaches-red font-mono text-xs font-bold uppercase tracking-widest">Live</span>
             </div>
             <span className="text-gray-400 font-mono text-xs truncate max-w-[200px]">{selectedDrill?.name}</span>
           </div>
@@ -260,7 +260,7 @@ function ShotCounterInner() {
             <p className="text-white font-mono text-7xl font-black leading-none">{shots}</p>
             <p className="text-gray-500 font-mono text-xs uppercase tracking-widest mt-2">Total Shots</p>
             {elapsed > 0 && (
-              <p className="text-mustang-red font-mono text-sm font-bold mt-1">
+              <p className="text-coaches-red font-mono text-sm font-bold mt-1">
                 {liveRate} shots/player/min
               </p>
             )}
@@ -268,7 +268,7 @@ function ShotCounterInner() {
 
           <button
             onClick={addShot}
-            className="w-full bg-mustang-red hover:bg-mustang-red-dark active:scale-95 transition-all rounded-2xl flex flex-col items-center justify-center gap-1 select-none"
+            className="w-full bg-coaches-red hover:bg-coaches-red-dark active:scale-95 transition-all rounded-2xl flex flex-col items-center justify-center gap-1 select-none"
             style={{ minHeight: "160px" }}
           >
             <Target size={36} className="text-white/80" />
@@ -312,14 +312,14 @@ function ShotCounterInner() {
             ].map(({ label, value, highlight }) => (
               <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-700/50 last:border-0">
                 <span className="text-gray-400 text-sm">{label}</span>
-                <span className={`font-mono text-sm font-bold ${highlight ? "text-mustang-red" : "text-white"}`}>{value}</span>
+                <span className={`font-mono text-sm font-bold ${highlight ? "text-coaches-red" : "text-white"}`}>{value}</span>
               </div>
             ))}
           </div>
 
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mb-5">
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={14} className="text-mustang-red" />
+              <TrendingUp size={14} className="text-coaches-red" />
               <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Drill Vault Update</p>
             </div>
 
@@ -366,7 +366,7 @@ function ShotCounterInner() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white font-bold text-sm transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white font-bold text-sm transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />}
                 {saving ? "Saving…" : "Save to Drill Vault"}

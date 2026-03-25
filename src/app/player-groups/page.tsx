@@ -69,7 +69,7 @@ function GroupingEditor({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
-            <Users size={18} className="text-mustang-red" />
+            <Users size={18} className="text-coaches-red" />
             <p className="text-white font-semibold">{initial ? "Edit Grouping" : "New Grouping"}</p>
           </div>
           <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
@@ -86,7 +86,7 @@ function GroupingEditor({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Shooting Groups, Scrimmage Teams…"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-coaches-red transition-colors"
             />
           </div>
 
@@ -99,10 +99,10 @@ function GroupingEditor({
                   <label className="text-gray-500 text-xs font-mono block mb-1">NUMBER OF GROUPS</label>
                   <input type="number" min={1} max={10} value={numGroups}
                     onChange={(e) => setNumGroups(Math.max(1, Math.min(10, Number(e.target.value))))}
-                    className="w-20 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-mustang-red transition-colors" />
+                    className="w-20 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-coaches-red transition-colors" />
                 </div>
                 <button type="button" onClick={handleCreateStructure}
-                  className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                  className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
                   <Plus size={14} /> Create Groups
                 </button>
               </div>
@@ -132,7 +132,7 @@ function GroupingEditor({
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragOverGroup(-1); }}
                 onDrop={(e) => { e.preventDefault(); handleDropOnUnassigned(); }}
-                className={`rounded-xl border-2 p-3 transition-colors ${dragOverGroup === -1 ? "border-mustang-red bg-mustang-red/5" : "border-gray-700 bg-gray-800/40"}`}
+                className={`rounded-xl border-2 p-3 transition-colors ${dragOverGroup === -1 ? "border-coaches-red bg-coaches-red/5" : "border-gray-700 bg-gray-800/40"}`}
               >
                 <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider mb-2">Unassigned ({unassigned.length})</p>
                 <div className="flex flex-wrap gap-1.5 min-h-[36px]">
@@ -170,7 +170,7 @@ function GroupingEditor({
             Cancel
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !name.trim() || groups.length === 0}
-            className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
             <Save size={14} />
             {saving ? "Saving…" : "Save Grouping"}
           </button>
@@ -195,8 +195,8 @@ function GroupingCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-mustang-red/10 border border-mustang-red/20 flex items-center justify-center shrink-0">
-            <Users size={16} className="text-mustang-red" />
+          <div className="w-9 h-9 rounded-xl bg-coaches-red/10 border border-coaches-red/20 flex items-center justify-center shrink-0">
+            <Users size={16} className="text-coaches-red" />
           </div>
           <div>
             <p className="text-white font-semibold text-sm leading-tight">{grouping.name}</p>
@@ -313,7 +313,7 @@ export default function PlayerGroupsPage() {
         </div>
         <button
           onClick={() => setEditing("new")}
-          className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
         >
           <Plus size={16} /> New Grouping
         </button>

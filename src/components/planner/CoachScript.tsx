@@ -117,7 +117,7 @@ export default function CoachScript({ session, players = [] }: Props) {
         {/* ── Red accent bar ───────────────────────────────────────────── */}
         <div
           className="hidden print:block w-full mb-0"
-          style={{ backgroundColor: "var(--color-mustang-red)", height: "6px" }}
+          style={{ backgroundColor: "var(--color-coaches-red)", height: "6px" }}
         />
 
         {/* ── Main header ─────────────────────────────────────────────── */}
@@ -135,7 +135,7 @@ export default function CoachScript({ session, players = [] }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <p className="font-black text-2xl tracking-tight leading-none" style={{ color: "var(--color-mustang-red)" }}>
+            <p className="font-black text-2xl tracking-tight leading-none" style={{ color: "var(--color-coaches-red)" }}>
               PRACTICE PLAN
             </p>
             <p className="text-black font-bold text-xs mt-0.5">{dateLabel}</p>
@@ -185,14 +185,6 @@ export default function CoachScript({ session, players = [] }: Props) {
                       <span className="block text-gray-500 print:text-gray-400 text-[10px]">
                         {row.duration} min
                       </span>
-                      {row.drill.sub_category && (
-                        <span
-                          className="block text-[10px] font-semibold mt-0.5 print:opacity-80"
-                          style={{ color: getCatColor(row.drill.category) }}
-                        >
-                          {row.drill.sub_category}
-                        </span>
-                      )}
                     </td>
 
                     {/* Time remaining — print only */}
@@ -203,6 +195,11 @@ export default function CoachScript({ session, players = [] }: Props) {
                     {/* Drill name */}
                     <td className="px-4 py-3 print:py-1.5 print:px-3 align-top">
                       <p className="text-white print:text-black font-semibold print:text-xs">{row.drill.name}</p>
+                      {(row.drill.objectives ?? []).length > 0 && (
+                        <p className="text-gray-500 print:text-gray-500 text-[10px] font-mono mt-0.5">
+                          {row.drill.objectives!.join(" · ")}
+                        </p>
+                      )}
                     </td>
 
                     {/* Shot counter button — screen only */}
@@ -212,7 +209,7 @@ export default function CoachScript({ session, players = [] }: Props) {
                           type="button"
                           onClick={() => setCountingDrill(row)}
                           title="Count shots for this drill"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-white hover:bg-mustang-red/20 hover:border-mustang-red/40 border border-transparent transition-colors"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-white hover:bg-coaches-red/20 hover:border-coaches-red/40 border border-transparent transition-colors"
                         >
                           <Target size={15} />
                         </button>
@@ -270,7 +267,7 @@ export default function CoachScript({ session, players = [] }: Props) {
         {/* ── Footer bar ──────────────────────────────────────────────── */}
         <div
           className="hidden print:flex items-center justify-between px-3 py-1.5 text-white text-[9px] font-mono"
-          style={{ backgroundColor: "var(--color-mustang-red)" }}
+          style={{ backgroundColor: "var(--color-coaches-red)" }}
         >
           <span>{settings.program_name.toUpperCase()} · STAFF CONFIDENTIAL</span>
           <span>Generated {generatedOn} · {settings.program_name}</span>

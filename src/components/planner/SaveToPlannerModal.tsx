@@ -86,7 +86,7 @@ export default function SaveToPlannerModal({ session, teamId, onClose }: SaveToP
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-mustang-red transition-colors"
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-coaches-red transition-colors"
             />
           </div>
 
@@ -123,7 +123,7 @@ export default function SaveToPlannerModal({ session, teamId, onClose }: SaveToP
               className={`w-full bg-gray-700 border rounded-lg px-3 py-2 text-white text-sm focus:outline-none transition-colors ${
                 labelConflict
                   ? "border-red-500 focus:border-red-500"
-                  : "border-gray-600 focus:border-mustang-red"
+                  : "border-gray-600 focus:border-coaches-red"
               }`}
             />
             {labelConflict && (
@@ -148,7 +148,7 @@ export default function SaveToPlannerModal({ session, teamId, onClose }: SaveToP
               type="button"
               onClick={handleSave}
               disabled={saving || labelConflict}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               {saving ? "Saving…" : "Save"}

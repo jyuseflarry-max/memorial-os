@@ -54,7 +54,6 @@ const NAV_GROUPS = [
     items: [
       { label: "Build a Plan",      href: "/build-a-plan",            icon: Sparkles,     staff: false },
       { label: "View Plans",        href: "/view-plans",              icon: ListChecks,   staff: false },
-      { label: "Calendar",          href: "/",                        icon: RadioTower,   staff: false },
       { label: "Drill Vault",       href: "/drill-vault",             icon: Layers,       staff: false },
     ],
   },
@@ -69,7 +68,8 @@ const NAV_GROUPS = [
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game", href: "/schedules/game", icon: Gamepad2, staff: false },
+      { label: "Game",     href: "/schedules/game", icon: Gamepad2,   staff: false },
+      { label: "Calendar", href: "/",               icon: RadioTower, staff: false },
     ],
   },
   {

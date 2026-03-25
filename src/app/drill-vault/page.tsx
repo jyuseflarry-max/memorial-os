@@ -7,7 +7,7 @@ import DrillForm from "@/components/drill-vault/DrillForm";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
-import { Drill } from "@/types/drill";
+import { Drill, INTENSITY_TIERS, IntensityLevel, DRILL_LEVELS } from "@/types/drill";
 import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 
 interface DrillUsage { last_used: string; use_count: number; }
@@ -18,12 +18,17 @@ function formatShortDate(iso: string): string {
 
 // ── Intensity pip display ─────────────────────────────────────────────────
 
+
 function IntensityPips({ level }: { level: number }) {
+  const tier = Math.min(Math.max(level, 1), 3) as IntensityLevel;
   return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className={`w-2 h-2 rounded-full ${n <= level ? "bg-mustang-red" : "bg-gray-600"}`} />
-      ))}
+    <div className="flex items-center gap-1.5">
+      <div className="flex gap-0.5">
+        {[1, 2, 3].map((n) => (
+          <span key={n} className={`w-2 h-2 rounded-full ${n <= tier ? "bg-coaches-blue" : "bg-gray-600"}`} />
+        ))}
+      </div>
+      <span className="text-[10px] font-mono text-gray-500">{INTENSITY_TIERS[tier]}</span>
     </div>
   );
 }
@@ -38,6 +43,7 @@ export default function DrillVaultPage() {
   const { getCatColor, addCategory } = useDrillCategories();
   const [query, setQuery]             = useState("");
   const [filterCat, setFilterCat]     = useState("All");
+  const [filterLevel, setFilterLevel] = useState<number | null>(null);
   const [editing, setEditing]         = useState<Drill | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [duplicating, setDuplicating] = useState<string | null>(null);
@@ -58,13 +64,8 @@ export default function DrillVaultPage() {
       .catch(() => {});
   }, [activeTeam, settings.season_start]);
 
-  // Unique lists for filter dropdowns and datalist suggestions
   const categories = useMemo(
-    () => Array.from(new Set(drills.map((d) => d.category))).sort(),
-    [drills]
-  );
-  const subCategories = useMemo(
-    () => Array.from(new Set(drills.map((d) => d.sub_category).filter(Boolean))).sort(),
+    () => Array.from(new Set(drills.flatMap((d) => d.categories ?? []))).sort(),
     [drills]
   );
 
@@ -75,10 +76,10 @@ export default function DrillVaultPage() {
         const matchesSearch =
           !q ||
           d.name.toLowerCase().includes(q) ||
-          d.sub_category.toLowerCase().includes(q) ||
-          d.category.toLowerCase().includes(q);
-        const matchesCat = filterCat === "All" || d.category === filterCat;
-        return matchesSearch && matchesCat;
+          (d.categories ?? []).some((c) => c.toLowerCase().includes(q));
+        const matchesCat   = filterCat === "All" || (d.categories ?? []).includes(filterCat);
+        const matchesLevel = filterLevel === null || d.level === filterLevel;
+        return matchesSearch && matchesCat && matchesLevel;
       })
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
   }, [drills, query, filterCat]);
@@ -131,11 +132,40 @@ export default function DrillVaultPage() {
         </div>
         <button
           onClick={() => setShowNewForm(true)}
-          className="flex items-center gap-2 bg-mustang-red hover:bg-mustang-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          className="flex items-center gap-2 bg-coaches-blue hover:bg-coaches-blue-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
         >
           <Plus size={16} />
           New Drill
         </button>
+      </div>
+
+      {/* Level filter chips */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setFilterLevel(null)}
+          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+            filterLevel === null
+              ? "bg-coaches-blue/15 text-coaches-blue border-coaches-blue/40"
+              : "text-gray-400 border-gray-700 hover:border-gray-500"
+          }`}
+        >
+          All Levels
+        </button>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setFilterLevel(filterLevel === n ? null : n)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filterLevel === n
+                ? "bg-coaches-blue/15 text-coaches-blue border-coaches-blue/40"
+                : "text-gray-400 border-gray-700 hover:border-gray-500"
+            }`}
+          >
+            L{n} · {DRILL_LEVELS[n]}
+          </button>
+        ))}
       </div>
 
       {/* Search */}
@@ -144,7 +174,7 @@ export default function DrillVaultPage() {
         <input
           type="text"
           placeholder="Search drills…"
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-mustang-red transition-colors"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-coaches-blue transition-colors"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -210,7 +240,7 @@ export default function DrillVaultPage() {
                   required
                   type="text"
                   placeholder="e.g. Transition"
-                  className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mustang-red transition-colors"
+                  className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-blue transition-colors"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
                 />
@@ -227,7 +257,7 @@ export default function DrillVaultPage() {
                 <button
                   type="submit"
                   disabled={catSaving}
-                  className="flex-1 py-2.5 rounded-lg bg-mustang-red hover:bg-mustang-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+                  className="flex-1 py-2.5 rounded-lg bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
                 >
                   {catSaving ? "Saving…" : "Save Category"}
                 </button>
@@ -255,10 +285,20 @@ export default function DrillVaultPage() {
               {/* Name */}
               <p className="text-white text-sm font-semibold mb-1">{drill.name}</p>
               {/* Attributes */}
-              <div className="flex items-center gap-3 mb-2">
-                {drill.sub_category && (
-                  <span className="text-gray-400 text-xs font-mono">{drill.sub_category}</span>
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                {drill.level && (
+                  <span className="text-coaches-blue text-[10px] font-mono font-bold bg-coaches-blue/10 border border-coaches-blue/25 px-2 py-0.5 rounded-full">
+                    L{drill.level} · {DRILL_LEVELS[drill.level]}
+                  </span>
                 )}
+                {drill.objectives?.map((o) => (
+                  <span key={o} className="text-purple-400 text-[10px] font-mono bg-purple-400/10 border border-purple-400/25 px-2 py-0.5 rounded-full">
+                    {o}
+                  </span>
+                ))}
+                {(drill.categories ?? []).map((c) => (
+                  <span key={c} className="text-coaches-blue text-[10px] font-mono bg-coaches-blue/10 border border-coaches-blue/25 px-2 py-0.5 rounded-full">{c}</span>
+                ))}
                 <IntensityPips level={drill.intensity} />
                 <span className="text-gray-400 text-xs font-mono">
                   {drill.default_duration ?? 10}m
@@ -274,7 +314,7 @@ export default function DrillVaultPage() {
               <div className="flex items-center gap-1">
                 {drill.video_url ? (
                   <a href={drill.video_url} target="_blank" rel="noopener noreferrer"
-                    className="p-2 rounded-lg text-mustang-red hover:bg-mustang-red/10 border border-gray-700 hover:border-mustang-red/30 transition-colors" title="Watch video">
+                    className="p-2 rounded-lg text-coaches-blue hover:bg-coaches-blue/10 border border-gray-700 hover:border-coaches-blue/30 transition-colors" title="Watch video">
                     <ExternalLink size={14} />
                   </a>
                 ) : (
@@ -309,7 +349,6 @@ export default function DrillVaultPage() {
 
       {showNewForm && (
         <DrillForm
-          subCategories={subCategories}
           onSave={(drill: Drill) => addToCache(drill)}
           onClose={() => setShowNewForm(false)}
         />
@@ -317,7 +356,6 @@ export default function DrillVaultPage() {
       {editing && (
         <DrillForm
           initialDrill={editing}
-          subCategories={subCategories}
           onSave={(drill: Drill) => updateInCache(drill)}
           onDelete={(id: string) => removeFromCache(id)}
           onClose={() => setEditing(null)}

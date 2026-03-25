@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState } from "react";
 import { register } from "@/actions/auth";
 import { ChevronRight } from "lucide-react";
@@ -8,16 +9,10 @@ export default function RegisterPage() {
   const [state, action, pending] = useActionState(register, null);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
-      {/* Wordmark */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
-        </div>
-        <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
-          Basketball OS
-        </span>
+    <div className="min-h-screen bg-coaches-navy flex flex-col items-center justify-center px-5 py-10">
+      {/* Logo */}
+      <div className="mb-8">
+        <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={220} height={88} className="h-16 w-auto object-contain rounded-xl" priority />
       </div>
 
       <div className="w-full max-w-sm">
@@ -44,7 +39,7 @@ export default function RegisterPage() {
                   name="school_name"
                   type="text"
                   required
-                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                   placeholder="Memorial High School"
                 />
               </div>
@@ -57,7 +52,7 @@ export default function RegisterPage() {
                   name="subscription_tier"
                   required
                   defaultValue="free"
-                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                 >
                   <option value="free">Free</option>
                   <option value="pro">Pro</option>
@@ -80,7 +75,7 @@ export default function RegisterPage() {
                   name="full_name"
                   type="text"
                   required
-                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                   placeholder="Coach Smith"
                 />
               </div>
@@ -94,7 +89,7 @@ export default function RegisterPage() {
                   type="email"
                   required
                   autoComplete="email"
-                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                   placeholder="coach@school.edu"
                 />
               </div>
@@ -109,7 +104,7 @@ export default function RegisterPage() {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                   placeholder="Min. 8 characters"
                 />
               </div>
@@ -124,7 +119,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={pending}
-              className="flex items-center justify-center gap-2 w-full min-h-[52px] rounded-2xl bg-mustang-red disabled:opacity-50 text-white font-semibold text-base transition-colors mt-1"
+              className="flex items-center justify-center gap-2 w-full min-h-[52px] rounded-2xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white font-semibold text-base transition-colors mt-1"
             >
               {pending ? "Creating…" : "Create school & account"}{" "}
               <ChevronRight size={18} />

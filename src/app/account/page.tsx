@@ -2,6 +2,7 @@
 
 import { Suspense, useActionState, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { updateProfile, updatePassword } from "@/actions/account";
@@ -65,11 +66,14 @@ function AccountPageInner() {
       <div className="max-w-lg mx-auto flex flex-col gap-6">
         {/* Welcome banner for newly invited users */}
         {isWelcome && (
-          <div className="flex items-center gap-3 bg-mustang-red/10 border border-mustang-red/20 rounded-2xl px-5 py-4">
-            <PartyPopper size={20} className="text-mustang-red shrink-0" />
-            <div>
-              <p className="text-white font-semibold text-sm">Welcome to the program.</p>
-              <p className="text-gray-400 text-xs mt-0.5">Set your name below so your coaches know it&apos;s you, then head into the app.</p>
+          <div className="flex flex-col items-center gap-4 bg-coaches-blue/10 border border-coaches-blue/20 rounded-2xl px-5 py-5">
+            <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={160} height={64} className="h-10 w-auto object-contain rounded" />
+            <div className="flex items-start gap-3">
+              <PartyPopper size={20} className="text-coaches-blue shrink-0 mt-0.5" />
+              <div>
+                <p className="text-white font-semibold text-sm">Welcome to the program.</p>
+                <p className="text-gray-400 text-xs mt-0.5">Set your name below so your coaches know it&apos;s you, then head into the app.</p>
+              </div>
             </div>
           </div>
         )}
@@ -94,7 +98,7 @@ function AccountPageInner() {
         {/* Profile */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <User size={16} className="text-mustang-red" />
+            <User size={16} className="text-coaches-blue" />
             <h2 className="text-white font-semibold text-sm">Profile</h2>
           </div>
 
@@ -109,7 +113,7 @@ function AccountPageInner() {
                 required
                 defaultValue={account?.fullName ?? ""}
                 key={account?.fullName}
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-mustang-red transition-colors"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-blue transition-colors"
                 placeholder="Your full name"
               />
             </div>
@@ -119,7 +123,7 @@ function AccountPageInner() {
             <button
               type="submit"
               disabled={profilePending}
-              className="self-start px-5 py-2.5 rounded-xl bg-mustang-red disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              className="self-start px-5 py-2.5 rounded-xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
             >
               {profilePending ? "Saving…" : "Save name"}
             </button>
@@ -129,7 +133,7 @@ function AccountPageInner() {
         {/* Password */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <KeyRound size={16} className="text-mustang-red" />
+            <KeyRound size={16} className="text-coaches-blue" />
             <h2 className="text-white font-semibold text-sm">Change Password</h2>
           </div>
 
@@ -144,7 +148,7 @@ function AccountPageInner() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-mustang-red transition-colors"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-blue transition-colors"
                 placeholder="Min. 8 characters"
               />
             </div>
@@ -159,7 +163,7 @@ function AccountPageInner() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-mustang-red transition-colors"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-blue transition-colors"
                 placeholder="Re-enter password"
               />
             </div>
@@ -169,7 +173,7 @@ function AccountPageInner() {
             <button
               type="submit"
               disabled={passwordPending}
-              className="self-start px-5 py-2.5 rounded-xl bg-mustang-red disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              className="self-start px-5 py-2.5 rounded-xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
             >
               {passwordPending ? "Updating…" : "Update password"}
             </button>

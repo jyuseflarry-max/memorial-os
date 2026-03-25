@@ -13,8 +13,8 @@ export default function PrintOrientationStyle() {
   return (
     <style>{`
       :root {
-        --color-mustang-red: ${settings.primary_color};
-        --color-mustang-red-dark: ${settings.primary_color_dark};
+        --color-coaches-red: ${settings.primary_color};
+        --color-coaches-red-dark: ${settings.primary_color_dark};
       }
       @media print {
         @page {

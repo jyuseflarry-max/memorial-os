@@ -87,10 +87,6 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   const [showAI,           setShowAI]           = useState(false);
   const [showSaveModal,    setShowSaveModal]    = useState(false);
 
-  const drillSubCategories = useMemo(
-    () => Array.from(new Set(vaultDrills.map((d) => d.sub_category).filter(Boolean))).sort(),
-    [vaultDrills],
-  );
 
   const totalMin      = totalDuration(session.drills);
   const totalShotsNum = Math.round(totalShots(session.drills));
@@ -149,7 +145,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
                   }}
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono border transition-colors ${
                     ds.label === activeLabel
-                      ? "bg-mustang-red/20 border-mustang-red/40 text-mustang-red"
+                      ? "bg-coaches-red/20 border-coaches-red/40 text-coaches-red"
                       : "bg-gray-700/50 border-gray-600 text-gray-400 hover:text-white"
                   }`}
                 >
@@ -172,7 +168,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
             <button
               type="button"
               onClick={() => setShowSaveModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-mustang-red hover:bg-mustang-red-dark text-white text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-xs font-semibold transition-colors"
             >
               <BookmarkPlus size={13} /> Save to Planner
             </button>
@@ -247,7 +243,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
       {/* Loading spinner — edit mode only */}
       {mode === "edit" && loadingDate && (
         <div className="flex items-center justify-center py-20 print:hidden">
-          <Loader2 size={24} className="text-mustang-red animate-spin" />
+          <Loader2 size={24} className="text-coaches-red animate-spin" />
         </div>
       )}
 
@@ -293,7 +289,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
           <button
             type="button"
             onClick={() => setShowDrillSheet(true)}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-dashed border-gray-700 hover:border-mustang-red/50 text-gray-500 hover:text-mustang-red text-sm font-semibold transition-colors"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-dashed border-gray-700 hover:border-coaches-red/50 text-gray-500 hover:text-coaches-red text-sm font-semibold transition-colors"
           >
             <Plus size={16} /> Add Drill
           </button>

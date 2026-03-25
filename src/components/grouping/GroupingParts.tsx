@@ -60,7 +60,7 @@ export function GroupDropZone({
       onDragOver={(e) => { e.preventDefault(); onDragOver(index); }}
       onDrop={(e) => { e.preventDefault(); onDrop(index); }}
       className={`rounded-xl border-2 transition-colors flex flex-col min-h-[120px] ${
-        isOver ? "border-mustang-red bg-mustang-red/5" : "border-gray-700 bg-gray-800/60"
+        isOver ? "border-coaches-red bg-coaches-red/5" : "border-gray-700 bg-gray-800/60"
       }`}
     >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-700/50">
@@ -106,7 +106,7 @@ export function GroupDropZone({
           );
         })}
         {group.playerIds.length === 0 && (
-          <p className={`text-xs font-mono w-full text-center py-4 ${isOver ? "text-mustang-red" : "text-gray-600"}`}>
+          <p className={`text-xs font-mono w-full text-center py-4 ${isOver ? "text-coaches-red" : "text-gray-600"}`}>
             {isOver ? "DROP HERE" : "DRAG PLAYERS HERE"}
           </p>
         )}

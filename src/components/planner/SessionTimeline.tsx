@@ -30,7 +30,7 @@ function buildTimelineRows(drills: SessionDrill[], startMin: number): TimelineRo
       shots,
       subLine: isRest
         ? "Non-Activity · 0 shots"
-        : `${sd.drill.sub_category || sd.drill.category} · ${sd.drill.shot_type} · ~${shots} shots`,
+        : `${(sd.drill.categories ?? []).join(", ") || "—"} · ${sd.drill.shot_type} · ~${shots} shots`,
     };
   });
 }
@@ -85,7 +85,7 @@ export default function SessionTimeline({
               {/* Drop indicator above */}
               <div className={`h-0.5 mx-2 rounded-full transition-all duration-100 ${
                 isTarget && dragFromIndex.current !== null && dragFromIndex.current > i
-                  ? "bg-mustang-red scale-y-100 mb-1" : "bg-transparent"
+                  ? "bg-coaches-red scale-y-100 mb-1" : "bg-transparent"
               }`} />
 
               <div
@@ -128,7 +128,7 @@ export default function SessionTimeline({
                     : isRest
                     ? "bg-sky-950/40 border-sky-800/50"
                     : "bg-gray-800 border-gray-700"
-                } ${isTarget ? "border-mustang-red shadow-[0_0_0_1px_rgba(237,28,36,0.4)]" : ""}`}
+                } ${isTarget ? "border-coaches-red shadow-[0_0_0_1px_rgba(237,28,36,0.4)]" : ""}`}
               >
                 {/* Drag handle — spans full card height */}
                 <div className="flex flex-col items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing self-start pt-0.5">
@@ -300,7 +300,7 @@ export default function SessionTimeline({
               {/* Drop indicator below */}
               <div className={`h-0.5 mx-2 rounded-full transition-all duration-100 ${
                 isTarget && dragFromIndex.current !== null && dragFromIndex.current < i
-                  ? "bg-mustang-red -mt-1 mb-1" : "bg-transparent"
+                  ? "bg-coaches-red -mt-1 mb-1" : "bg-transparent"
               }`} />
             </div>
           );
