@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { login } from "@/actions/auth";
@@ -16,20 +17,21 @@ export default function LoginPage() {
   const urlError     = searchParams.get("error");
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
-      {/* Wordmark */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
-        </div>
-        <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
-          Basketball OS
-        </span>
+    <div className="min-h-screen bg-coaches-navy flex flex-col items-center justify-center px-5 py-10">
+      {/* Splash logo */}
+      <div className="mb-8 w-full max-w-sm">
+        <Image
+          src="/thecoachsOS.jpg"
+          alt="The Coach's OS"
+          width={480}
+          height={192}
+          className="w-full h-auto object-contain rounded-xl"
+          priority
+        />
       </div>
 
       <div className="w-full max-w-sm">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-5">
+        <div className="bg-gray-900/80 border border-gray-700/60 rounded-2xl p-6 flex flex-col gap-5 backdrop-blur-sm">
           <div>
             <h1 className="text-white text-2xl font-bold">Sign in</h1>
             <p className="text-gray-400 text-sm mt-1">
@@ -47,7 +49,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 autoComplete="email"
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                 placeholder="coach@school.edu"
               />
             </div>
@@ -61,7 +63,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 autoComplete="current-password"
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-mustang-red transition-colors"
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-coaches-blue transition-colors"
                 placeholder="••••••••"
               />
             </div>
@@ -76,7 +78,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={pending}
-              className="flex items-center justify-center gap-2 w-full min-h-[52px] rounded-2xl bg-mustang-red disabled:opacity-50 text-white font-semibold text-base transition-colors mt-1"
+              className="flex items-center justify-center gap-2 w-full min-h-[52px] rounded-2xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white font-semibold text-base transition-colors mt-1"
             >
               {pending ? "Signing in…" : "Sign in"} <ChevronRight size={18} />
             </button>

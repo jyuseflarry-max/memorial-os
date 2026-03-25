@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
-/* ── Mustang Brand Palette ──────────────────────────────────────────────── */
+/* ── Brand Palette ──────────────────────────────────────────────────────── */
 
 @theme inline {
-  /* Identity colours */
+  /* Coach's OS platform colours */
+  --color-coaches-blue:      #4a9eca;
+  --color-coaches-blue-dark: #3a7fa8;
+  --color-coaches-navy:      #0a0f1e;
+
+  /* Mustang tenant colours (Memorial Basketball) */
   --color-mustang-red:       #ED1C24;
   --color-mustang-red-dark:  #C01920;   /* hover / pressed state */
   --color-mustang-grey:      #A7A9AC;

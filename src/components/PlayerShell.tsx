@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RadioTower, ListChecks, CheckSquare, BarChart3 } from "lucide-react";
@@ -29,26 +30,26 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
       {/* Top bar */}
       <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-gray-950 border-b border-gray-800">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={settings.logo_url || "/mustang-logo.png"}
-              alt={settings.program_name}
-              width={24}
-              height={24}
-              className="object-contain"
-            />
-          </div>
-          <span className="text-white font-semibold text-sm tracking-wide">
-            {settings.program_name.split(" ")[0]}
-          </span>
+          {settings.logo_url ? (
+            <>
+              <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={settings.logo_url} alt={settings.program_name} width={24} height={24} className="object-contain" />
+              </div>
+              <span className="text-white font-semibold text-sm tracking-wide">
+                {settings.program_name.split(" ")[0]}
+              </span>
+            </>
+          ) : (
+            <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-8 w-auto object-contain rounded" priority />
+          )}
         </div>
         <Link
           href="/account"
           className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"
         >
-          <div className="w-7 h-7 rounded-full bg-mustang-red/20 border border-mustang-red/30 flex items-center justify-center">
-            <span className="text-mustang-red text-xs font-bold">
+          <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
+            <span className="text-coaches-blue text-xs font-bold">
               {firstName.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -71,7 +72,7 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
                 key={href}
                 href={href}
                 className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                  active ? "text-mustang-red" : "text-gray-500 hover:text-gray-300"
+                  active ? "text-coaches-blue" : "text-gray-500 hover:text-gray-300"
                 }`}
               >
                 <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />

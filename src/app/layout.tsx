@@ -20,18 +20,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Memorial Basketball OS",
-  description: "Mission Control for the Memorial Mustangs basketball program",
-  icons: { icon: "/mustang-logo.png", apple: "/mustang-logo.png" },
+  title: "The Coach's OS",
+  description: "The Coach's Operating System — AI-powered practice planning, player readiness, and program management for every sport.",
+  icons: { icon: "/thecoachsOS.jpg", apple: "/thecoachsOS.jpg" },
   openGraph: {
-    title: "Mustang Basketball OS: Command Center",
-    description: "Precision Coaching, Elite Analytics, and Mustang Culture. Fueling Memorial Basketball.",
-    images: [{ url: "/og-memorial-os.png" }],
+    title: "The Coach's OS",
+    description: "The Coach's Operating System — AI-powered practice planning, player readiness, and program management for every sport.",
+    images: [{ url: "/og-coaches-os.jpg" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og-memorial-os.png"],
+    images: ["/og-coaches-os.jpg"],
   },
 };
 

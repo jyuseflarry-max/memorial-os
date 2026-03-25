@@ -109,8 +109,8 @@ function NavGroup({
         className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors text-gray-500 hover:text-gray-300 hover:bg-gray-800/60"
       >
         <div className="flex items-center gap-2">
-          <GroupIcon size={13} className={hasActive ? "text-mustang-red" : "text-gray-600"} />
-          <span className={hasActive ? "text-mustang-red" : ""}>{label}</span>
+          <GroupIcon size={13} className={hasActive ? "text-coaches-blue" : "text-gray-600"} />
+          <span className={hasActive ? "text-coaches-blue" : ""}>{label}</span>
         </div>
         <ChevronDown
           size={13}
@@ -130,11 +130,11 @@ function NavGroup({
                 onClick={onClose}
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   active
-                    ? "bg-mustang-red/15 text-mustang-red"
+                    ? "bg-coaches-blue/15 text-coaches-blue"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
                 }`}
               >
-                <Icon size={14} className={active ? "text-mustang-red" : "text-gray-500"} />
+                <Icon size={14} className={active ? "text-coaches-blue" : "text-gray-500"} />
                 <span className="flex-1">{label}</span>
                 {staff && (
                   <span className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-full">
@@ -177,18 +177,24 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
     <aside className="flex flex-col w-64 h-full min-h-screen bg-gray-950 border-r border-gray-800 px-4 py-6 shrink-0 overflow-y-auto">
       {/* Logo / Wordmark + mobile close button */}
       <div className="flex items-center gap-3 mb-8 px-2">
-        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          {settings.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={settings.logo_url} alt="Program logo" className="w-full h-full object-contain" />
-          ) : (
-            <Image src="/mustang-logo.png" alt="Memorial Mustangs" width={32} height={32} priority />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold text-sm leading-tight tracking-wide">{settings.program_name.split(" ")[0]}</p>
-          <p className="text-mustang-red text-xs font-mono uppercase tracking-widest">{settings.program_name.split(" ").slice(1).join(" ") || "Basketball OS"}</p>
-        </div>
+        {settings.logo_url ? (
+          /* Tenant custom logo + program name */
+          <>
+            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={settings.logo_url} alt="Program logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-semibold text-sm leading-tight tracking-wide">{settings.program_name.split(" ")[0]}</p>
+              <p className="text-coaches-blue text-xs font-mono uppercase tracking-widest">{settings.program_name.split(" ").slice(1).join(" ") || "Coach's OS"}</p>
+            </div>
+          </>
+        ) : (
+          /* Platform default — Coach's OS logo */
+          <div className="flex-1 min-w-0">
+            <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={180} height={72} className="w-full h-auto object-contain rounded-lg" priority />
+          </div>
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -211,7 +217,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
                 onClick={() => handleTeamSelect(team)}
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   activeTeam?.id === team.id
-                    ? "bg-mustang-red text-white"
+                    ? "bg-coaches-blue text-white"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
                 }`}
               >
@@ -243,11 +249,11 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             pathname === "/settings"
-              ? "bg-mustang-red/15 text-mustang-red"
+              ? "bg-coaches-blue/15 text-coaches-blue"
               : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
           }`}
         >
-          <Settings size={14} className={pathname === "/settings" ? "text-mustang-red" : "text-gray-600"} />
+          <Settings size={14} className={pathname === "/settings" ? "text-coaches-blue" : "text-gray-600"} />
           Settings
         </Link>
       </div>
@@ -260,11 +266,11 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               pathname === "/account"
-                ? "bg-mustang-red/15 text-mustang-red"
+                ? "bg-coaches-blue/15 text-coaches-blue"
                 : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
             }`}
           >
-            <CircleUser size={14} className={pathname === "/account" ? "text-mustang-red" : "text-gray-600"} />
+            <CircleUser size={14} className={pathname === "/account" ? "text-coaches-blue" : "text-gray-600"} />
             <span className="flex-1 truncate">{userEmail}</span>
           </Link>
           <form action={logout}>
