@@ -253,7 +253,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
                 const updated = sd.groups
                   .map((g) => ({ ...g, playerIds: g.playerIds.filter((pid) => !absentIds.has(pid)) }))
                   .filter((g) => g.playerIds.length > 0);
-                updateGroups(sd.instanceId, updated.length ? updated : null);
+                updateGroups(sd.instanceId, updated);
               });
             }}
           />
