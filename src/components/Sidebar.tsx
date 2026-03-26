@@ -41,43 +41,43 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Vibe Check",         href: "/players",        icon: Users,     staff: false },
-      { label: "Groups",            href: "/player-groups",  icon: UsersRound, staff: false },
-      { label: "Roster",            href: "/admin/roster",   icon: UserCog,   staff: true  },
-      { label: "Teams",             href: "/admin/teams",    icon: Users,     staff: true  },
-      { label: "Staff",             href: "/admin/staff",    icon: UsersRound, staff: true },
+      { label: "Vibe Check", href: "/players",       icon: Users,      staff: false, playerOk: true  },
+      { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false },
+      { label: "Roster",     href: "/admin/roster",  icon: UserCog,    staff: true,  playerOk: false },
+      { label: "Teams",      href: "/admin/teams",   icon: Users,      staff: true,  playerOk: false },
+      { label: "Staff",      href: "/admin/staff",   icon: UsersRound, staff: true,  playerOk: false },
     ],
   },
   {
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Build a Plan",      href: "/build-a-plan",            icon: Sparkles,     staff: false },
-      { label: "View Plans",        href: "/view-plans",              icon: ListChecks,   staff: false },
-      { label: "Drill Vault",       href: "/drill-vault",             icon: Layers,       staff: false },
+      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,   staff: false, playerOk: false },
+      { label: "View Plans",   href: "/view-plans",   icon: ListChecks, staff: false, playerOk: false },
+      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,     staff: false, playerOk: false },
     ],
   },
   {
     label: "Reports",
     icon: BarChart3,
     items: [
-      { label: "Category Breakdown", href: "/reports", icon: BarChart3, staff: false },
+      { label: "Category Breakdown", href: "/reports", icon: BarChart3, staff: false, playerOk: false },
     ],
   },
   {
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game",     href: "/schedules/game", icon: Gamepad2,   staff: false },
-      { label: "Calendar", href: "/",               icon: RadioTower, staff: false },
+      { label: "Game",     href: "/schedules/game", icon: Gamepad2,   staff: false, playerOk: true },
+      { label: "Calendar", href: "/",               icon: RadioTower, staff: false, playerOk: true },
     ],
   },
   {
     label: "Strength",
     icon: Flame,
     items: [
-      { label: "Armory",   href: "/admin/strength/maxes",    icon: Trophy,   staff: true },
-      { label: "Designer", href: "/admin/strength/designer", icon: Dumbbell, staff: true },
+      { label: "Armory",   href: "/admin/strength/maxes",    icon: Trophy,   staff: true, playerOk: false },
+      { label: "Designer", href: "/admin/strength/designer", icon: Dumbbell, staff: true, playerOk: false },
     ],
   },
 ];
@@ -93,7 +93,7 @@ function NavGroup({
 }: {
   label: string;
   icon: React.ElementType;
-  items: { label: string; href: string; icon: React.ElementType; staff: boolean }[];
+  items: { label: string; href: string; icon: React.ElementType; staff: boolean; playerOk: boolean }[];
   pathname: string;
   onClose: () => void;
 }) {
@@ -160,10 +160,15 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { teams, activeTeam, setActiveTeam } = useTeam();
   const { settings } = useSettings();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRole,  setUserRole]  = useState<string | null>(null);
 
   useEffect(() => {
-    getSupabaseBrowser().auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserEmail(user.email ?? null);
+    const sb = getSupabaseBrowser();
+    sb.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      setUserEmail(user.email ?? null);
+      const { data } = await sb.from("users").select("role").eq("id", user.id).single();
+      if (data) setUserRole(data.role);
     });
   }, []);
 
@@ -230,32 +235,43 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
 
       {/* Collapsible nav groups */}
       <nav className="flex flex-col gap-3">
-        {NAV_GROUPS.filter((g) => (settings.enabled_modules ?? []).includes(g.label)).map((group) => (
-          <NavGroup
-            key={group.label}
-            label={group.label}
-            icon={group.icon}
-            items={group.items}
-            pathname={pathname}
-            onClose={onClose}
-          />
-        ))}
+        {NAV_GROUPS
+          .filter((g) => (settings.enabled_modules ?? []).includes(g.label))
+          .map((group) => {
+            const isPlayer = userRole === "Player";
+            const visibleItems = isPlayer
+              ? group.items.filter((i) => i.playerOk)
+              : group.items;
+            if (visibleItems.length === 0) return null;
+            return (
+              <NavGroup
+                key={group.label}
+                label={group.label}
+                icon={group.icon}
+                items={visibleItems}
+                pathname={pathname}
+                onClose={onClose}
+              />
+            );
+          })}
       </nav>
 
-      {/* Settings link */}
+      {/* Settings link — hidden for players */}
       <div className="mt-auto px-1 pb-1">
-        <Link
-          href="/settings"
-          onClick={onClose}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            pathname === "/settings"
-              ? "bg-coaches-blue/15 text-coaches-blue"
-              : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-          }`}
-        >
-          <Settings size={14} className={pathname === "/settings" ? "text-coaches-blue" : "text-gray-600"} />
-          Settings
-        </Link>
+        {userRole !== "Player" && (
+          <Link
+            href="/settings"
+            onClick={onClose}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              pathname === "/settings"
+                ? "bg-coaches-blue/15 text-coaches-blue"
+                : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+            }`}
+          >
+            <Settings size={14} className={pathname === "/settings" ? "text-coaches-blue" : "text-gray-600"} />
+            Settings
+          </Link>
+        )}
       </div>
 
       {/* User account section */}
