@@ -329,7 +329,7 @@ export default function CalendarWidget() {
                       <span key={`s-${s.id}`}
                         onMouseEnter={(e) => showTooltip(ev, e)}
                         onMouseLeave={hideTooltip}
-                        className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${color.text} ${color.bg} border ${color.border} truncate w-full`}>
+                        className={`text-[10px] font-mono font-semibold leading-none px-1 py-px rounded-full text-left ${color.text} ${color.bg} border ${color.border} truncate w-full`}>
                         {formatTimeShort(s.start_time)}{end ? `–${end}` : ""}
                       </span>
                     );
@@ -341,7 +341,7 @@ export default function CalendarWidget() {
                       <span key={`g-${g.id}-${i}`}
                         onMouseEnter={(e) => showTooltip(ev, e)}
                         onMouseLeave={hideTooltip}
-                        className={`text-[8px] font-mono font-semibold leading-none px-1 py-px rounded-full ${gcls.text} ${gcls.bg} border ${gcls.border} truncate w-full`}>
+                        className={`text-[10px] font-mono font-semibold leading-none px-1 py-px rounded-full text-left ${gcls.text} ${gcls.bg} border ${gcls.border} truncate w-full`}>
                         {label ? `${label} ` : ""}{g.opponent} {locationLabel(g)}
                       </span>
                     );
