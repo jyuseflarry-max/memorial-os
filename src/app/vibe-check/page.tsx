@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePlayers } from "@/context/PlayerContext";
 import { VibeScale, computeVibeScore } from "@/types/player";
-import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile } from "lucide-react";
+import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile, LogOut } from "lucide-react";
+import { logout } from "@/actions/auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -138,15 +139,26 @@ export default function VibeCheckPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
-      {/* Wordmark */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
+      {/* Wordmark + sign out */}
+      <div className="flex items-center justify-between w-full max-w-sm mb-8">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
+          </div>
+          <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
+            Vibe Check
+          </span>
         </div>
-        <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
-          Vibe Check
-        </span>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 text-xs font-mono text-gray-600 hover:text-gray-300 transition-colors"
+          >
+            <LogOut size={13} />
+            Sign out
+          </button>
+        </form>
       </div>
 
       <div className="w-full max-w-sm flex flex-col gap-6">
