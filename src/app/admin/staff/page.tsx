@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   UserPlus, Trash2, RefreshCw, CheckCircle2,
-  AlertTriangle, X, Loader2, ShieldCheck,
+  AlertTriangle, X, Loader2, ShieldCheck, KeyRound,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
@@ -118,6 +118,92 @@ function AddStaffModal({ onAdd, onClose }: {
   );
 }
 
+// ── Set password modal ─────────────────────────────────────────────────────
+
+function SetPasswordModal({ member, onClose }: {
+  member: StaffMember;
+  onClose: () => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [saving,   setSaving]   = useState(false);
+  const [done,     setDone]     = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/staff/${member.id}/set-password`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}>
+      <div className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-2xl mx-4 flex flex-col gap-5"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-white font-semibold">Set Password</p>
+            <p className="text-gray-400 text-xs mt-0.5">{member.full_name ?? member.email}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {done ? (
+          <div className="flex items-center gap-2 text-green-400 text-sm bg-green-400/10 border border-green-400/20 rounded-xl px-4 py-3">
+            <CheckCircle2 size={14} className="shrink-0" /> Password updated — they can now log in.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">New Password</label>
+              <input
+                type="password" required minLength={6} value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-blue transition-colors"
+                placeholder="Min 6 characters"
+                autoFocus
+              />
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
+                <AlertTriangle size={14} className="shrink-0" /> {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-coaches-blue disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                {saving ? "Saving…" : "Set Password"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function StaffPage() {
@@ -125,8 +211,9 @@ export default function StaffPage() {
   const [loading,   setLoading]   = useState(true);
   const [showAdd,   setShowAdd]   = useState(false);
   const [error,     setError]     = useState<string | null>(null);
-  const [resending, setResending] = useState<string | null>(null);
-  const [removing,  setRemoving]  = useState<string | null>(null);
+  const [resending,    setResending]    = useState<string | null>(null);
+  const [removing,     setRemoving]     = useState<string | null>(null);
+  const [settingPwFor, setSettingPwFor] = useState<StaffMember | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -269,6 +356,14 @@ export default function StaffPage() {
                       </button>
                       <button
                         type="button"
+                        onClick={() => setSettingPwFor(member)}
+                        title="Set password"
+                        className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        <KeyRound size={14} />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleRemove(member.id)}
                         disabled={removing === member.id}
                         title="Remove staff member"
@@ -288,6 +383,7 @@ export default function StaffPage() {
       </div>
 
       {showAdd && <AddStaffModal onAdd={handleAdd} onClose={() => setShowAdd(false)} />}
+      {settingPwFor && <SetPasswordModal member={settingPwFor} onClose={() => setSettingPwFor(null)} />}
     </DashboardLayout>
   );
 }
