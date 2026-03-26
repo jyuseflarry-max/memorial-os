@@ -384,34 +384,25 @@ export default function RosterPage() {
             {sorted.map((player) => (
               <tr key={player.id}
                 className="border-b border-gray-700/50 last:border-0 hover:bg-gray-700/20 transition-colors">
-                <td className="px-4 py-3 text-gray-400 font-mono text-xs font-bold">
-                  {player.jersey_number}
+                <td className="px-4 py-3 align-top">
+                  <p className="text-gray-400 font-mono text-xs font-bold">{player.jersey_number}</p>
+                  <div className="mt-1.5"><StatusBadge status={player.status} /></div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 align-top">
                   <p className="text-white font-medium">{player.name}</p>
-                  {player.email && (
-                    <p className="text-gray-600 text-[10px] font-mono mt-0.5">{player.email}</p>
-                  )}
-                  <div className="flex items-center gap-4 mt-1.5">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] font-mono text-gray-600 uppercase tracking-wider">Status</span>
-                      <StatusBadge status={player.status} />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] font-mono text-gray-600 uppercase tracking-wider">App Access</span>
-                      {!player.email ? (
-                        <span className="text-[10px] font-mono text-gray-600">No email</span>
-                      ) : player.user_id ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
-                            <CheckCircle2 size={11} /> Member
-                          </span>
-                          <InviteButton player={player} onDone={refresh} />
-                        </div>
-                      ) : (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {!player.email ? (
+                      <span className="text-[10px] font-mono text-gray-600">No email</span>
+                    ) : player.user_id ? (
+                      <>
+                        <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
+                          <CheckCircle2 size={11} /> Member
+                        </span>
                         <InviteButton player={player} onDone={refresh} />
-                      )}
-                    </div>
+                      </>
+                    ) : (
+                      <InviteButton player={player} onDone={refresh} />
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-3">
