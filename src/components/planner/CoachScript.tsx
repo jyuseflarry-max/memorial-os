@@ -8,6 +8,7 @@ import { Player } from "@/types/player";
 import ShotCounterModal from "@/components/planner/ShotCounterModal";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Row builder ───────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ interface Props { session: Session; players?: Player[] }
 export default function CoachScript({ session, players = [] }: Props) {
   const { getCatColor } = useDrillCategories();
   const { settings } = useSettings();
+  const { isPlayer } = useAuth();
   const [countingDrill, setCountingDrill] = useState<SessionDrill | null>(null);
 
   if (session.drills.length === 0) return null;
@@ -110,7 +112,7 @@ export default function CoachScript({ session, players = [] }: Props) {
           <div>
             <p className="text-white font-bold text-base">{dateLabel}</p>
             <p className="text-gray-400 text-xs font-mono">{timeRangeLabel}</p>
-            <p className="text-gray-400 text-xs font-mono">~{shots} shots per player</p>
+            {!isPlayer && <p className="text-gray-400 text-xs font-mono">~{shots} shots per player</p>}
           </div>
         </div>
 
@@ -140,7 +142,7 @@ export default function CoachScript({ session, players = [] }: Props) {
             </p>
             <p className="text-black font-bold text-xs mt-0.5">{dateLabel}</p>
             <p className="text-gray-700 text-[10px] font-mono mt-0.5">{timeRangeLabel}</p>
-            <p className="text-gray-700 text-[10px] font-mono">~{shots} shots per player</p>
+            {!isPlayer && <p className="text-gray-700 text-[10px] font-mono">~{shots} shots per player</p>}
           </div>
         </div>
 
@@ -204,7 +206,7 @@ export default function CoachScript({ session, players = [] }: Props) {
 
                     {/* Shot counter button — screen only */}
                     <td className="px-2 py-3 print:py-1.5 print:hidden align-top">
-                      {!isRest && (
+                      {!isRest && !isPlayer && (
                         <button
                           type="button"
                           onClick={() => setCountingDrill(row)}
