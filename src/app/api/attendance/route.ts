@@ -53,21 +53,28 @@ export async function POST(request: NextRequest) {
     const { data: myRecord } = await service.from("users").select("tenant_id").eq("id", me.id).single();
     if (!myRecord) return apiError("User record not found", 403);
 
-    // Upsert — if already absent just update status/notes
+    // Delete any existing record first, then insert fresh
+    // (avoids upsert issues with functional unique indexes on nullable team_id)
+    let delQuery = service
+      .from("practice_attendance")
+      .delete()
+      .eq("tenant_id", myRecord.tenant_id)
+      .eq("practice_date", practice_date)
+      .eq("player_id", player_id);
+    if (team_id) delQuery = delQuery.eq("team_id", team_id);
+    else         delQuery = delQuery.is("team_id", null);
+    await delQuery;
+
     const { data, error } = await service
       .from("practice_attendance")
-      .upsert(
-        {
-          tenant_id:     myRecord.tenant_id,
-          team_id:       team_id ?? null,
-          practice_date,
-          player_id,
-          status,
-          notes:         notes ?? null,
-          updated_at:    new Date().toISOString(),
-        },
-        { onConflict: "practice_date,player_id,team_id" }
-      )
+      .insert({
+        tenant_id:     myRecord.tenant_id,
+        team_id:       team_id ?? null,
+        practice_date,
+        player_id,
+        status,
+        notes:         notes ?? null,
+      })
       .select("id, player_id, status, notes")
       .single();
 
