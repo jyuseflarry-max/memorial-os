@@ -359,7 +359,7 @@ export default function RosterPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">
-              {["#", "Name", "Status", "App Access", "Actions"].map((h) => (
+              {["#", "Name", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
                   {h}
                 </th>
@@ -369,14 +369,14 @@ export default function RosterPage() {
           <tbody>
             {loading && players.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={3} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   LOADING…
                 </td>
               </tr>
             )}
             {!loading && sorted.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={3} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   ROSTER IS EMPTY — ADD THE FIRST PLAYER
                 </td>
               </tr>
@@ -392,21 +392,21 @@ export default function RosterPage() {
                   {player.email && (
                     <p className="text-gray-600 text-[10px] font-mono mt-0.5">{player.email}</p>
                   )}
-                </td>
-                <td className="px-4 py-3"><StatusBadge status={player.status} /></td>
-                <td className="px-4 py-3">
-                  {!player.email ? (
-                    <span className="text-[10px] font-mono text-gray-600">No email</span>
-                  ) : player.user_id ? (
-                    <div className="flex flex-col gap-1.5">
-                      <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
-                        <CheckCircle2 size={11} /> Member
-                      </span>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <StatusBadge status={player.status} />
+                    {!player.email ? (
+                      <span className="text-[10px] font-mono text-gray-600">No email</span>
+                    ) : player.user_id ? (
+                      <>
+                        <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
+                          <CheckCircle2 size={11} /> Member
+                        </span>
+                        <InviteButton player={player} onDone={refresh} />
+                      </>
+                    ) : (
                       <InviteButton player={player} onDone={refresh} />
-                    </div>
-                  ) : (
-                    <InviteButton player={player} onDone={refresh} />
-                  )}
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
