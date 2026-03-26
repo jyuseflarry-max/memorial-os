@@ -65,7 +65,7 @@ export async function POST(
       if (!invited?.user) throw inviteError;
     }
 
-    const newUserId = invited!.user.id;
+    const newUserId = invited!.user!.id;
 
     // Create the users table record for this player
     const { error: userInsertError } = await service.from("users").insert({

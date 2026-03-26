@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     // Create the users table record
     const { error: insertError } = await service.from("users").insert({
-      id:        invited!.user.id,
+      id:        invited!.user!.id,
       tenant_id: myRecord.tenant_id,
       role,
       full_name,
