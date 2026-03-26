@@ -65,7 +65,11 @@ export function useAttendance(date: string, teamId: string | null | undefined) {
   async function markPresent(playerId: string) {
     const params = new URLSearchParams({ date, player_id: playerId });
     if (teamId) params.set("team_id", teamId);
-    await fetch(`/api/attendance?${params}`, { method: "DELETE" });
+    const res = await fetch(`/api/attendance?${params}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Failed to mark present");
+    }
     setAbsences((prev) => prev.filter((a) => a.player_id !== playerId));
   }
 
