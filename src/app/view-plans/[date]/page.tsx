@@ -96,13 +96,15 @@ function PlanViewInner() {
                 <Pencil size={13} /> Edit
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:text-white text-xs font-semibold transition-colors"
-            >
-              <Printer size={13} /> Print
-            </button>
+            {!isPlayer && (
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:text-white text-xs font-semibold transition-colors"
+              >
+                <Printer size={13} /> Print
+              </button>
+            )}
 
             {!isPlayer && (
               !confirmDelete ? (
