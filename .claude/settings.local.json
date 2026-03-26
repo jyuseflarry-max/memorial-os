@@ -29,7 +29,11 @@
       "Bash(xargs grep:*)",
       "Bash(dir:*)",
       "Bash(xargs sed:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(find /c/Users/larryj/memorial-os -name *.sql -type f)",
+      "Bash(find /c/Users/larryj/memorial-os -name schema* -type f)",
+      "Bash(grep -r from.*sessions /c/Users/larryj/memorial-os/src --include=*.ts --include=*.tsx)",
+      "Bash(grep -r tenant_id /c/Users/larryj/memorial-os/src/app/api --include=*.ts)"
     ]
   }
 }

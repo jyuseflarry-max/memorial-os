@@ -11,6 +11,7 @@ import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import DrillSheet from "@/components/planner/DrillSheet";
 import SaveToPlannerModal from "@/components/planner/SaveToPlannerModal";
+import AttendancePanel from "@/components/planner/AttendancePanel";
 import { useDrills } from "@/hooks/useDrills";
 import { useTeam } from "@/context/TeamContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
@@ -239,6 +240,23 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
       {/* Main content */}
       {(mode === "new" || !loadingDate) && (
         <div className="flex flex-col gap-4 print:hidden">
+
+          {/* Attendance */}
+          <AttendancePanel
+            date={session.date}
+            teamId={activeTeam?.id}
+            players={players}
+            onAbsentChange={(absentIds) => {
+              // Remove absent players from every drill's group assignments
+              session.drills.forEach((sd) => {
+                if (!sd.groups?.length) return;
+                const updated = sd.groups
+                  .map((g) => ({ ...g, playerIds: g.playerIds.filter((pid) => !absentIds.has(pid)) }))
+                  .filter((g) => g.playerIds.length > 0);
+                updateGroups(sd.instanceId, updated.length ? updated : null);
+              });
+            }}
+          />
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1">
