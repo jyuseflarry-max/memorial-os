@@ -392,20 +392,26 @@ export default function RosterPage() {
                   {player.email && (
                     <p className="text-gray-600 text-[10px] font-mono mt-0.5">{player.email}</p>
                   )}
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <StatusBadge status={player.status} />
-                    {!player.email ? (
-                      <span className="text-[10px] font-mono text-gray-600">No email</span>
-                    ) : player.user_id ? (
-                      <>
-                        <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
-                          <CheckCircle2 size={11} /> Member
-                        </span>
+                  <div className="flex items-center gap-4 mt-1.5">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-mono text-gray-600 uppercase tracking-wider">Status</span>
+                      <StatusBadge status={player.status} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-mono text-gray-600 uppercase tracking-wider">App Access</span>
+                      {!player.email ? (
+                        <span className="text-[10px] font-mono text-gray-600">No email</span>
+                      ) : player.user_id ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
+                            <CheckCircle2 size={11} /> Member
+                          </span>
+                          <InviteButton player={player} onDone={refresh} />
+                        </div>
+                      ) : (
                         <InviteButton player={player} onDone={refresh} />
-                      </>
-                    ) : (
-                      <InviteButton player={player} onDone={refresh} />
-                    )}
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
