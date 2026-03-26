@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Eye,
 } from "lucide-react";
 import { useTeam } from "@/context/TeamContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface SavedSession {
   id: string;
@@ -127,6 +128,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
   const router = useRouter();
   const today  = isoToday();
   const { activeTeam } = useTeam();
+  const { isPlayer } = useAuth();
 
   const [sessions,  setSessions]  = useState<SavedSession[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -296,20 +298,24 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                       <Eye size={14} />
                     </button>
                   )}
-                  <button type="button" title="Edit plan"
-                    onClick={() => {
-                      const tp = s.team_id ? `&team_id=${s.team_id}` : "";
-                      const lp = s.label   ? `&label=${encodeURIComponent(s.label)}` : "";
-                      router.push(`/planner?date=${s.date}${tp}${lp}`);
-                    }}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Pencil size={14} />
-                  </button>
-                  <button type="button" title="Copy to another date"
-                    onClick={() => setCopying(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Copy size={14} />
-                  </button>
+                  {!isPlayer && (
+                    <button type="button" title="Edit plan"
+                      onClick={() => {
+                        const tp = s.team_id ? `&team_id=${s.team_id}` : "";
+                        const lp = s.label   ? `&label=${encodeURIComponent(s.label)}` : "";
+                        router.push(`/planner?date=${s.date}${tp}${lp}`);
+                      }}
+                      className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                  {!isPlayer && (
+                    <button type="button" title="Copy to another date"
+                      onClick={() => setCopying(s)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                      <Copy size={14} />
+                    </button>
+                  )}
                   <button type="button" title="Print / Save as PDF"
                     onClick={() => handlePrint(s)}
                     className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
@@ -320,12 +326,14 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                     className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
                     <Mail size={14} />
                   </button>
-                  <button type="button" title="Delete plan"
-                    disabled={deleting === s.id}
-                    onClick={() => handleDelete(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors disabled:opacity-40">
-                    <Trash2 size={14} />
-                  </button>
+                  {!isPlayer && (
+                    <button type="button" title="Delete plan"
+                      disabled={deleting === s.id}
+                      onClick={() => handleDelete(s)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors disabled:opacity-40">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             );

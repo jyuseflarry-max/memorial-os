@@ -41,43 +41,44 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Vibe Check", href: "/players",       icon: Users,      staff: false, playerOk: true  },
-      { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false },
-      { label: "Roster",     href: "/admin/roster",  icon: UserCog,    staff: true,  playerOk: false },
-      { label: "Teams",      href: "/admin/teams",   icon: Users,      staff: true,  playerOk: false },
-      { label: "Staff",      href: "/admin/staff",   icon: UsersRound, staff: true,  playerOk: false },
+      { label: "Vibe Check", href: "/vibe-check",   icon: Users,      staff: false, playerOk: true,  coachHide: true  },
+      { label: "Vibe Check", href: "/players",       icon: Users,      staff: false, playerOk: false, coachHide: false },
+      { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false, coachHide: false },
+      { label: "Roster",     href: "/admin/roster",  icon: UserCog,    staff: true,  playerOk: false, coachHide: false },
+      { label: "Teams",      href: "/admin/teams",   icon: Users,      staff: true,  playerOk: false, coachHide: false },
+      { label: "Staff",      href: "/admin/staff",   icon: UsersRound, staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,   staff: false, playerOk: false },
-      { label: "View Plans",   href: "/view-plans",   icon: ListChecks, staff: false, playerOk: false },
-      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,     staff: false, playerOk: false },
+      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,   staff: false, playerOk: false, coachHide: false },
+      { label: "View Plans",   href: "/view-plans",   icon: ListChecks, staff: false, playerOk: true,  coachHide: false },
+      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,     staff: false, playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Reports",
     icon: BarChart3,
     items: [
-      { label: "Category Breakdown", href: "/reports", icon: BarChart3, staff: false, playerOk: false },
+      { label: "Category Breakdown", href: "/reports", icon: BarChart3, staff: false, playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game",     href: "/schedules/game", icon: Gamepad2,   staff: false, playerOk: true },
-      { label: "Calendar", href: "/",               icon: RadioTower, staff: false, playerOk: true },
+      { label: "Game",     href: "/schedules/game", icon: Gamepad2,   staff: false, playerOk: true,  coachHide: false },
+      { label: "Calendar", href: "/",               icon: RadioTower, staff: false, playerOk: true,  coachHide: false },
     ],
   },
   {
     label: "Strength",
     icon: Flame,
     items: [
-      { label: "Armory",   href: "/admin/strength/maxes",    icon: Trophy,   staff: true, playerOk: false },
-      { label: "Designer", href: "/admin/strength/designer", icon: Dumbbell, staff: true, playerOk: false },
+      { label: "Armory",   href: "/admin/strength/maxes",    icon: Trophy,   staff: true, playerOk: false, coachHide: false },
+      { label: "Designer", href: "/admin/strength/designer", icon: Dumbbell, staff: true, playerOk: false, coachHide: false },
     ],
   },
 ];
@@ -93,7 +94,7 @@ function NavGroup({
 }: {
   label: string;
   icon: React.ElementType;
-  items: { label: string; href: string; icon: React.ElementType; staff: boolean; playerOk: boolean }[];
+  items: { label: string; href: string; icon: React.ElementType; staff: boolean; playerOk: boolean; coachHide: boolean }[];
   pathname: string;
   onClose: () => void;
 }) {
@@ -241,7 +242,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
             const isPlayer = userRole === "Player";
             const visibleItems = isPlayer
               ? group.items.filter((i) => i.playerOk)
-              : group.items;
+              : group.items.filter((i) => !i.coachHide);
             if (visibleItems.length === 0) return null;
             return (
               <NavGroup

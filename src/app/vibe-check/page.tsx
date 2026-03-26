@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { usePlayers } from "@/context/PlayerContext";
 import { VibeScale, computeVibeScore } from "@/types/player";
 import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile } from "lucide-react";
@@ -309,6 +310,13 @@ export default function VibeCheckPage() {
             <p className="text-gray-600 text-xs font-mono">
               See you at practice.
             </p>
+
+            <Link
+              href="/schedules/game"
+              className="w-full flex items-center justify-center gap-2 min-h-[52px] rounded-2xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold transition-colors hover:bg-gray-700"
+            >
+              View Schedule
+            </Link>
           </div>
         )}
 
