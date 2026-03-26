@@ -30,7 +30,10 @@ export async function POST(
       return apiError("Admin only", 403);
     }
 
-    const { error } = await service.auth.admin.updateUserById(id, { password });
+    const { error } = await service.auth.admin.updateUserById(id, {
+      password,
+      email_confirm: true,
+    });
     if (error) throw error;
 
     return Response.json({ ok: true });
