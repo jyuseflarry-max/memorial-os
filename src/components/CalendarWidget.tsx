@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Dumbbell, Swords } from "lucide-react";
 import { useTeam } from "@/context/TeamContext";
+import { useAuth } from "@/context/AuthContext";
 import { Game, GAME_TYPE_LABELS } from "@/types/game";
 
 interface SavedSession {
@@ -77,6 +78,7 @@ export default function CalendarWidget() {
   const router = useRouter();
   const today  = isoToday();
   const { teams } = useTeam();
+  const { isPlayer, authUser } = useAuth();
 
   const [year,  setYear]  = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
@@ -84,7 +86,9 @@ export default function CalendarWidget() {
   const [games,    setGames]    = useState<Game[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [dayPopover, setDayPopover] = useState<{ iso: string; events: DayEvent[] } | null>(null);
-  const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [teamFilter, setTeamFilter] = useState<string>(() =>
+    isPlayer && authUser?.teamId ? authUser.teamId : "all"
+  );
   const [tooltip, setTooltip] = useState<{ ev: DayEvent; x: number; y: number } | null>(null);
 
   const showTooltip = useCallback((ev: DayEvent, e: React.MouseEvent) => {
@@ -105,6 +109,11 @@ export default function CalendarWidget() {
     if (!teamId) return TEAM_COLORS[0];
     return TEAM_COLORS[teamColorMap[teamId] ?? 0];
   }
+
+  // Re-lock filter once auth resolves for players
+  useEffect(() => {
+    if (isPlayer && authUser?.teamId) setTeamFilter(authUser.teamId);
+  }, [isPlayer, authUser?.teamId]);
 
   useEffect(() => {
     setLoading(true);
@@ -215,8 +224,8 @@ export default function CalendarWidget() {
 
   return (
     <>
-      {/* Team filter pills */}
-      {teams.length > 0 && (
+      {/* Team filter pills — hidden for players (auto-locked to their team) */}
+      {teams.length > 0 && !isPlayer && (
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
           <button
             type="button"
