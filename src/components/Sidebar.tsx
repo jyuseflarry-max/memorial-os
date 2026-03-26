@@ -46,7 +46,7 @@ const NAV_GROUPS = [
       { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false, coachHide: false },
       { label: "Roster",     href: "/admin/roster",  icon: UserCog,    staff: true,  playerOk: false, coachHide: false },
       { label: "Teams",      href: "/admin/teams",   icon: Users,      staff: true,  playerOk: false, coachHide: false },
-      { label: "Staff",      href: "/admin/staff",   icon: UsersRound, staff: true,  playerOk: false, coachHide: false },
+      { label: "Users",      href: "/admin/users",   icon: UsersRound, staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
