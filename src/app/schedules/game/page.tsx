@@ -524,12 +524,16 @@ function GameRow({
   onEdit,
   onDelete,
   onViewWriteup,
+  selected,
+  onSelect,
 }: {
   game: Game;
   primaryColor: string;
   onEdit: () => void;
   onDelete: () => void;
   onViewWriteup: () => void;
+  selected: boolean;
+  onSelect: (checked: boolean) => void;
 }) {
   const { short, weekday } = fmtDate(game.game_date);
   const result = gameResult(game);
@@ -550,9 +554,18 @@ function GameRow({
 
   return (
     <div
-      className="flex items-start gap-3 px-4 py-3.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-800/30 transition-colors group"
+      className={`flex items-start gap-3 px-4 py-3.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-800/30 transition-colors group ${selected ? "bg-red-500/5" : ""}`}
       style={rowBg}
     >
+      {/* Checkbox */}
+      <div className="shrink-0 pt-1">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={(e) => onSelect(e.target.checked)}
+          className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+        />
+      </div>
       {/* Date */}
       <div className="w-24 shrink-0 pt-0.5">
         <p className="text-white font-mono text-sm font-semibold">{short}</p>
@@ -687,6 +700,9 @@ export default function GameSchedulePage() {
   const [modal,         setModal]         = useState<ModalMode | null>(null);
   const [writeupGame,   setWriteupGame]   = useState<Game | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Game | null>(null);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeleting,   setBulkDeleting]   = useState(false);
 
   // Load ALL games for the team — filter client-side so season switching is instant
   useEffect(() => {
@@ -761,6 +777,18 @@ export default function GameSchedulePage() {
     setConfirmDelete(null);
   }
 
+  const allVisibleSelected = visibleGames.length > 0 && visibleGames.every((g) => selectedIds.has(g.id));
+  const someVisibleSelected = !allVisibleSelected && visibleGames.some((g) => selectedIds.has(g.id));
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    await Promise.all([...selectedIds].map((id) => fetch(`/api/games/${id}`, { method: "DELETE" })));
+    setGames((prev) => prev.filter((g) => !selectedIds.has(g.id)));
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+    setBulkDeleting(false);
+  }
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -771,13 +799,24 @@ export default function GameSchedulePage() {
             {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {activeSeason === "all" ? "ALL SEASONS" : activeSeason}
           </p>
         </div>
-        <button
-          onClick={() => setModal({ type: "add" })}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
-        >
-          <Plus size={15} />
-          Add Game
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowBulkDelete(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+            >
+              <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+            </button>
+          )}
+          <button
+            onClick={() => setModal({ type: "add" })}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
+          >
+            <Plus size={15} />
+            Add Game
+          </button>
+        </div>
       </div>
 
       {/* Season filter bar */}
@@ -849,6 +888,15 @@ export default function GameSchedulePage() {
       {/* Column headers */}
       {visibleGames.length > 0 && (
         <div className="flex items-center gap-3 px-4 py-2 text-[10px] font-mono text-gray-600 uppercase tracking-wider border-b border-gray-700 mb-0">
+          <div className="shrink-0">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              ref={(el) => { if (el) el.indeterminate = someVisibleSelected; }}
+              onChange={(e) => setSelectedIds(e.target.checked ? new Set(visibleGames.map((g) => g.id)) : new Set())}
+              className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+            />
+          </div>
           <div className="w-24 shrink-0">Date</div>
           <div className="flex-1">Opponent</div>
           <div className="w-20 shrink-0 hidden sm:block">Location</div>
@@ -896,6 +944,12 @@ export default function GameSchedulePage() {
                 onEdit={() => setModal({ type: "edit", game })}
                 onDelete={() => setConfirmDelete(game)}
                 onViewWriteup={() => setWriteupGame(game)}
+                selected={selectedIds.has(game.id)}
+                onSelect={(checked) => setSelectedIds((prev) => {
+                  const next = new Set(prev);
+                  if (checked) next.add(game.id); else next.delete(game.id);
+                  return next;
+                })}
               />
             ))}
           </div>
@@ -939,6 +993,34 @@ export default function GameSchedulePage() {
                 className="px-4 py-2 rounded-lg text-xs font-semibold bg-coaches-red hover:bg-coaches-red-dark text-white transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk delete confirm */}
+      {showBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-gray-900 border border-red-800/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <Trash2 size={18} className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Delete {selectedIds.size} game{selectedIds.size !== 1 ? "s" : ""}?</p>
+                <p className="text-gray-400 text-sm">This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowBulkDelete(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={handleBulkDelete} disabled={bulkDeleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                {bulkDeleting ? "Deleting…" : "Delete All"}
               </button>
             </div>
           </div>

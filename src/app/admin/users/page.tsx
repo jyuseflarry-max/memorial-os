@@ -214,6 +214,9 @@ export default function StaffPage() {
   const [resending,    setResending]    = useState<string | null>(null);
   const [removing,     setRemoving]     = useState<string | null>(null);
   const [settingPwFor, setSettingPwFor] = useState<StaffMember | null>(null);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeleting,   setBulkDeleting]   = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -230,6 +233,19 @@ export default function StaffPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const selectableStaff = staff.filter((m) => m.role !== "Admin");
+  const allSelected = selectableStaff.length > 0 && selectableStaff.every((m) => selectedIds.has(m.id));
+  const someSelected = !allSelected && selectableStaff.some((m) => selectedIds.has(m.id));
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    await Promise.all([...selectedIds].map((id) => fetch(`/api/staff/${id}`, { method: "DELETE" })));
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+    setBulkDeleting(false);
+    await load();
+  }
 
   async function handleAdd(full_name: string, email: string, role: string) {
     const res = await fetch("/api/staff", {
@@ -272,13 +288,24 @@ export default function StaffPage() {
             COACHES · MANAGERS · ADMIN · STAFF ONLY
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
-        >
-          <UserPlus size={16} /> Invite Staff
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowBulkDelete(true)}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+            >
+              <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          >
+            <UserPlus size={16} /> Invite Staff
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -294,6 +321,15 @@ export default function StaffPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-left">
+              <th className="pl-4 pr-2 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                  onChange={(e) => setSelectedIds(e.target.checked ? new Set(selectableStaff.map((m) => m.id)) : new Set())}
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+                />
+              </th>
               {["Name", "Email", "Role", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
                   {h}
@@ -304,21 +340,35 @@ export default function StaffPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   LOADING…
                 </td>
               </tr>
             )}
             {!loading && staff.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   NO STAFF — INVITE YOUR FIRST COACH
                 </td>
               </tr>
             )}
             {staff.map((member) => (
               <tr key={member.id}
-                className="border-b border-gray-700/50 last:border-0 hover:bg-gray-700/20 transition-colors">
+                className={`border-b border-gray-700/50 last:border-0 hover:bg-gray-700/20 transition-colors ${selectedIds.has(member.id) ? "bg-red-500/5" : ""}`}>
+                <td className="pl-4 pr-2 py-3 w-10">
+                  {member.role !== "Admin" && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(member.id)}
+                      onChange={(e) => setSelectedIds((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(member.id); else next.delete(member.id);
+                        return next;
+                      })}
+                      className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+                    />
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <p className="text-white font-medium">{member.full_name ?? "—"}</p>
@@ -384,6 +434,33 @@ export default function StaffPage() {
 
       {showAdd && <AddStaffModal onAdd={handleAdd} onClose={() => setShowAdd(false)} />}
       {settingPwFor && <SetPasswordModal member={settingPwFor} onClose={() => setSettingPwFor(null)} />}
+
+      {showBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-gray-900 border border-red-800/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Remove {selectedIds.size} staff member{selectedIds.size !== 1 ? "s" : ""}?</p>
+                <p className="text-gray-400 text-sm">They will lose access immediately. This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowBulkDelete(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={handleBulkDelete} disabled={bulkDeleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                {bulkDeleting ? "Removing…" : "Remove All"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

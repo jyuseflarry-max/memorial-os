@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy, Tag } from "lucide-react";
+import { Plus, Search, ExternalLink, Video, Pencil, Trash2, Copy, Tag, AlertTriangle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import DrillForm from "@/components/drill-vault/DrillForm";
 import { useDrills } from "@/hooks/useDrills";
@@ -53,6 +53,9 @@ export default function DrillVaultPage() {
   const [catSaving, setCatSaving]     = useState(false);
   const [catError, setCatError]       = useState<string | null>(null);
   const catInputRef                   = useRef<HTMLInputElement>(null);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeleting,   setBulkDeleting]   = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -100,6 +103,20 @@ export default function DrillVaultPage() {
     }
   }
 
+  const allDisplayedSelected = displayed.length > 0 && displayed.every((d) => selectedIds.has(d.id));
+  const someDisplayedSelected = !allDisplayedSelected && displayed.some((d) => selectedIds.has(d.id));
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    await Promise.all([...selectedIds].map((id) =>
+      fetch(`/api/drills/${id}`, { method: "DELETE" }).catch(() => {})
+    ));
+    [...selectedIds].forEach((id) => removeFromCache(id));
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+    setBulkDeleting(false);
+  }
+
   async function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
     const name = newCatName.trim();
@@ -130,13 +147,24 @@ export default function DrillVaultPage() {
             {activeTeam && <span className="text-gray-600"> · {activeTeam.name.toUpperCase()}</span>}
           </p>
         </div>
-        <button
-          onClick={() => setShowNewForm(true)}
-          className="flex items-center gap-2 bg-coaches-blue hover:bg-coaches-blue-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
-        >
-          <Plus size={16} />
-          New Drill
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowBulkDelete(true)}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+            >
+              <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+            </button>
+          )}
+          <button
+            onClick={() => setShowNewForm(true)}
+            className="flex items-center gap-2 bg-coaches-blue hover:bg-coaches-blue-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          >
+            <Plus size={16} />
+            New Drill
+          </button>
+        </div>
       </div>
 
       {/* Level filter chips */}
@@ -269,6 +297,18 @@ export default function DrillVaultPage() {
 
       {/* Drill card list */}
       <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
+        {!loading && displayed.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-700/50">
+            <input
+              type="checkbox"
+              checked={allDisplayedSelected}
+              ref={(el) => { if (el) el.indeterminate = someDisplayedSelected; }}
+              onChange={(e) => setSelectedIds(e.target.checked ? new Set(displayed.map((d) => d.id)) : new Set())}
+              className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+            />
+            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Select All</span>
+          </div>
+        )}
         {loading && (
           <p className="text-gray-500 text-xs font-mono text-center py-10">LOADING…</p>
         )}
@@ -281,7 +321,19 @@ export default function DrillVaultPage() {
           {displayed.map((drill) => {
             const u = usage[drill.id];
             return (
-            <div key={drill.id} className="px-4 py-3">
+            <div key={drill.id} className={`px-4 py-3 ${selectedIds.has(drill.id) ? "bg-red-500/5" : ""}`}>
+              <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={selectedIds.has(drill.id)}
+                onChange={(e) => setSelectedIds((prev) => {
+                  const next = new Set(prev);
+                  if (e.target.checked) next.add(drill.id); else next.delete(drill.id);
+                  return next;
+                })}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600 mt-1 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
               {/* Name */}
               <p className="text-white text-sm font-semibold mb-1">{drill.name}</p>
               {/* Attributes */}
@@ -340,12 +392,41 @@ export default function DrillVaultPage() {
                   <Trash2 size={14} />
                 </button>
               </div>
+              </div>
+              </div>
             </div>
             );
           })}
         </div>
       </div>
 
+
+      {showBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-gray-900 border border-red-800/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Delete {selectedIds.size} drill{selectedIds.size !== 1 ? "s" : ""}?</p>
+                <p className="text-gray-400 text-sm">This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowBulkDelete(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={handleBulkDelete} disabled={bulkDeleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                {bulkDeleting ? "Deleting…" : "Delete All"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showNewForm && (
         <DrillForm
