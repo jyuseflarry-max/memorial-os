@@ -337,8 +337,7 @@ export default function DrillForm({ initialDrill, onSave, onDelete, onClose }: P
           {/* Coaching Notes */}
           <div>
             <label className={labelCls}>
-              Coaching Notes{" "}
-              <span className="text-gray-600 normal-case tracking-normal">(feeds AI planner)</span>
+              Coaching Notes
             </label>
             <textarea
               rows={3}

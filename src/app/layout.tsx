@@ -22,11 +22,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   title: "The Coach's OS",
-  description: "The Coach's Operating System — AI-powered practice planning, player readiness, and program management for every sport.",
+  description: "The Coach's Operating System — practice planning, player readiness, and program management for every sport.",
   icons: { icon: "/thecoachsOS.jpg", apple: "/thecoachsOS.jpg" },
   openGraph: {
     title: "The Coach's OS",
-    description: "The Coach's Operating System — AI-powered practice planning, player readiness, and program management for every sport.",
+    description: "The Coach's Operating System — practice planning, player readiness, and program management for every sport.",
     images: [{ url: "/og-coaches-os.jpg" }],
     type: "website",
   },

@@ -3,13 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, Sparkles, BookmarkPlus,
+  Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, BookmarkPlus,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SessionTimeline from "@/components/planner/SessionTimeline";
 import DrillGroupingModal from "@/components/planner/DrillGroupingModal";
 import DrillForm from "@/components/drill-vault/DrillForm";
-import AIGeneratorPanel from "@/components/planner/AIGeneratorPanel";
 import DrillSheet from "@/components/planner/DrillSheet";
 import SaveToPlannerModal from "@/components/planner/SaveToPlannerModal";
 import { useDrills } from "@/hooks/useDrills";
@@ -84,7 +83,6 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   const [showNewDrillForm, setShowNewDrillForm] = useState(false);
   const [showDrillSheet,   setShowDrillSheet]   = useState(false);
   const [showOverflow,     setShowOverflow]     = useState(false);
-  const [showAI,           setShowAI]           = useState(false);
   const [showSaveModal,    setShowSaveModal]    = useState(false);
 
 
@@ -224,15 +222,6 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
                   >
                     <FileText size={14} /> Print / Export PDF
                   </button>
-                  {session.drills.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => { setShowAI(true); setShowOverflow(false); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors text-left"
-                    >
-                      <Sparkles size={14} /> AI Generate Practice
-                    </button>
-                  )}
                 </div>
               </>
             )}
@@ -250,15 +239,6 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
       {/* Main content */}
       {(mode === "new" || !loadingDate) && (
         <div className="flex flex-col gap-4 print:hidden">
-
-          {(session.drills.length === 0 || showAI) && (
-            <AIGeneratorPanel
-              playerCount={players.length || 10}
-              teamName={activeTeam?.name}
-              drills={vaultDrills}
-              onLoadPlan={(plan) => { resolveAndLoadPlan(plan); setShowAI(false); }}
-            />
-          )}
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1">
