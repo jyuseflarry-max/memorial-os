@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Shuffle, Plus, Save, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { X, Shuffle, Plus, Save, ChevronDown, ChevronUp, Users, Trash2 } from "lucide-react";
 import { Player } from "@/types/player";
 import { DrillGroup } from "@/types/grouping";
 import { useGroupingEditor } from "@/hooks/useGroupingEditor";
@@ -230,13 +230,24 @@ export default function DrillGroupingModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-700">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-gray-600 text-gray-400 text-sm hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-gray-600 text-gray-400 text-sm hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            {initialGroups && initialGroups.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { onApply([]); onClose(); }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-800/50 text-red-400 hover:bg-red-500/10 text-sm transition-colors"
+              >
+                <Trash2 size={13} /> Remove Groups
+              </button>
+            )}
+          </div>
           {groups.length > 0 && (
             <button
               type="button"
