@@ -33,8 +33,13 @@ export async function POST(
     const { error } = await service.auth.admin.updateUserById(id, {
       password,
       email_confirm: true,
+      user_metadata: {},
     });
-    if (error) throw error;
+    if (error) {
+      console.error("[set-password] updateUserById error:", error.message);
+      throw error;
+    }
+    console.log("[set-password] updated user", id);
 
     return Response.json({ ok: true });
   } catch (err: unknown) {
