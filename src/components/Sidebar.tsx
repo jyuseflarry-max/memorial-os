@@ -211,8 +211,8 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Team switcher */}
-      {teams.length > 0 && (
+      {/* Team switcher — hidden for players (they are auto-locked to their team) */}
+      {teams.length > 0 && userRole !== "Player" && (
         <div className="mb-6 px-1">
           <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1.5 px-1">Active Team</p>
           <div className="flex flex-col gap-1">
