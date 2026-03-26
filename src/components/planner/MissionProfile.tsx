@@ -13,7 +13,8 @@ function computeProfile(drills: SessionDrill[]) {
   const totalTime = drills.reduce((s, d) => s + d.duration, 0);
   const catTime: Record<string, number> = {};
   for (const sd of drills) {
-    catTime[sd.drill.category] = (catTime[sd.drill.category] ?? 0) + sd.duration;
+    const cat = sd.drill.categories?.[0] ?? "Other";
+    catTime[cat] = (catTime[cat] ?? 0) + sd.duration;
   }
   return { totalTime, catTime };
 }

@@ -168,7 +168,7 @@ export default function CoachScript({ session, players = [] }: Props) {
 
             <tbody>
               {rows.map((row, i) => {
-                const isRest   = row.drill.category === DrillCategory.RestTransition;
+                const isRest   = row.drill.categories?.includes(DrillCategory.RestTransition);
                 const hasGroups = row.groups && row.groups.length > 0;
                 return (
                   <Fragment key={row.instanceId}>

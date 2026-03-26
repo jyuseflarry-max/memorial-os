@@ -298,7 +298,6 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
 
       {showNewDrillForm && (
         <DrillForm
-          subCategories={drillSubCategories}
           onSave={(drill) => { addToCache(drill); setShowNewDrillForm(false); }}
           onClose={() => setShowNewDrillForm(false)}
         />

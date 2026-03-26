@@ -21,7 +21,7 @@ function buildTimelineRows(drills: SessionDrill[], startMin: number): TimelineRo
   return drills.map((sd) => {
     const drillStart = cursor;
     cursor += sd.duration;
-    const isRest = sd.drill.category === DrillCategory.RestTransition;
+    const isRest = sd.drill.categories?.includes(DrillCategory.RestTransition);
     const shots  = drillShots(sd);
     return {
       ...sd,
@@ -133,7 +133,7 @@ export default function SessionTimeline({
                 {/* Drag handle — spans full card height */}
                 <div className="flex flex-col items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing self-start pt-0.5">
                   <GripVertical size={14} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(sd.drill.category) }} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(sd.drill.categories?.[0] ?? "") }} />
                 </div>
 
                 {/* ── Card body: 2-row on mobile, 1-row on sm+ ── */}

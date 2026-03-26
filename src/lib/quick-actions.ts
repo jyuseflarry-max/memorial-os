@@ -14,8 +14,7 @@ export const QUICK_ACTIONS: Drill[] = [
   {
     id: SYSTEM_DRILL_IDS.WATER_BREAK,
     name: "Water Break",
-    category: DrillCategory.RestTransition,
-    sub_category: "Non-Activity",
+    categories: [DrillCategory.RestTransition],
     shot_density: 0,
     shot_type: ShotType.None,
     intensity: 1,
@@ -24,8 +23,7 @@ export const QUICK_ACTIONS: Drill[] = [
   {
     id: SYSTEM_DRILL_IDS.TRANSITION,
     name: "Transition",
-    category: DrillCategory.RestTransition,
-    sub_category: "Non-Activity",
+    categories: [DrillCategory.RestTransition],
     shot_density: 0,
     shot_type: ShotType.None,
     intensity: 1,
