@@ -56,12 +56,16 @@ export async function POST(
     // ── First invite ──────────────────────────────────────────────────────
     const { data: invited, error: inviteError } =
       await service.auth.admin.inviteUserByEmail(player.email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?type=invite`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       });
 
-    if (inviteError) throw inviteError;
+    if (inviteError) {
+      console.error("[invite] inviteUserByEmail failed:", inviteError.message);
+      // Email failure is non-fatal if a user was still created
+      if (!invited?.user) throw inviteError;
+    }
 
-    const newUserId = invited.user.id;
+    const newUserId = invited!.user.id;
 
     // Create the users table record for this player
     const { error: userInsertError } = await service.from("users").insert({

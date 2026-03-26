@@ -71,13 +71,16 @@ export async function POST(request: NextRequest) {
     // Send the invite email
     const { data: invited, error: inviteError } =
       await service.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?type=invite`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       });
-    if (inviteError) throw inviteError;
+    if (inviteError) {
+      console.error("[staff invite] inviteUserByEmail failed:", inviteError.message);
+      if (!invited?.user) throw inviteError;
+    }
 
     // Create the users table record
     const { error: insertError } = await service.from("users").insert({
-      id:        invited.user.id,
+      id:        invited!.user.id,
       tenant_id: myRecord.tenant_id,
       role,
       full_name,
