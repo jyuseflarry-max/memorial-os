@@ -316,16 +316,20 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                       <Copy size={14} />
                     </button>
                   )}
-                  <button type="button" title="Print / Save as PDF"
-                    onClick={() => handlePrint(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Printer size={14} />
-                  </button>
-                  <button type="button" title="Email plan"
-                    onClick={() => handleEmail(s)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <Mail size={14} />
-                  </button>
+                  {!isPlayer && (
+                    <button type="button" title="Print / Save as PDF"
+                      onClick={() => handlePrint(s)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                      <Printer size={14} />
+                    </button>
+                  )}
+                  {!isPlayer && (
+                    <button type="button" title="Email plan"
+                      onClick={() => handleEmail(s)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-500 transition-colors">
+                      <Mail size={14} />
+                    </button>
+                  )}
                   {!isPlayer && (
                     <button type="button" title="Delete plan"
                       disabled={deleting === s.id}
