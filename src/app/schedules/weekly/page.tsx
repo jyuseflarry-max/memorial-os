@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
@@ -88,6 +88,12 @@ export default function WeeklyEventsPage() {
     if (isPlayer && authUser?.teamId) setFilterTeam(authUser.teamId);
   }, [isPlayer, authUser?.teamId]);
 
+  // Absence sheet state
+  const [absenceSheet, setAbsenceSheet]       = useState<EventItem | null>(null);
+  const [absenceReason, setAbsenceReason]     = useState("");
+  const [submittingAbsence, setSubmittingAbsence] = useState(false);
+  const [reportedDates, setReportedDates]     = useState<Set<string>>(new Set());
+
   const weekLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
   useEffect(() => {
@@ -105,6 +111,33 @@ export default function WeeklyEventsPage() {
     }).catch(() => {}).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekOf, activeTeam]);
+
+  async function handleAbsenceSubmit() {
+    if (!absenceSheet || !authUser?.playerId) return;
+    setSubmittingAbsence(true);
+    const teamId =
+      absenceSheet.kind === "game"    ? absenceSheet.game.team_id :
+      absenceSheet.kind === "session" ? absenceSheet.session.team_id :
+      absenceSheet.practice.team_id;
+    try {
+      await fetch("/api/attendance", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          practice_date: absenceSheet.date,
+          player_id:     authUser.playerId,
+          team_id:       teamId ?? null,
+          status:        "excused",
+          notes:         absenceReason.trim() || null,
+        }),
+      });
+      setReportedDates((prev) => new Set([...prev, absenceSheet.date]));
+      setAbsenceSheet(null);
+      setAbsenceReason("");
+    } finally {
+      setSubmittingAbsence(false);
+    }
+  }
 
   const events = useMemo<EventItem[]>(() => {
     const fromStr = toISO(start);
@@ -138,6 +171,30 @@ export default function WeeklyEventsPage() {
     }
     return Array.from(map.entries());
   }, [events]);
+
+  // Load which event dates this player has already reported absent
+  useEffect(() => {
+    if (!isPlayer || !authUser?.playerId || loading || events.length === 0) return;
+    const dates = [...new Set(events.map((e) => e.date))];
+    const pid   = authUser.playerId;
+    const tid   = authUser.teamId;
+    Promise.all(
+      dates.map((date) => {
+        const p = new URLSearchParams({ date });
+        if (tid) p.set("team_id", tid);
+        return fetch(`/api/attendance?${p}`).then((r) => r.json()).catch(() => []);
+      })
+    ).then((results) => {
+      const reported = new Set<string>();
+      results.forEach((records: { player_id: string }[], i) => {
+        if (Array.isArray(records) && records.some((r) => r.player_id === pid)) {
+          reported.add(dates[i]);
+        }
+      });
+      setReportedDates(reported);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, isPlayer, authUser?.playerId, authUser?.teamId, loading]);
 
   const prevWeek = () => { const d = new Date(weekOf); d.setDate(d.getDate() - 7); setWeekOf(d); };
   const nextWeek = () => { const d = new Date(weekOf); d.setDate(d.getDate() + 7); setWeekOf(d); };
@@ -217,7 +274,11 @@ export default function WeeklyEventsPage() {
                       : null;
 
                   return (
-                    <div key={key} className={`flex items-start gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""}`}>
+                    <div
+                      key={key}
+                      onClick={() => isPlayer && setAbsenceSheet(ev)}
+                      className={`flex items-start gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""} ${isPlayer ? "cursor-pointer active:bg-gray-800/50" : ""}`}
+                    >
                       <div className="w-2 h-2 rounded-full shrink-0 bg-coaches-red mt-1.5" />
                       <div className="flex-1 min-w-0">
                         {/* Line 1: opponent */}
@@ -242,7 +303,12 @@ export default function WeeklyEventsPage() {
                           </p>
                         )}
                       </div>
-                      <p className="text-gray-500 text-xs font-mono shrink-0 mt-0.5">{timeStr}</p>
+                      <div className="flex flex-col items-end shrink-0 mt-0.5 gap-1">
+                        <p className="text-gray-500 text-xs font-mono">{timeStr}</p>
+                        {isPlayer && reportedDates.has(ev.date) && (
+                          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">Reported</span>
+                        )}
+                      </div>
                     </div>
                   );
                 }
@@ -265,10 +331,19 @@ export default function WeeklyEventsPage() {
                 }
 
                 return (
-                  <div key={key} className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""}`}>
+                  <div
+                    key={key}
+                    onClick={() => isPlayer && setAbsenceSheet(ev)}
+                    className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""} ${isPlayer ? "cursor-pointer active:bg-gray-800/50" : ""}`}
+                  >
                     <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
                     <p className="flex-1 text-white text-sm">{typeLabel}</p>
-                    <p className="text-gray-500 text-xs font-mono shrink-0">{timeStr}</p>
+                    <div className="flex flex-col items-end shrink-0 gap-1">
+                      <p className="text-gray-500 text-xs font-mono">{timeStr}</p>
+                      {isPlayer && reportedDates.has(ev.date) && (
+                        <span className="text-[9px] font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">Reported</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -276,6 +351,63 @@ export default function WeeklyEventsPage() {
           );
         })}
       </div>
+      {/* Absence report sheet (players only) */}
+      {absenceSheet && (() => {
+        const label =
+          absenceSheet.kind === "game"    ? `Game — vs. ${absenceSheet.game.opponent}` :
+          absenceSheet.kind === "session" ? `Practice${absenceSheet.session.label ? ` — ${absenceSheet.session.label}` : ""}` :
+          "Practice";
+        const { weekday, short } = fmtDate(absenceSheet.date);
+        return (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-black/60" onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); }} />
+            <div className="relative bg-gray-900 border-t border-gray-700 rounded-t-2xl p-5 flex flex-col gap-4">
+              {/* Handle */}
+              <div className="w-10 h-1 rounded-full bg-gray-700 mx-auto -mt-1 mb-1" />
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-white font-semibold">Can&apos;t make it?</p>
+                  <p className="text-gray-400 text-sm mt-0.5 font-mono">{label} · {weekday}, {short}</p>
+                </div>
+                <button
+                  onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              {/* Reason */}
+              <div>
+                <label className="block text-xs font-mono text-gray-400 mb-2 uppercase tracking-wider">Reason (optional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. family trip, doctor appointment…"
+                  value={absenceReason}
+                  onChange={(e) => setAbsenceReason(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-coaches-red transition-colors"
+                />
+              </div>
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); }}
+                  className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={submittingAbsence}
+                  onClick={handleAbsenceSubmit}
+                  className="flex-1 py-3 rounded-xl bg-coaches-red text-white font-semibold text-sm disabled:opacity-50 transition-colors"
+                >
+                  {submittingAbsence ? "Submitting…" : reportedDates.has(absenceSheet.date) ? "Update Report" : "Report Absence"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </DashboardLayout>
   );
 }
