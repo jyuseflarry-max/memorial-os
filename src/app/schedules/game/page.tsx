@@ -255,7 +255,20 @@ function GameModal({
       : { ...EMPTY_DRAFT, team_id: teamId, season: defaultSeason };
 
   const { locations } = useLocations();
-  const [draft, setDraft] = useState<GameDraft>(initial);
+  const homeLocation = locations.find((l) => l.is_home_venue) ?? null;
+
+  function homeVenueString(l: typeof homeLocation) {
+    if (!l) return null;
+    return [l.name, l.address, l.city].filter(Boolean).join(", ");
+  }
+
+  const [draft, setDraft] = useState<GameDraft>(() => {
+    // For new games set to Home, pre-fill venue with the home location
+    if (initial.location_type === "home" && !initial.venue && homeLocation) {
+      return { ...initial, venue: homeVenueString(homeLocation) };
+    }
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
 
@@ -408,7 +421,13 @@ function GameModal({
                   <button
                     key={loc}
                     type="button"
-                    onClick={() => patch("location_type", loc)}
+                    onClick={() => {
+                      patch("location_type", loc);
+                      // Auto-fill venue when switching to Home
+                      if (loc === "home" && homeLocation) {
+                        patch("venue", homeVenueString(homeLocation));
+                      }
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors capitalize ${
                       draft.location_type === loc
                         ? "bg-coaches-red border-coaches-red text-white"
