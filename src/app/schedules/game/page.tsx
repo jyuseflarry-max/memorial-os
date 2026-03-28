@@ -10,6 +10,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import BulkImportModal from "@/components/BulkImportModal";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useLocations } from "@/context/LocationsContext";
 import type { Game, LocationType, GameType, GameDraft } from "@/types/game";
 import { LOCATION_LABELS, GAME_TYPE_LABELS, EMPTY_DRAFT } from "@/types/game";
 import { seasonOptions } from "@/types/settings";
@@ -253,6 +254,7 @@ function GameModal({
       ? { ...mode.game }
       : { ...EMPTY_DRAFT, team_id: teamId, season: defaultSeason };
 
+  const { locations } = useLocations();
   const [draft, setDraft] = useState<GameDraft>(initial);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
@@ -368,14 +370,22 @@ function GameModal({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className={labelCls}>Venue / Address <span className="normal-case tracking-normal text-gray-600">(for directions)</span></label>
-              <input
-                type="text"
+              <label className={labelCls}>Venue <span className="normal-case tracking-normal text-gray-600">(for directions)</span></label>
+              <select
                 value={draft.venue ?? ""}
                 onChange={(e) => patch("venue", e.target.value || null)}
-                placeholder="e.g. Mustang Gym, 1234 Main St, Houston TX"
-                className={inputCls}
-              />
+                className={inputCls + " appearance-none"}
+              >
+                <option value="">— Select a location —</option>
+                {locations.map((l) => {
+                  const full = [l.name, l.address, l.city].filter(Boolean).join(", ");
+                  return (
+                    <option key={l.id} value={full}>
+                      {l.name}{l.is_home_venue ? " (Home)" : ""}{l.city ? ` · ${l.city}` : ""}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
 
             <div className="flex flex-col gap-1">
