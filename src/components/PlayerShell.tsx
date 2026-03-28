@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RadioTower, ListChecks, CheckSquare, BarChart3 } from "lucide-react";
+import { RadioTower, ListChecks, CheckSquare, BarChart3, LogOut } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
+import { logout } from "@/actions/auth";
 
 // ── Bottom nav definition ─────────────────────────────────────────────────
 
@@ -44,17 +45,28 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
             <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-8 w-auto object-contain rounded" priority />
           )}
         </div>
-        <Link
-          href="/account"
-          className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"
-        >
-          <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
-            <span className="text-coaches-blue text-xs font-bold">
-              {firstName.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <span className="text-xs font-mono text-gray-400 hidden sm:block">{firstName}</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/account"
+            className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
+              <span className="text-coaches-blue text-xs font-bold">
+                {firstName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <span className="text-xs font-mono text-gray-400 hidden sm:block">{firstName}</span>
+          </Link>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={15} />
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Page content */}
