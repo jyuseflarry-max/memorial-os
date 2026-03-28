@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
 import FamilyShell from "@/components/FamilyShell";
 import { useAuth } from "@/context/AuthContext";
+import { useLocations } from "@/context/LocationsContext";
 import type { Game } from "@/types/game";
 import { GAME_TYPE_LABELS } from "@/types/game";
 import type { PracticeSchedule } from "@/types/practice-schedule";
@@ -25,6 +26,16 @@ function fmt12h(hhmm: string): string {
   const [hStr, mStr] = hhmm.split(":");
   const h = parseInt(hStr, 10);
   return `${h % 12 === 0 ? 12 : h % 12}:${mStr} ${h >= 12 ? "PM" : "AM"}`;
+}
+
+function subtractMins(hhmm: string, mins: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  let total = h * 60 + m - mins;
+  if (total < 0) total += 24 * 60;
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  const suffix = hh >= 12 ? "PM" : "AM";
+  return `${hh % 12 || 12}:${String(mm).padStart(2, "0")} ${suffix}`;
 }
 
 function addMins(hhmm: string, mins: number): string {
@@ -69,6 +80,7 @@ type FamilyEvent =
 
 export default function FamilySchedulePage() {
   const { authUser, isFamily, loading: authLoading } = useAuth();
+  const { locations } = useLocations();
 
   const linkedPlayers = authUser?.linkedPlayers ?? [];
 
@@ -274,6 +286,16 @@ export default function FamilySchedulePage() {
                     const locLabel = g.location_type === "home" ? "Home" : g.location_type === "away" ? "Away" : "Neutral";
                     const timeStr  = g.time_tbd ? "Time TBD" : g.game_time ? fmt12h(g.game_time) : "Time TBD";
                     const venueUrl = g.venue ? `https://maps.google.com/maps?q=${encodeURIComponent(g.venue)}` : null;
+                    const matchedLoc = g.venue ? locations.find((l) => [l.name, l.address, l.city].filter(Boolean).join(", ") === g.venue) : null;
+                    const departureTime =
+                      (g.location_type === "away" || g.location_type === "neutral") &&
+                      g.game_time && !g.time_tbd && matchedLoc
+                        ? subtractMins(g.game_time, matchedLoc.default_travel_time + 90)
+                        : null;
+                    const arrivalTime =
+                      g.location_type === "home" && g.game_time && !g.time_tbd
+                        ? subtractMins(g.game_time, 90)
+                        : null;
                     return (
                       <div key={g.id} className={`px-4 py-3 ${border}`}>
                         <div className="flex items-start gap-3">
@@ -295,6 +317,16 @@ export default function FamilySchedulePage() {
                               >
                                 <MapPin size={9} /> {g.venue}
                               </a>
+                            )}
+                            {departureTime && (
+                              <p className="flex items-center gap-1 text-amber-400 text-[11px] font-mono mt-0.5">
+                                <Clock size={9} /> Depart by {departureTime}
+                              </p>
+                            )}
+                            {arrivalTime && (
+                              <p className="flex items-center gap-1 text-emerald-400 text-[11px] font-mono mt-0.5">
+                                <Clock size={9} /> Be there by {arrivalTime}
+                              </p>
                             )}
                           </div>
                           <p className="text-gray-500 text-xs font-mono shrink-0 mt-0.5">{timeStr}</p>

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Loader2, Swords, MapPin, Clock } from "lucide-react";
 import FamilyShell from "@/components/FamilyShell";
 import { useAuth } from "@/context/AuthContext";
+import { useLocations } from "@/context/LocationsContext";
 import type { Game } from "@/types/game";
 import { GAME_TYPE_LABELS } from "@/types/game";
 
@@ -40,6 +41,7 @@ function isoToday() { return new Date().toISOString().split("T")[0]; }
 
 export default function FamilyGamesPage() {
   const { authUser, isFamily, loading: authLoading } = useAuth();
+  const { locations } = useLocations();
   const linkedPlayers = authUser?.linkedPlayers ?? [];
 
   const [selected, setSelected] = useState<string>("all");
@@ -133,6 +135,13 @@ export default function FamilyGamesPage() {
               const timeStr = g.time_tbd ? "Time TBD" : g.game_time ? fmt12h(g.game_time) : "Time TBD";
               const venueUrl = g.venue ? `https://maps.google.com/maps?q=${encodeURIComponent(g.venue)}` : null;
               const locLabel = g.location_type === "home" ? "Home" : g.location_type === "away" ? "Away" : "Neutral";
+              const matchedLoc = g.venue ? locations.find((l) => [l.name, l.address, l.city].filter(Boolean).join(", ") === g.venue) : null;
+              const departureTime = isAway && g.game_time && !g.time_tbd && matchedLoc
+                ? subtractMins(g.game_time, matchedLoc.default_travel_time + 90)
+                : null;
+              const arrivalTime = g.location_type === "home" && g.game_time && !g.time_tbd
+                ? subtractMins(g.game_time, 90)
+                : null;
               const currentYear = new Date().getFullYear();
 
               return (
@@ -184,17 +193,22 @@ export default function FamilyGamesPage() {
                   )}
 
                   {/* Departure time for away/neutral */}
-                  {isAway && g.game_time && !g.time_tbd && (
+                  {departureTime && (
                     <div className="flex items-center gap-2 bg-amber-400/5 border border-amber-400/15 rounded-xl px-3 py-2.5">
                       <Clock size={13} className="text-amber-400 shrink-0" />
-                      <div>
-                        <p className="text-amber-400 text-xs font-semibold">
-                          Suggested departure: {subtractMins(g.game_time, 35)}
-                        </p>
-                        <p className="text-gray-600 text-[10px] font-mono mt-0.5">
-                          35 min before tip-off (add extra for travel distance)
-                        </p>
-                      </div>
+                      <p className="text-amber-400 text-xs font-semibold">
+                        Depart by {departureTime}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Arrival time for home */}
+                  {arrivalTime && (
+                    <div className="flex items-center gap-2 bg-emerald-400/5 border border-emerald-400/15 rounded-xl px-3 py-2.5">
+                      <Clock size={13} className="text-emerald-400 shrink-0" />
+                      <p className="text-emerald-400 text-xs font-semibold">
+                        Be there by {arrivalTime}
+                      </p>
                     </div>
                   )}
                 </div>
