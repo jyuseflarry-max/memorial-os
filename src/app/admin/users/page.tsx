@@ -23,7 +23,7 @@ const ROLE_COLORS: Record<string, string> = {
   Manager: "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
-// ── Add staff modal ────────────────────────────────────────────────────────
+// ── Add staff modal (invite) ───────────────────────────────────────────────
 
 function AddStaffModal({ onAdd, onClose }: {
   onAdd: (full_name: string, email: string, role: string) => Promise<void>;
@@ -110,6 +110,113 @@ function AddStaffModal({ onAdd, onClose }: {
             <button type="submit" disabled={saving}
               className="flex-1 py-2.5 rounded-xl bg-coaches-red disabled:opacity-50 text-white text-sm font-semibold transition-colors">
               {saving ? "Sending…" : "Send Invite"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Add user manually modal ────────────────────────────────────────────────
+
+function AddUserModal({ onAdd, onClose }: {
+  onAdd: (full_name: string, email: string, role: string, password: string) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [fullName,  setFullName]  = useState("");
+  const [email,     setEmail]     = useState("");
+  const [password,  setPassword]  = useState("");
+  const [role,      setRole]      = useState("Coach");
+  const [saving,    setSaving]    = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await onAdd(fullName.trim(), email.trim(), role, password);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create user");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}>
+      <div className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-2xl mx-4 flex flex-col gap-5"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-white font-semibold">Add User</p>
+            <p className="text-gray-400 text-xs mt-0.5">Account is created immediately — no email sent.</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Full Name</label>
+            <input
+              type="text" required value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
+              placeholder="Coach Johnson"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Email</label>
+            <input
+              type="email" required value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
+              placeholder="coach@school.edu"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Password</label>
+            <input
+              type="password" required minLength={6} value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
+              placeholder="Min 6 characters"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Role</label>
+            <select
+              value={role} onChange={(e) => setRole(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors"
+            >
+              <option value="Coach">Coach</option>
+              <option value="Manager">Manager</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
+              <AlertTriangle size={14} className="shrink-0" /> {error}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 py-2.5 rounded-xl bg-coaches-red disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+              {saving ? "Creating…" : "Create User"}
             </button>
           </div>
         </form>
@@ -214,6 +321,7 @@ export default function StaffPage() {
   const [resending,    setResending]    = useState<string | null>(null);
   const [removing,     setRemoving]     = useState<string | null>(null);
   const [settingPwFor, setSettingPwFor] = useState<StaffMember | null>(null);
+  const [showAddUser,    setShowAddUser]    = useState(false);
   const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [bulkDeleting,   setBulkDeleting]   = useState(false);
@@ -258,6 +366,17 @@ export default function StaffPage() {
     await load();
   }
 
+  async function handleAddUser(full_name: string, email: string, role: string, password: string) {
+    const res = await fetch("/api/staff", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ full_name, email, role, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to create user");
+    await load();
+  }
+
   async function handleResend(id: string) {
     setResending(id);
     try {
@@ -283,7 +402,7 @@ export default function StaffPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-white text-2xl font-bold tracking-tight">Staff</h1>
+          <h1 className="text-white text-2xl font-bold tracking-tight">Users</h1>
           <p className="text-gray-400 text-sm font-mono mt-1">
             COACHES · MANAGERS · ADMIN · STAFF ONLY
           </p>
@@ -298,6 +417,13 @@ export default function StaffPage() {
               <Trash2 size={15} /> Delete Selected ({selectedIds.size})
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setShowAddUser(true)}
+            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          >
+            <UserPlus size={16} /> Add User
+          </button>
           <button
             type="button"
             onClick={() => setShowAdd(true)}
@@ -433,6 +559,7 @@ export default function StaffPage() {
       </div>
 
       {showAdd && <AddStaffModal onAdd={handleAdd} onClose={() => setShowAdd(false)} />}
+      {showAddUser && <AddUserModal onAdd={handleAddUser} onClose={() => setShowAddUser(false)} />}
       {settingPwFor && <SetPasswordModal member={settingPwFor} onClose={() => setSettingPwFor(null)} />}
 
       {showBulkDelete && (

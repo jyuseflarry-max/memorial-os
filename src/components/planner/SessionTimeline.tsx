@@ -2,30 +2,47 @@
 
 import { useState, useRef } from "react";
 import { X, ChevronUp, ChevronDown, Minus, Plus, Users, GripVertical } from "lucide-react";
-import { SessionDrill, parseTime, formatTime12, drillShots, totalDuration } from "@/types/session";
+import { SessionDrill, SessionItem, SplitGroupBlock, isSplitGroup, parseTime, formatTime12, drillShots, totalDuration } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
-import { DrillCategory } from "@/types/drill";
+import { DrillCategory, Drill } from "@/types/drill";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
+import SplitGroupBlockCard from "./SplitGroupBlockCard";
 
 // ── Row builder ───────────────────────────────────────────────────────────
 
-interface TimelineRow extends SessionDrill {
+interface DrillRow extends SessionDrill {
   blockLabel: string;
   isRest: boolean;
   shots: number;
   subLine: string;
 }
 
-function buildTimelineRows(drills: SessionDrill[], startMin: number): TimelineRow[] {
+interface SplitRow extends SplitGroupBlock {
+  blockLabel: string;
+}
+
+type TimelineRow = (DrillRow & { _kind: "drill" }) | (SplitRow & { _kind: "split" });
+
+function buildTimelineRows(drills: SessionItem[], startMin: number): TimelineRow[] {
   let cursor = startMin;
-  return drills.map((sd) => {
-    const drillStart = cursor;
+  return drills.map((item) => {
+    const itemStart = cursor;
+    if (isSplitGroup(item)) {
+      cursor += item.masterDuration;
+      return {
+        ...item,
+        _kind: "split" as const,
+        blockLabel: `${formatTime12(itemStart)} – ${formatTime12(cursor)}`,
+      };
+    }
+    const sd = item as SessionDrill;
     cursor += sd.duration;
     const isRest = sd.drill.categories?.includes(DrillCategory.RestTransition);
     const shots  = drillShots(sd);
     return {
       ...sd,
-      blockLabel: `${formatTime12(drillStart)} – ${formatTime12(cursor)}`,
+      _kind: "drill" as const,
+      blockLabel: `${formatTime12(itemStart)} – ${formatTime12(cursor)}`,
       isRest,
       shots,
       subLine: isRest
@@ -36,21 +53,25 @@ function buildTimelineRows(drills: SessionDrill[], startMin: number): TimelineRo
 }
 
 interface Props {
-  drills: SessionDrill[];
+  drills: SessionItem[];
   startTime: string;
+  vaultDrills?: Drill[];
   onRemove: (instanceId: string) => void;
   onDurationChange: (instanceId: string, duration: number) => void;
   onReorder: (from: number, to: number) => void;
   onGroupsClick: (instanceId: string) => void;
+  onSplitBlockUpdate?: (block: SplitGroupBlock) => void;
 }
 
 export default function SessionTimeline({
   drills,
   startTime,
+  vaultDrills = [],
   onRemove,
   onDurationChange,
   onReorder,
   onGroupsClick,
+  onSplitBlockUpdate,
 }: Props) {
   const { getCatColor } = useDrillCategories();
   const dragFromIndex = useRef<number | null>(null);
@@ -74,54 +95,89 @@ export default function SessionTimeline({
         </div>
       )}
 
-      {/* Drill rows */}
-      {buildTimelineRows(drills, startMin).map((sd, i) => {
-          const { blockLabel, isRest, shots, subLine } = sd;
+      {/* Rows */}
+      {buildTimelineRows(drills, startMin).map((row, i) => {
           const isDragging = dragFromIndex.current === i;
           const isTarget   = dragOverIndex === i && dragFromIndex.current !== i;
 
+          const dropIndicatorAbove = (
+            <div className={`h-0.5 mx-2 rounded-full transition-all duration-100 ${
+              isTarget && dragFromIndex.current !== null && dragFromIndex.current > i
+                ? "bg-coaches-red scale-y-100 mb-1" : "bg-transparent"
+            }`} />
+          );
+          const dropIndicatorBelow = (
+            <div className={`h-0.5 mx-2 rounded-full transition-all duration-100 ${
+              isTarget && dragFromIndex.current !== null && dragFromIndex.current < i
+                ? "bg-coaches-red -mt-1 mb-1" : "bg-transparent"
+            }`} />
+          );
+
+          const dragHandlers = {
+            draggable: true as const,
+            onDragStart: (e: React.DragEvent) => {
+              dragFromIndex.current = i;
+              e.dataTransfer.setData("x-row-index", String(i));
+              e.dataTransfer.effectAllowed = "move";
+            },
+            onDragOver: (e: React.DragEvent) => {
+              if (e.dataTransfer.types.includes("x-row-index")) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOverIndex !== i) setDragOverIndex(i);
+              }
+            },
+            onDragLeave: (e: React.DragEvent) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverIndex(null);
+            },
+            onDrop: (e: React.DragEvent) => {
+              const fromStr = e.dataTransfer.getData("x-row-index");
+              if (!fromStr) return;
+              e.preventDefault();
+              e.stopPropagation();
+              const from = parseInt(fromStr, 10);
+              if (from !== i) onReorder(from, i);
+              setDragOverIndex(null);
+              dragFromIndex.current = null;
+            },
+            onDragEnd: () => {
+              setDragOverIndex(null);
+              dragFromIndex.current = null;
+            },
+          };
+
+          // ── Split-Group Block ──────────────────────────────────────────
+          if (row._kind === "split") {
+            return (
+              <div key={row.instanceId} {...dragHandlers}>
+                {dropIndicatorAbove}
+                <SplitGroupBlockCard
+                  block={row}
+                  index={i}
+                  totalItems={drills.length}
+                  vaultDrills={vaultDrills}
+                  isDragging={isDragging}
+                  isTarget={isTarget}
+                  onUpdate={(b) => onSplitBlockUpdate?.(b)}
+                  onRemove={() => onRemove(row.instanceId)}
+                  onReorder={onReorder}
+                />
+                {dropIndicatorBelow}
+              </div>
+            );
+          }
+
+          // ── Regular drill ──────────────────────────────────────────────
+          const sd = row;
+          const { blockLabel, isRest, subLine } = sd;
+
           return (
             <div key={sd.instanceId}>
-              {/* Drop indicator above */}
-              <div className={`h-0.5 mx-2 rounded-full transition-all duration-100 ${
-                isTarget && dragFromIndex.current !== null && dragFromIndex.current > i
-                  ? "bg-coaches-red scale-y-100 mb-1" : "bg-transparent"
-              }`} />
+              {dropIndicatorAbove}
 
               <div
-                draggable
-                onDragStart={(e) => {
-                  dragFromIndex.current = i;
-                  e.dataTransfer.setData("x-row-index", String(i));
-                  e.dataTransfer.effectAllowed = "move";
-                }}
-                onDragOver={(e) => {
-                  if (e.dataTransfer.types.includes("x-row-index")) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.dataTransfer.dropEffect = "move";
-                    if (dragOverIndex !== i) setDragOverIndex(i);
-                  }
-                }}
-                onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                    setDragOverIndex(null);
-                  }
-                }}
-                onDrop={(e) => {
-                  const fromStr = e.dataTransfer.getData("x-row-index");
-                  if (!fromStr) return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const from = parseInt(fromStr, 10);
-                  if (from !== i) onReorder(from, i);
-                  setDragOverIndex(null);
-                  dragFromIndex.current = null;
-                }}
-                onDragEnd={() => {
-                  setDragOverIndex(null);
-                  dragFromIndex.current = null;
-                }}
+                {...dragHandlers}
                 className={`flex gap-2 sm:gap-3 rounded-xl px-3 py-2.5 group border transition-all duration-100 mb-2 ${
                   isDragging
                     ? "opacity-40 scale-[0.98]"
@@ -297,11 +353,7 @@ export default function SessionTimeline({
                 </div>
               </div>
 
-              {/* Drop indicator below */}
-              <div className={`h-0.5 mx-2 rounded-full transition-all duration-100 ${
-                isTarget && dragFromIndex.current !== null && dragFromIndex.current < i
-                  ? "bg-coaches-red -mt-1 mb-1" : "bg-transparent"
-              }`} />
+              {dropIndicatorBelow}
             </div>
           );
         })}

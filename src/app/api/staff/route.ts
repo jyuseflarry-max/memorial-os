@@ -41,18 +41,22 @@ export async function GET() {
 }
 
 /**
- * POST /api/staff — invite a new staff member (Coach or Manager)
- * Body: { full_name, email, role }
+ * POST /api/staff
+ * - With `password`: create user immediately (all roles including Admin)
+ * - Without `password`: send invite email (Coach / Manager only)
+ * Body: { full_name, email, role, password? }
  */
 export async function POST(request: NextRequest) {
   try {
-    const { full_name, email, role } = await request.json();
+    const { full_name, email, role, password } = await request.json();
 
     if (!full_name || !email || !role) {
       return apiError("full_name, email, and role are required", 400);
     }
-    if (!["Coach", "Manager"].includes(role)) {
-      return apiError("Role must be Coach or Manager", 400);
+    const allRoles = ["Admin", "Coach", "Manager"];
+    if (!allRoles.includes(role)) return apiError("Invalid role", 400);
+    if (!password && !["Coach", "Manager"].includes(role)) {
+      return apiError("Invite flow only supports Coach or Manager", 400);
     }
 
     const userClient = await getSupabaseUser();
@@ -68,19 +72,33 @@ export async function POST(request: NextRequest) {
       .single();
     if (!myRecord) return apiError("Admin record not found", 403);
 
-    // Send the invite email
-    const { data: invited, error: inviteError } =
-      await service.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    let userId: string;
+
+    if (password) {
+      // Manual creation — set password immediately, no email
+      const { data: created, error: createError } = await service.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
       });
-    if (inviteError) {
-      console.error("[staff invite] inviteUserByEmail failed:", inviteError.message);
-      if (!invited?.user) throw inviteError;
+      if (createError) throw createError;
+      userId = created.user.id;
+    } else {
+      // Invite flow — send "set your password" email
+      const { data: invited, error: inviteError } =
+        await service.auth.admin.inviteUserByEmail(email, {
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        });
+      if (inviteError) {
+        console.error("[staff invite] inviteUserByEmail failed:", inviteError.message);
+        if (!invited?.user) throw inviteError;
+      }
+      userId = invited!.user!.id;
     }
 
     // Create the users table record
     const { error: insertError } = await service.from("users").insert({
-      id:        invited!.user!.id,
+      id:        userId,
       tenant_id: myRecord.tenant_id,
       role,
       full_name,

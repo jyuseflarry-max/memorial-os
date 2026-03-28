@@ -2,7 +2,7 @@
 
 import { useState, Fragment } from "react";
 import { Target } from "lucide-react";
-import { Session, SessionDrill, parseTime, formatTime12, totalDuration, totalShots } from "@/types/session";
+import { Session, SessionDrill, isSplitGroup, parseTime, formatTime12, totalDuration, totalShots } from "@/types/session";
 import { DrillCategory } from "@/types/drill";
 import { Player } from "@/types/player";
 import ShotCounterModal from "@/components/planner/ShotCounterModal";
@@ -22,14 +22,22 @@ function buildRows(session: Session): ScriptRow[] {
   let cursor = parseTime(session.startTime);
   const total = totalDuration(session.drills);
   let elapsed = 0;
-  return session.drills.map((sd) => {
-    const startStr = formatTime12(cursor);
+  const rows: ScriptRow[] = [];
+  for (const item of session.drills) {
+    if (isSplitGroup(item)) {
+      cursor  += item.masterDuration;
+      elapsed += item.masterDuration;
+      continue;
+    }
+    const sd = item as SessionDrill;
+    const startStr  = formatTime12(cursor);
     cursor  += sd.duration;
     elapsed += sd.duration;
-    const endStr   = formatTime12(cursor);
+    const endStr    = formatTime12(cursor);
     const remaining = total - elapsed;
-    return { ...sd, startStr, endStr, remaining };
-  });
+    rows.push({ ...sd, startStr, endStr, remaining });
+  }
+  return rows;
 }
 
 // ── Name display ──────────────────────────────────────────────────────────
@@ -96,8 +104,9 @@ export default function CoachScript({ session, players = [] }: Props) {
   });
   const timeRangeLabel = `${startLabel} – ${formatTime12(parseTime(session.startTime) + mins)} (${mins} min)`;
 
-  const avgIntensity = session.drills.length
-    ? (session.drills.reduce((s, d) => s + d.drill.intensity, 0) / session.drills.length).toFixed(1)
+  const regularDrills = session.drills.filter((d): d is SessionDrill => !isSplitGroup(d));
+  const avgIntensity = regularDrills.length
+    ? (regularDrills.reduce((s, d) => s + d.drill.intensity, 0) / regularDrills.length).toFixed(1)
     : "—";
 
   return (

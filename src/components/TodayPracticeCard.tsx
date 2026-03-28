@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Clock, Zap, TrendingUp, ShieldCheck, ArrowRight } from "lucide-react";
-import { SessionDrill, parseTime, formatTime12, totalDuration } from "@/types/session";
+import { SessionDrill, SessionItem, isSplitGroup, parseTime, formatTime12, totalDuration } from "@/types/session";
 import { useTeam } from "@/context/TeamContext";
 
 interface SavedSession {
   date: string;
   start_time: string;
-  drills: SessionDrill[];
+  drills: SessionItem[];
 }
 
 const INTENSITY_LABEL = ["", "Recovery", "Light", "Moderate", "Hard", "All-Out"];
@@ -104,7 +104,23 @@ export default function TodayPracticeCard() {
 
           {/* Drill list */}
           <ul className="flex flex-col gap-2">
-            {session.drills.map((sd, idx) => (
+            {session.drills.map((item, idx) => {
+              if (isSplitGroup(item)) {
+                return (
+                  <li key={item.instanceId}
+                    className="flex items-center justify-between bg-purple-900/20 border border-purple-800/30 rounded-lg px-4 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-600 text-xs font-mono w-4 text-right">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <span className="text-purple-300 text-sm">{item.title}</span>
+                    </div>
+                    <span className="text-gray-400 text-xs font-mono">{item.masterDuration} min · {item.subTracks.length} groups</span>
+                  </li>
+                );
+              }
+              const sd = item as SessionDrill;
+              return (
               <li key={sd.instanceId}
                 className="flex items-center justify-between bg-gray-700/40 hover:bg-gray-700/70 transition-colors rounded-lg px-4 py-2.5">
                 <div className="flex items-center gap-3">
@@ -120,7 +136,8 @@ export default function TodayPracticeCard() {
                   </span>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
 
           <button

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Plus, Pencil, Trash2, Copy, Users, X, Shuffle, Save,
+  Plus, Pencil, Trash2, Copy, Users, X, Shuffle, Save, AlertTriangle,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
@@ -255,9 +255,12 @@ export default function PlayerGroupsPage() {
   const { players }    = useTeamPlayers();
   const activePlayers  = players.filter((p) => p.status === PlayerStatus.Active);
 
-  const [groupings, setGroupings] = useState<PlayerGrouping[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [editing,   setEditing]   = useState<PlayerGrouping | null | "new">(null);
+  const [groupings,      setGroupings]      = useState<PlayerGrouping[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [editing,        setEditing]        = useState<PlayerGrouping | null | "new">(null);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeleting,   setBulkDeleting]   = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -301,6 +304,17 @@ export default function PlayerGroupsPage() {
     fetch(`/api/player-groupings/${id}`, { method: "DELETE" }).catch(() => {});
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    await Promise.all([...selectedIds].map((id) =>
+      fetch(`/api/player-groupings/${id}`, { method: "DELETE" }).catch(() => {})
+    ));
+    setGroupings((prev) => prev.filter((g) => !selectedIds.has(g.id)));
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+    setBulkDeleting(false);
+  }
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -311,12 +325,23 @@ export default function PlayerGroupsPage() {
             {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {groupings.length} GROUPING{groupings.length !== 1 ? "S" : ""}
           </p>
         </div>
-        <button
-          onClick={() => setEditing("new")}
-          className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
-        >
-          <Plus size={16} /> New Grouping
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowBulkDelete(true)}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+            >
+              <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+            </button>
+          )}
+          <button
+            onClick={() => setEditing("new")}
+            className="flex items-center gap-2 bg-coaches-red hover:bg-coaches-red-dark transition-colors text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
+          >
+            <Plus size={16} /> New Grouping
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -329,18 +354,43 @@ export default function PlayerGroupsPage() {
           <p className="text-gray-600 text-xs font-mono">Create one with the button above.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {groupings.map((g) => (
-            <GroupingCard
-              key={g.id}
-              grouping={g}
-              players={players}
-              onEdit={() => setEditing(g)}
-              onDuplicate={() => handleDuplicate(g)}
-              onDelete={() => handleDelete(g.id, g.name)}
-            />
-          ))}
-        </div>
+        <>
+          {groupings.length > 0 && (
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="checkbox"
+                checked={groupings.length > 0 && groupings.every((g) => selectedIds.has(g.id))}
+                ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && !groupings.every((g) => selectedIds.has(g.id)); }}
+                onChange={(e) => setSelectedIds(e.target.checked ? new Set(groupings.map((g) => g.id)) : new Set())}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+              />
+              <span className="text-gray-500 text-xs font-mono">SELECT ALL</span>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {groupings.map((g) => (
+              <div key={g.id} className="relative">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(g.id)}
+                  onChange={(e) => {
+                    const next = new Set(selectedIds);
+                    e.target.checked ? next.add(g.id) : next.delete(g.id);
+                    setSelectedIds(next);
+                  }}
+                  className="absolute top-3 left-3 z-10 w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+                />
+                <GroupingCard
+                  grouping={g}
+                  players={players}
+                  onEdit={() => setEditing(g)}
+                  onDuplicate={() => handleDuplicate(g)}
+                  onDelete={() => handleDelete(g.id, g.name)}
+                />
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Editor modal */}
@@ -352,6 +402,33 @@ export default function PlayerGroupsPage() {
           onSave={handleSave}
           onClose={() => setEditing(null)}
         />
+      )}
+
+      {/* Bulk delete confirmation */}
+      {showBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-gray-900 border border-red-800/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Delete {selectedIds.size} grouping{selectedIds.size !== 1 ? "s" : ""}?</p>
+                <p className="text-gray-400 text-sm">This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowBulkDelete(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={handleBulkDelete} disabled={bulkDeleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                {bulkDeleting ? "Deleting…" : "Delete All"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

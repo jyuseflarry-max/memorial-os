@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { QUICK_ACTIONS } from "@/lib/quick-actions";
-import { Session, SessionDrill, SessionSummary, SaveStatus } from "@/types/session";
+import { Session, SessionDrill, SessionItem, SplitGroupBlock, isSplitGroup, SessionSummary, SaveStatus } from "@/types/session";
 import { DrillGroup } from "@/types/grouping";
 import { Drill } from "@/types/drill";
 import { postSession, fetchSession } from "@/lib/session-api";
@@ -144,6 +144,30 @@ export function useSessionEditor({
     mutate((s) => ({ ...s, drills: s.drills.map((d) => d.instanceId === instanceId ? { ...d, groups } : d) }));
   }
 
+  function addSplitBlock(numTracks: number) {
+    const block: SplitGroupBlock = {
+      instanceId: crypto.randomUUID(),
+      type: "split-group",
+      title: "Split Group",
+      masterDuration: 15,
+      subTracks: Array.from({ length: numTracks }, (_, i) => ({
+        id: crypto.randomUUID(),
+        label: `Group ${i + 1}`,
+        drills: [],
+      })),
+    };
+    mutate((s) => ({ ...s, drills: [...s.drills, block] }));
+  }
+
+  function updateSplitBlock(instanceId: string, updater: (b: SplitGroupBlock) => SplitGroupBlock) {
+    mutate((s) => ({
+      ...s,
+      drills: s.drills.map((d) =>
+        isSplitGroup(d) && d.instanceId === instanceId ? updater(d) : d
+      ),
+    }));
+  }
+
   function reorderDrills(from: number, to: number) {
     mutate((s) => {
       const drills = [...s.drills];
@@ -179,6 +203,8 @@ export function useSessionEditor({
     removeDrill,
     updateDuration,
     updateGroups,
+    addSplitBlock,
+    updateSplitBlock,
     reorderDrills,
     handleStartTimeChange,
     handleDateChange,

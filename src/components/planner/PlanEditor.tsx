@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, BookmarkPlus,
+  Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, BookmarkPlus, Scissors,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SessionTimeline from "@/components/planner/SessionTimeline";
@@ -18,7 +18,7 @@ import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useSettings } from "@/context/SettingsContext";
 import { useSessionEditor } from "@/hooks/useSessionEditor";
 import { SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
-import { totalDuration, totalShots, formatHHMM, GeneratedDrill, SessionDrill } from "@/types/session";
+import { totalDuration, totalShots, formatHHMM, GeneratedDrill, SessionDrill, isSplitGroup } from "@/types/session";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
@@ -58,6 +58,8 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
     removeDrill,
     updateDuration,
     updateGroups,
+    addSplitBlock,
+    updateSplitBlock,
     reorderDrills,
     handleStartTimeChange,
     handleDateChange,
@@ -80,11 +82,12 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   }
 
   // UI-only state — which modals / panels are open
-  const [groupingDrillId,  setGroupingDrillId]  = useState<string | null>(null);
-  const [showNewDrillForm, setShowNewDrillForm] = useState(false);
-  const [showDrillSheet,   setShowDrillSheet]   = useState(false);
-  const [showOverflow,     setShowOverflow]     = useState(false);
-  const [showSaveModal,    setShowSaveModal]    = useState(false);
+  const [groupingDrillId,   setGroupingDrillId]   = useState<string | null>(null);
+  const [showNewDrillForm,  setShowNewDrillForm]  = useState(false);
+  const [showDrillSheet,    setShowDrillSheet]    = useState(false);
+  const [showOverflow,      setShowOverflow]      = useState(false);
+  const [showSaveModal,     setShowSaveModal]     = useState(false);
+  const [showSplitPicker,   setShowSplitPicker]   = useState(false);
 
 
   const totalMin      = totalDuration(session.drills);
@@ -248,12 +251,13 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
             players={players}
             onAbsentChange={(absentIds) => {
               // Remove absent players from every drill's group assignments
-              session.drills.forEach((sd) => {
-                if (!sd.groups?.length) return;
-                const updated = sd.groups
+              session.drills.forEach((item) => {
+                if (isSplitGroup(item)) return;
+                if (!item.groups?.length) return;
+                const updated = item.groups
                   .map((g) => ({ ...g, playerIds: g.playerIds.filter((pid) => !absentIds.has(pid)) }))
                   .filter((g) => g.playerIds.length > 0);
-                updateGroups(sd.instanceId, updated);
+                updateGroups(item.instanceId, updated);
               });
             }}
           />
@@ -271,16 +275,42 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-400 text-xs font-medium hover:bg-sky-900/60 transition-colors">
                   <Zap size={12} /> Transition
                 </button>
+                <div className="relative">
+                  <button type="button" onClick={() => setShowSplitPicker((v) => !v)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-800/60 text-purple-400 text-xs font-medium hover:bg-purple-900/60 transition-colors">
+                    <Scissors size={12} /> Split-Group
+                  </button>
+                  {showSplitPicker && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowSplitPicker(false)} />
+                      <div className="absolute right-0 top-full mt-1 z-20 bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-1 w-36 overflow-hidden">
+                        <p className="text-gray-500 text-[10px] font-mono px-3 pt-1 pb-0.5">SUB-GROUPS</p>
+                        {[2, 3, 4].map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => { addSplitBlock(n); setShowSplitPicker(false); }}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                          >
+                            {n} groups
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
             <SessionTimeline
               drills={session.drills}
               startTime={session.startTime}
+              vaultDrills={vaultDrills}
               onRemove={removeDrill}
               onDurationChange={updateDuration}
               onReorder={reorderDrills}
               onGroupsClick={(id) => setGroupingDrillId(id)}
+              onSplitBlockUpdate={(block) => updateSplitBlock(block.instanceId, () => block)}
             />
           </div>
 
@@ -319,8 +349,9 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
       )}
 
       {groupingDrillId && (() => {
-        const sd = session.drills.find((d) => d.instanceId === groupingDrillId);
-        if (!sd) return null;
+        const item = session.drills.find((d) => d.instanceId === groupingDrillId);
+        if (!item || isSplitGroup(item)) return null;
+        const sd = item;
         return (
           <DrillGroupingModal
             drillName={sd.drill.name}

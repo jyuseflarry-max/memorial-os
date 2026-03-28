@@ -21,7 +21,6 @@ import { NewPlayerData } from "@/context/PlayerContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useTeam } from "@/context/TeamContext";
 import { Player, PlayerStatus } from "@/types/player";
-import { StatusBadge } from "@/components/player/StatusBadge";
 
 // ── Delete confirmation ───────────────────────────────────────────────────
 
@@ -430,26 +429,11 @@ export default function RosterPage() {
                     className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600 mt-0.5"
                   />
                 </td>
-                <td className="px-4 py-3 align-top">
+                <td className="px-4 py-3">
                   <p className="text-gray-400 font-mono text-xs font-bold">{player.jersey_number}</p>
-                  <div className="mt-1.5"><StatusBadge status={player.status} /></div>
                 </td>
-                <td className="px-4 py-3 align-top">
+                <td className="px-4 py-3">
                   <p className="text-white font-medium">{player.name}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    {!player.email ? (
-                      <span className="text-[10px] font-mono text-gray-600">No email</span>
-                    ) : player.user_id ? (
-                      <>
-                        <span className="flex items-center gap-1 text-[10px] font-mono text-green-400">
-                          <CheckCircle2 size={11} /> Member
-                        </span>
-                        <InviteButton player={player} onDone={refresh} />
-                      </>
-                    ) : (
-                      <InviteButton player={player} onDone={refresh} />
-                    )}
-                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

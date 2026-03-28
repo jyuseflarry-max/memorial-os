@@ -1,10 +1,10 @@
 "use client";
 
-import { SessionDrill } from "@/types/session";
+import { SessionDrill, SessionItem, isSplitGroup } from "@/types/session";
 import { useDrillCategories } from "@/context/DrillCategoryContext";
 
 interface Props {
-  drills: SessionDrill[];
+  drills: SessionItem[];
 }
 
 // ── Analytics computation ─────────────────────────────────────────────────
@@ -21,8 +21,9 @@ function computeProfile(drills: SessionDrill[]) {
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-export default function MissionProfile({ drills }: Props) {
+export default function MissionProfile({ drills: rawDrills }: Props) {
   const { getCatColor } = useDrillCategories();
+  const drills = rawDrills.filter((d): d is SessionDrill => !isSplitGroup(d));
 
   if (drills.length === 0) {
     return (

@@ -18,10 +18,39 @@ export interface SessionDrill {
   groups?: DrillGroup[] | null;
 }
 
+// ── Split-Group Block ──────────────────────────────────────────────────────
+
+export interface SubTrackDrill {
+  instanceId: string;
+  name: string;
+  drillId?: string; // vault drill id, if sourced from vault
+  duration: number; // minutes
+}
+
+export interface SubTrack {
+  id: string;
+  label: string;
+  drills: SubTrackDrill[];
+}
+
+export interface SplitGroupBlock {
+  instanceId: string;
+  type: "split-group";
+  title: string;
+  masterDuration: number; // minutes — shared cap per sub-track
+  subTracks: SubTrack[];
+}
+
+export type SessionItem = SessionDrill | SplitGroupBlock;
+
+export function isSplitGroup(item: SessionItem): item is SplitGroupBlock {
+  return (item as SplitGroupBlock).type === "split-group";
+}
+
 export interface Session {
   date: string;      // YYYY-MM-DD
   startTime: string; // HH:MM (24-hr clock)
-  drills: SessionDrill[];
+  drills: SessionItem[];
 }
 
 // ── Time helpers ──────────────────────────────────────────────────────────
@@ -51,8 +80,8 @@ export function formatTime12(totalMinutes: number): string {
 }
 
 /** Total session minutes */
-export function totalDuration(drills: SessionDrill[]): number {
-  return drills.reduce((s, d) => s + d.duration, 0);
+export function totalDuration(drills: SessionItem[]): number {
+  return drills.reduce((s, d) => s + (isSplitGroup(d) ? d.masterDuration : d.duration), 0);
 }
 
 /** Projected shots for a single drill instance */
@@ -60,9 +89,9 @@ export function drillShots(sd: SessionDrill): number {
   return Math.round(sd.drill.shot_density * sd.duration);
 }
 
-/** Total projected shots across all drills */
-export function totalShots(drills: SessionDrill[]): number {
-  return drills.reduce((s, d) => s + d.drill.shot_density * d.duration, 0);
+/** Total projected shots across all drills (split-group blocks contribute 0) */
+export function totalShots(drills: SessionItem[]): number {
+  return drills.reduce((s, d) => s + (isSplitGroup(d) ? 0 : d.drill.shot_density * d.duration), 0);
 }
 
 /** A single drill entry returned by the AI planner */

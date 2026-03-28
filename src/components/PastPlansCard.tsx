@@ -5,20 +5,25 @@ import { useRouter } from "next/navigation";
 import {
   ClipboardList, Pencil, Copy, Trash2, X,
   CalendarDays, Printer, Mail, ChevronUp, ChevronDown,
-  ChevronLeft, ChevronRight, Eye,
+  ChevronLeft, ChevronRight, Eye, AlertTriangle,
 } from "lucide-react";
 import { useTeam } from "@/context/TeamContext";
 import { useAuth } from "@/context/AuthContext";
+
+type DrillItem = { instanceId: string; drill: { id?: string; name: string; categories?: string[] }; duration: number };
+type SplitItem = { instanceId: string; type: "split-group"; title: string; masterDuration: number };
+type PlanItem  = DrillItem | SplitItem;
+
+function isSplitItem(item: PlanItem): item is SplitItem {
+  return (item as SplitItem).type === "split-group";
+}
 
 interface SavedSession {
   id: string;
   date: string;
   label: string;
   start_time: string;
-  drills: Array<{
-    drill: { id?: string; name: string; categories?: string[] };
-    duration: number;
-  }>;
+  drills: PlanItem[];
   team_id: string | null;
 }
 
@@ -50,14 +55,19 @@ function formatTime12FromMin(totalMinutes: number): string {
 function buildEmailBody(session: SavedSession, teamName: string): string {
   const [sh, sm] = session.start_time.split(":").map(Number);
   let cursor = sh * 60 + sm;
-  const totalMin = session.drills.reduce((s, d) => s + d.duration, 0);
+  const totalMin = session.drills.reduce((s, d) => s + (isSplitItem(d) ? d.masterDuration : d.duration), 0);
 
-  const drillLines = session.drills.map((sd, i) => {
+  const drillLines = session.drills.map((item, i) => {
     const start = formatTime12FromMin(cursor);
-    cursor += sd.duration;
+    if (isSplitItem(item)) {
+      cursor += item.masterDuration;
+      const end = formatTime12FromMin(cursor);
+      return `  ${String(i + 1).padStart(2, "0")}. [Split Group] ${item.title}\n      ${start} – ${end} (${item.masterDuration} min)`;
+    }
+    cursor += item.duration;
     const end = formatTime12FromMin(cursor);
-    const cat = (sd.drill.categories ?? []).join(", ") || "—";
-    return `  ${String(i + 1).padStart(2, "0")}. ${sd.drill.name}\n      ${start} – ${end} (${sd.duration} min) · ${cat}`;
+    const cat = (item.drill.categories ?? []).join(", ") || "—";
+    return `  ${String(i + 1).padStart(2, "0")}. ${item.drill.name}\n      ${start} – ${end} (${item.duration} min) · ${cat}`;
   });
 
   const lines = [
@@ -130,13 +140,16 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
   const { activeTeam } = useTeam();
   const { isPlayer } = useAuth();
 
-  const [sessions,  setSessions]  = useState<SavedSession[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [sortAsc,   setSortAsc]   = useState(false);
-  const [copying,   setCopying]   = useState<SavedSession | null>(null);
-  const [deleting,  setDeleting]  = useState<string | null>(null);
-  const [page,      setPage]      = useState(1);
-  const [perPage,   setPerPage]   = useState(20);
+  const [sessions,       setSessions]       = useState<SavedSession[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [sortAsc,        setSortAsc]        = useState(false);
+  const [copying,        setCopying]        = useState<SavedSession | null>(null);
+  const [deleting,       setDeleting]       = useState<string | null>(null);
+  const [page,           setPage]           = useState(1);
+  const [perPage,        setPerPage]        = useState(20);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeleting,   setBulkDeleting]   = useState(false);
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -197,6 +210,22 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
     window.open(`/view-plans/${session.date}?${qp}`, "_blank");
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    await Promise.all([...selectedIds].map((id) => {
+      const s = sessions.find((sess) => sess.id === id);
+      if (!s) return Promise.resolve();
+      const qp = new URLSearchParams();
+      if (s.team_id) qp.set("team_id", s.team_id);
+      qp.set("label", s.label ?? "");
+      return fetch(`/api/sessions/${s.date}?${qp}`, { method: "DELETE" }).catch(() => {});
+    }));
+    setSessions((prev) => prev.filter((s) => !selectedIds.has(s.id)));
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+    setBulkDeleting(false);
+  }
+
   function handleEmail(session: SavedSession) {
     const teamName = activeTeam?.name ?? "Team";
     const subject  = encodeURIComponent(`Practice Plan — ${formatDate(session.date)} — ${teamName}`);
@@ -210,10 +239,32 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
+            {!isPlayer && sessions.length > 0 && (
+              <input
+                type="checkbox"
+                checked={paginated.length > 0 && paginated.every((s) => selectedIds.has(s.id))}
+                ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && !paginated.every((s) => selectedIds.has(s.id)); }}
+                onChange={(e) => {
+                  const next = new Set(selectedIds);
+                  paginated.forEach((s) => e.target.checked ? next.add(s.id) : next.delete(s.id));
+                  setSelectedIds(next);
+                }}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+              />
+            )}
             <ClipboardList size={18} className="text-coaches-red" />
             <h2 className="text-white font-semibold">Practice Plans</h2>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            {!isPlayer && selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowBulkDelete(true)}
+                className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 transition-colors text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
+              >
+                <Trash2 size={12} /> Delete ({selectedIds.size})
+              </button>
+            )}
             <span className="text-gray-500 text-xs font-mono hidden sm:inline">
               {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {loading ? "…" : sessions.length} PLANS
             </span>
@@ -259,10 +310,23 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
             return (
               <div
                 key={s.id}
-                className={`px-4 py-3 transition-colors ${
+                className={`flex items-start gap-3 px-4 py-3 transition-colors ${
                   isToday ? "bg-coaches-red/5" : "hover:bg-gray-700/20"
                 }`}
               >
+                {!isPlayer && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(s.id)}
+                    onChange={(e) => {
+                      const next = new Set(selectedIds);
+                      e.target.checked ? next.add(s.id) : next.delete(s.id);
+                      setSelectedIds(next);
+                    }}
+                    className="w-4 h-4 mt-1 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600 shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
                 {/* Date + time row */}
                 <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                   <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{
@@ -339,6 +403,7 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
                     </button>
                   )}
                 </div>
+                </div>
               </div>
             );
           })}
@@ -403,6 +468,32 @@ export default function PracticeHistoryCard({ showViewButton = false }: { showVi
           onConfirm={(date) => handleCopy(copying, date)}
           onClose={() => setCopying(null)}
         />
+      )}
+
+      {showBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-gray-900 border border-red-800/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Delete {selectedIds.size} practice plan{selectedIds.size !== 1 ? "s" : ""}?</p>
+                <p className="text-gray-400 text-sm">This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowBulkDelete(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={handleBulkDelete} disabled={bulkDeleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                {bulkDeleting ? "Deleting…" : "Delete All"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
