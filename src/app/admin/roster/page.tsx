@@ -14,6 +14,7 @@ import {
   RefreshCw,
   CheckCircle2,
   Loader2,
+  Link2,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import PlayerForm from "@/components/admin/PlayerForm";
@@ -250,6 +251,37 @@ function InviteButton({ player, onDone }: { player: Player; onDone: () => void }
   );
 }
 
+// ── Family link copy button ────────────────────────────────────────────────
+
+function FamilyLinkButton({ playerId }: { playerId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    const url  = `${base}/join/family?playerID=${playerId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title="Copy family join link"
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold uppercase tracking-wide transition-colors ${
+        copied
+          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+          : "bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25"
+      }`}
+    >
+      {copied ? <CheckCircle2 size={10} /> : <Link2 size={10} />}
+      {copied ? "Copied!" : "Family Link"}
+    </button>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function RosterPage() {
@@ -446,7 +478,9 @@ export default function RosterPage() {
                   <p className="text-white font-medium">{player.name}</p>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <InviteButton player={player} onDone={refresh} />
+                    <FamilyLinkButton playerId={player.id} />
                     <button type="button" onClick={() => setEditing(player)} title="Edit player"
                       className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors">
                       <Pencil size={14} />

@@ -16,7 +16,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isPlayer, loading } = useAuth();
+  const { isPlayer, isFamily, loading } = useAuth();
   const pathname   = usePathname();
   const router     = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,9 +30,15 @@ export default function DashboardLayout({
     if (!allowed) router.replace("/");
   }, [isPlayer, pathname, router]);
 
+  // Redirect family users to their dedicated dashboard
+  useEffect(() => {
+    if (isFamily) router.replace("/family");
+  }, [isFamily, router]);
+
   // Show nothing while auth is loading to avoid a layout flash.
   if (loading) return null;
   if (isPlayer) return <PlayerShell>{children}</PlayerShell>;
+  if (isFamily) return null; // redirect in progress
 
   return (
     <div className="flex min-h-screen bg-gray-900 font-sans print:bg-white overflow-x-hidden">

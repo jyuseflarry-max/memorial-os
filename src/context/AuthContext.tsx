@@ -10,7 +10,14 @@ import {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type UserRole = "Admin" | "Coach" | "Manager" | "Player";
+export type UserRole = "Admin" | "Coach" | "Manager" | "Player" | "Family";
+
+export interface LinkedPlayer {
+  playerId:     string;
+  playerName:   string;
+  teamId:       string | null;
+  relationship: string;
+}
 
 export interface AuthUser {
   id:       string;
@@ -22,6 +29,8 @@ export interface AuthUser {
   teamId:   string | null;
   /** The player's own record id — only populated for role=Player */
   playerId: string | null;
+  /** Linked players — only populated for role=Family */
+  linkedPlayers: LinkedPlayer[] | null;
 }
 
 interface AuthContextValue {
@@ -32,6 +41,7 @@ interface AuthContextValue {
   isCoach:   boolean;
   isManager: boolean;
   isPlayer:  boolean;
+  isFamily:  boolean;
 }
 
 // ── Context ────────────────────────────────────────────────────────────────
@@ -44,6 +54,7 @@ const AuthContext = createContext<AuthContextValue>({
   isCoach:   false,
   isManager: false,
   isPlayer:  false,
+  isFamily:  false,
 });
 
 export function useAuth() {
@@ -82,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isCoach:   role === "Coach",
       isManager: role === "Manager",
       isPlayer:  role === "Player",
+      isFamily:  role === "Family",
     }}>
       {children}
     </AuthContext.Provider>

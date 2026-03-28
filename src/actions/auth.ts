@@ -13,9 +13,20 @@ export async function login(
   const password = formData.get("password") as string;
 
   const supabase = await getSupabaseUser();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: authResult, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) return { error: error.message };
+
+  // Redirect Family users to their dedicated dashboard
+  if (authResult?.user) {
+    const service = getSupabaseServer();
+    const { data: record } = await service
+      .from("users")
+      .select("role")
+      .eq("id", authResult.user.id)
+      .single();
+    if (record?.role === "Family") redirect("/family");
+  }
 
   redirect("/");
 }

@@ -30,6 +30,7 @@ export async function GET() {
     // For players, find their linked player record to get team_id
     let teamId:   string | null = null;
     let playerId: string | null = null;
+    let linkedPlayers: Array<{ playerId: string; playerName: string; teamId: string | null; relationship: string }> | null = null;
 
     if (record.role === "Player") {
       const { data: playerRecord } = await service
@@ -44,14 +45,34 @@ export async function GET() {
       }
     }
 
+    if (record.role === "Family") {
+      const { data: links } = await service
+        .from("family_player_links")
+        .select("player_id, relationship_tag, players(id, name, team_id)")
+        .eq("family_id", user.id);
+
+      if (links) {
+        linkedPlayers = links.map((l: Record<string, unknown>) => {
+          const p = l.players as { id: string; name: string; team_id: string | null } | null;
+          return {
+            playerId:     l.player_id as string,
+            playerName:   p?.name ?? "Unknown",
+            teamId:       p?.team_id ?? null,
+            relationship: l.relationship_tag as string,
+          };
+        });
+      }
+    }
+
     return Response.json({
-      id:        user.id,
-      email:     user.email ?? null,
-      fullName:  record.full_name,
-      role:      record.role,
-      tenantId:  record.tenant_id,
+      id:           user.id,
+      email:        user.email ?? null,
+      fullName:     record.full_name,
+      role:         record.role,
+      tenantId:     record.tenant_id,
       teamId,
       playerId,
+      linkedPlayers,
     });
   } catch (err: unknown) {
     return apiError(err);
