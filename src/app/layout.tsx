@@ -5,6 +5,7 @@ import { PlayerProvider } from "@/context/PlayerContext";
 import { TeamProvider } from "@/context/TeamContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { DrillCategoryProvider } from "@/context/DrillCategoryContext";
+import { DrillObjectivesProvider } from "@/context/DrillObjectivesContext";
 import { DrillProvider } from "@/context/DrillContext";
 import { AuthProvider } from "@/context/AuthContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
@@ -50,12 +51,14 @@ export default function RootLayout({
         <AuthProvider>
           <SettingsProvider>
             <DrillCategoryProvider>
-              <PrintOrientationStyle />
-              <TeamProvider>
-                <PlayerProvider>
-                  <DrillProvider>{children}</DrillProvider>
-                </PlayerProvider>
-              </TeamProvider>
+              <DrillObjectivesProvider>
+                <PrintOrientationStyle />
+                <TeamProvider>
+                  <PlayerProvider>
+                    <DrillProvider>{children}</DrillProvider>
+                  </PlayerProvider>
+                </TeamProvider>
+              </DrillObjectivesProvider>
             </DrillCategoryProvider>
           </SettingsProvider>
         </AuthProvider>
