@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
-  Plus, Edit2, Trash2, ExternalLink, FileText, Video,
+  Plus, Edit2, Trash2, ExternalLink, Video,
   X, Save, Loader2, Trophy, ClipboardList, Target,
   Upload, CheckCircle2, AlertCircle, MapPin,
 } from "lucide-react";
@@ -92,34 +92,7 @@ function ResultChip({ game }: { game: Game }) {
   );
 }
 
-// ── Writeup modal ──────────────────────────────────────────────────────────
-
-function WriteupModal({ game, onClose }: { game: Game; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-gray-700 shrink-0">
-          <div>
-            <h2 className="text-white font-semibold text-base">Game Writeup</h2>
-            <p className="text-gray-500 text-xs font-mono mt-0.5">
-              {fmtDate(game.game_date).short} · {game.opponent}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="p-5 overflow-y-auto">
-          {game.game_writeup ? (
-            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{game.game_writeup}</p>
-          ) : (
-            <p className="text-gray-600 font-mono text-xs">No writeup yet.</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+// ── Add / Edit modal ───────────────────────────────────────────────────────
 
 // ── Add / Edit modal ───────────────────────────────────────────────────────
 
@@ -520,16 +493,6 @@ function GameModal({
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className={labelCls}>Game Writeup</label>
-              <textarea
-                value={draft.game_writeup ?? ""}
-                onChange={(e) => patch("game_writeup", e.target.value || null)}
-                placeholder="Recap of the game — key plays, standout performances, areas to improve…"
-                rows={5}
-                className="bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors resize-none w-full"
-              />
-            </div>
           </div>
 
           {error && <p className="text-red-400 text-xs font-mono">{error}</p>}
@@ -564,7 +527,6 @@ function GameRow({
   primaryColor,
   onEdit,
   onDelete,
-  onViewWriteup,
   selected,
   onSelect,
 }: {
@@ -572,7 +534,6 @@ function GameRow({
   primaryColor: string;
   onEdit: () => void;
   onDelete: () => void;
-  onViewWriteup: () => void;
   selected: boolean;
   onSelect: (checked: boolean) => void;
 }) {
@@ -672,15 +633,6 @@ function GameRow({
               <ExternalLink size={10} /> Box Score
             </span>
           )}
-          {game.game_writeup ? (
-            <button onClick={onViewWriteup} className="flex items-center gap-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 transition-colors">
-              <FileText size={10} /> Writeup
-            </button>
-          ) : (
-            <button onClick={onViewWriteup} className="flex items-center gap-1 text-[10px] font-mono text-gray-600 hover:text-gray-400 transition-colors">
-              <FileText size={10} /> Writeup
-            </button>
-          )}
         </div>
       </div>
 
@@ -731,7 +683,6 @@ export default function GameSchedulePage() {
   }, [settings.current_season]);
 
   const [modal,         setModal]         = useState<ModalMode | null>(null);
-  const [writeupGame,   setWriteupGame]   = useState<Game | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Game | null>(null);
   const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
@@ -1018,7 +969,6 @@ export default function GameSchedulePage() {
                 primaryColor={settings.primary_color}
                 onEdit={() => setModal({ type: "edit", game })}
                 onDelete={() => setConfirmDelete(game)}
-                onViewWriteup={() => setWriteupGame(game)}
                 selected={selectedIds.has(game.id)}
                 onSelect={(checked) => setSelectedIds((prev) => {
                   const next = new Set(prev);
@@ -1043,10 +993,6 @@ export default function GameSchedulePage() {
         />
       )}
 
-      {/* Writeup modal */}
-      {writeupGame && (
-        <WriteupModal game={writeupGame} onClose={() => setWriteupGame(null)} />
-      )}
 
       {/* Delete confirm */}
       {confirmDelete && (
