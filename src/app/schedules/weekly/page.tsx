@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, Gamepad2, Dumbbell, MapPin, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, CalendarDays, Gamepad2, Dumbbell, MapPin, Clock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import type { Game } from "@/types/game";
 import { LOCATION_LABELS, GAME_TYPE_LABELS } from "@/types/game";
 import type { PracticeSchedule } from "@/types/practice-schedule";
+
+interface SavedSession {
+  id: string;
+  date: string;
+  label: string;
+  start_time: string;
+  drills: Array<{ duration: number }>;
+  team_id: string | null;
+}
 
 function getWeekBounds(date: Date): { start: Date; end: Date } {
   const start = new Date(date);
@@ -42,7 +51,8 @@ const LOCATION_STYLES = {
 
 type EventItem =
   | { kind: "game";     date: string; time: string | null; game: Game }
-  | { kind: "practice"; date: string; time: string;        practice: PracticeSchedule };
+  | { kind: "session";  date: string; time: string;        session: SavedSession }
+  | { kind: "schedule"; date: string; time: string;        practice: PracticeSchedule };
 
 export default function WeeklyEventsPage() {
   const { teams, activeTeam } = useTeam();
@@ -51,23 +61,25 @@ export default function WeeklyEventsPage() {
   const { start, end } = getWeekBounds(weekOf);
 
   const [games,     setGames]     = useState<Game[]>([]);
+  const [sessions,  setSessions]  = useState<SavedSession[]>([]);
   const [practices, setPractices] = useState<PracticeSchedule[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [filterTeam, setFilterTeam] = useState<string>("all");
 
-  // Build week label e.g. "Mar 23 – Mar 29, 2026"
   const weekLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
   useEffect(() => {
     setLoading(true);
     const pp = new URLSearchParams();
-    if (activeTeam) { pp.set("team_id", activeTeam.id); }
+    if (activeTeam) pp.set("team_id", activeTeam.id);
 
     Promise.all([
-      fetch(`/api/games`).then((r) => r.json()),
+      fetch("/api/games").then((r) => r.json()),
+      fetch("/api/sessions").then((r) => r.json()),
       fetch(`/api/practice-schedule?${pp}`).then((r) => r.json()),
-    ]).then(([g, p]) => {
+    ]).then(([g, s, p]) => {
       setGames(Array.isArray(g) ? g : []);
+      setSessions(Array.isArray(s) ? s : []);
       setPractices(Array.isArray(p) ? p : []);
     }).catch(() => {}).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,22 +88,43 @@ export default function WeeklyEventsPage() {
   const events = useMemo<EventItem[]>(() => {
     const fromStr = toISO(start);
     const toStr   = toISO(end);
-    const all: EventItem[] = [
-      ...games
-        .filter((g) => g.game_date >= fromStr && g.game_date <= toStr)
-        .map((g): EventItem => ({ kind: "game", date: g.game_date, time: g.game_time, game: g })),
-      ...practices
-        .filter((p) => p.practice_date >= fromStr && p.practice_date <= toStr)
-        .map((p): EventItem => ({ kind: "practice", date: p.practice_date, time: p.start_time, practice: p })),
-    ];
+
+    const gameEvents: EventItem[] = games
+      .filter((g) => {
+        if (g.game_date < fromStr || g.game_date > toStr) return false;
+        if (filterTeam !== "all" && g.team_id !== filterTeam) return false;
+        return true;
+      })
+      .map((g) => ({ kind: "game", date: g.game_date, time: g.game_time, game: g }));
+
+    const sessionEvents: EventItem[] = sessions
+      .filter((s) => {
+        if (s.date < fromStr || s.date > toStr) return false;
+        if (filterTeam !== "all" && s.team_id !== filterTeam) return false;
+        return true;
+      })
+      .map((s) => ({ kind: "session", date: s.date, time: s.start_time, session: s }));
+
+    const scheduleEvents: EventItem[] = practices
+      .filter((p) => {
+        if (p.practice_date < fromStr || p.practice_date > toStr) return false;
+        if (filterTeam !== "all" && p.team_id !== filterTeam) return false;
+        return true;
+      })
+      .map((p) => ({ kind: "schedule", date: p.practice_date, time: p.start_time, practice: p }));
+
+    // Deduplicate: if a date already has a saved session, don't also show the schedule placeholder for that date
+    const sessionDates = new Set(sessionEvents.map((e) => e.date));
+    const filteredSchedule = scheduleEvents.filter((e) => !sessionDates.has(e.date));
+
+    const all = [...gameEvents, ...sessionEvents, ...filteredSchedule];
     return all.sort((a, b) => {
       const dc = a.date.localeCompare(b.date);
       if (dc !== 0) return dc;
       return (a.time ?? "23:59").localeCompare(b.time ?? "23:59");
     });
-  }, [games, practices, start, end]);
+  }, [games, sessions, practices, filterTeam, start, end]);
 
-  // Group by date
   const byDate = useMemo(() => {
     const map = new Map<string, EventItem[]>();
     for (const e of events) {
@@ -104,9 +137,6 @@ export default function WeeklyEventsPage() {
   const prevWeek = () => { const d = new Date(weekOf); d.setDate(d.getDate() - 7); setWeekOf(d); };
   const nextWeek = () => { const d = new Date(weekOf); d.setDate(d.getDate() + 7); setWeekOf(d); };
   const goToday  = () => setWeekOf(new Date());
-
-  // Suppress unused variable warning — filterTeam used by pill buttons above
-  void filterTeam;
 
   return (
     <DashboardLayout>
@@ -154,56 +184,109 @@ export default function WeeklyEventsPage() {
                 {isToday && <span className="text-[9px] font-mono bg-coaches-red text-white px-1.5 py-0.5 rounded-full">TODAY</span>}
               </div>
               <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden">
-                {items.map((ev, i) => (
-                  <div key={ev.kind === "game" ? ev.game.id : ev.practice.id} className={`flex items-center gap-3 px-4 py-3.5 ${i < items.length - 1 ? "border-b border-gray-700/50" : ""}`}>
-                    {ev.kind === "game" ? (
-                      <>
-                        <div className="w-7 h-7 rounded-lg bg-coaches-red/10 border border-coaches-red/20 flex items-center justify-center shrink-0">
-                          <Gamepad2 size={13} className="text-coaches-red" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-white text-sm font-semibold truncate">vs. {ev.game.opponent}</p>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border uppercase tracking-wide ${LOCATION_STYLES[ev.game.location_type]}`}>
-                              {LOCATION_LABELS[ev.game.location_type]}
-                            </span>
-                            <span className="text-[10px] font-mono text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">{GAME_TYPE_LABELS[ev.game.game_type]}</span>
+                {items.map((ev, i) => {
+                  const key = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
+                  return (
+                    <div key={key} className={`flex items-center gap-3 px-4 py-3.5 ${i < items.length - 1 ? "border-b border-gray-700/50" : ""}`}>
+                      {ev.kind === "game" && (
+                        <>
+                          <div className="w-7 h-7 rounded-lg bg-coaches-red/10 border border-coaches-red/20 flex items-center justify-center shrink-0">
+                            <Gamepad2 size={13} className="text-coaches-red" />
                           </div>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            {ev.game.game_time && !ev.game.time_tbd && (
-                              <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500"><Clock size={9} />{fmt12h(ev.game.game_time)}</span>
-                            )}
-                            {ev.game.time_tbd && <span className="text-[11px] font-mono text-gray-600">Time TBD</span>}
-                            {ev.game.venue && (
-                              <a href={`https://maps.google.com/maps?q=${encodeURIComponent(ev.game.venue)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-mono text-coaches-blue hover:text-blue-300 transition-colors truncate">
-                                <MapPin size={9} />{ev.game.venue}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-7 h-7 rounded-lg bg-sky-900/40 border border-sky-800/40 flex items-center justify-center shrink-0">
-                          <Dumbbell size={13} className="text-sky-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-semibold">Practice</p>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
-                              <Clock size={9} />{fmt12h(ev.practice.start_time)}–{fmt12h(ev.practice.end_time)}
-                            </span>
-                            {ev.practice.location && (
-                              <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500 truncate">
-                                <MapPin size={9} />{ev.practice.location.name}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-white text-sm font-semibold">vs. {ev.game.opponent}</p>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border uppercase tracking-wide ${LOCATION_STYLES[ev.game.location_type]}`}>
+                                {LOCATION_LABELS[ev.game.location_type]}
                               </span>
-                            )}
+                              <span className="text-[10px] font-mono text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">{GAME_TYPE_LABELS[ev.game.game_type]}</span>
+                              {ev.game.game_note && <span className="text-[10px] font-mono text-purple-400">{ev.game.game_note}</span>}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                              {ev.game.game_time && !ev.game.time_tbd && (
+                                <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500"><Clock size={9} />{fmt12h(ev.game.game_time)}</span>
+                              )}
+                              {ev.game.time_tbd && <span className="text-[11px] font-mono text-gray-600">Time TBD</span>}
+                              {ev.game.venue && (
+                                <a href={`https://maps.google.com/maps?q=${encodeURIComponent(ev.game.venue)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-mono text-coaches-blue hover:text-blue-300 transition-colors truncate">
+                                  <MapPin size={9} />{ev.game.venue}
+                                </a>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
+                        </>
+                      )}
+
+                      {ev.kind === "session" && (() => {
+                        const totalMin = ev.session.drills.reduce((s, d) => s + d.duration, 0);
+                        const teamName = teams.find((t) => t.id === ev.session.team_id)?.name;
+                        const planUrl  = `/view-plans/${ev.session.date}${ev.session.team_id || ev.session.label ? `?${new URLSearchParams({ ...(ev.session.team_id ? { team_id: ev.session.team_id } : {}), ...(ev.session.label ? { label: ev.session.label } : {}) })}` : ""}`;
+                        return (
+                          <>
+                            <div className="w-7 h-7 rounded-lg bg-coaches-blue/10 border border-coaches-blue/20 flex items-center justify-center shrink-0">
+                              <Dumbbell size={13} className="text-coaches-blue" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-white text-sm font-semibold">Practice Plan</p>
+                                {ev.session.label && (
+                                  <span className="text-[9px] font-mono text-gray-400 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-full">{ev.session.label}</span>
+                                )}
+                                {teamName && <span className="text-[10px] font-mono text-gray-500">{teamName}</span>}
+                              </div>
+                              <div className="flex items-center gap-3 mt-0.5">
+                                <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
+                                  <Clock size={9} />{fmt12h(ev.session.start_time)}
+                                  {totalMin > 0 && ` · ${totalMin}m`}
+                                </span>
+                                <span className="text-[11px] font-mono text-gray-600">{ev.session.drills.length} drills</span>
+                              </div>
+                            </div>
+                            <a href={planUrl} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-coaches-blue/10 border border-coaches-blue/20 text-coaches-blue hover:bg-coaches-blue/20 text-xs font-semibold transition-colors shrink-0">
+                              View <ExternalLink size={10} />
+                            </a>
+                          </>
+                        );
+                      })()}
+
+                      {ev.kind === "schedule" && (
+                        <>
+                          <div className="w-7 h-7 rounded-lg bg-sky-900/40 border border-sky-800/40 flex items-center justify-center shrink-0">
+                            <Dumbbell size={13} className="text-sky-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-semibold">
+                              Practice
+                              <span className="ml-2 text-[9px] font-mono text-gray-500 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded-full align-middle">SCHEDULED</span>
+                            </p>
+                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                              <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
+                                <Clock size={9} />{fmt12h(ev.practice.start_time)}–{fmt12h(ev.practice.end_time)}
+                              </span>
+                              {ev.practice.location && (
+                                ev.practice.location.address ? (
+                                  <a href={`https://maps.google.com/maps?q=${encodeURIComponent(ev.practice.location.address + ", " + (ev.practice.location.city ?? ""))}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-mono text-coaches-blue hover:text-blue-300 transition-colors truncate">
+                                    <MapPin size={9} />{ev.practice.location.name}
+                                  </a>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500 truncate">
+                                    <MapPin size={9} />{ev.practice.location.name}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          </div>
+                          <a
+                            href={`/planner?date=${ev.practice.practice_date}${ev.practice.team_id ? `&team_id=${ev.practice.team_id}` : ""}`}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-coaches-red/10 border border-coaches-red/30 text-coaches-red hover:bg-coaches-red/20 text-xs font-semibold transition-colors shrink-0"
+                          >
+                            Plan <ExternalLink size={10} />
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
