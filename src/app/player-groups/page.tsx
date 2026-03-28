@@ -10,7 +10,7 @@ import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { Player, PlayerStatus } from "@/types/player";
 import { DrillGroup, PlayerGrouping } from "@/types/grouping";
 import { useGroupState } from "@/hooks/useGroupState";
-import { PlayerChip, GroupDropZone } from "@/components/grouping/GroupingParts";
+import { PlayerChip, GroupDropZone, playerDisplayName } from "@/components/grouping/GroupingParts";
 
 // ── Editor modal ──────────────────────────────────────────────────────────
 
@@ -137,7 +137,7 @@ function GroupingEditor({
                 <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider mb-2">Unassigned ({unassigned.length})</p>
                 <div className="flex flex-wrap gap-1.5 min-h-[36px]">
                   {unassigned.map((p) => (
-                    <PlayerChip key={p.id} player={p} onDragStart={() => handleDragStart(p.id)} />
+                    <PlayerChip key={p.id} player={p} allPlayers={activePlayers} onDragStart={() => handleDragStart(p.id)} />
                   ))}
                   {unassigned.length === 0 && (
                     <p className="text-gray-600 text-xs font-mono w-full text-center py-1">
@@ -233,7 +233,7 @@ function GroupingCard({
               <div className="flex flex-wrap gap-1">
                 {groupPlayers.map((p) => (
                   <span key={p.id} className="text-[10px] font-mono bg-gray-700 border border-gray-600 text-gray-300 px-1.5 py-0.5 rounded">
-                    #{p.jersey_number} {p.name.split(" ").slice(-1)[0]}
+                    #{p.jersey_number} {playerDisplayName(p, players)}
                   </span>
                 ))}
                 {groupPlayers.length === 0 && (

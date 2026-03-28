@@ -4,14 +4,30 @@ import { X, Trash2 } from "lucide-react";
 import { Player } from "@/types/player";
 import { DrillGroup } from "@/types/grouping";
 
+/**
+ * Returns "LastName" normally, or "F. LastName" when another player in
+ * `allPlayers` shares the same last name.
+ */
+export function playerDisplayName(player: Player, allPlayers: Player[]): string {
+  const parts    = player.name.trim().split(/\s+/);
+  const lastName = parts[parts.length - 1];
+  const hasDupe  = allPlayers.some(
+    (p) => p.id !== player.id && p.name.trim().split(/\s+/).pop() === lastName
+  );
+  if (!hasDupe) return lastName;
+  return `${parts[0][0]}. ${lastName}`;
+}
+
 // ── Player chip ───────────────────────────────────────────────────────────
 
 export function PlayerChip({
   player,
+  allPlayers = [],
   dragging = false,
   onDragStart,
 }: {
   player: Player;
+  allPlayers?: Player[];
   dragging?: boolean;
   onDragStart: () => void;
 }) {
@@ -26,7 +42,7 @@ export function PlayerChip({
       <span className="w-5 h-5 rounded bg-gray-600 flex items-center justify-center font-mono text-[10px] shrink-0">
         {player.jersey_number}
       </span>
-      <span className="truncate max-w-[90px]">{player.name.split(" ").slice(-1)[0]}</span>
+      <span className="truncate max-w-[90px]">{playerDisplayName(player, allPlayers)}</span>
     </div>
   );
 }
@@ -94,7 +110,7 @@ export function GroupDropZone({
               <span className="w-4 h-4 rounded bg-gray-600 flex items-center justify-center font-mono text-[9px]">
                 {p.jersey_number}
               </span>
-              <span className="max-w-[80px] truncate">{p.name.split(" ").slice(-1)[0]}</span>
+              <span className="max-w-[80px] truncate">{playerDisplayName(p, players)}</span>
               <button
                 type="button"
                 onClick={() => onRemovePlayer(index, pid)}

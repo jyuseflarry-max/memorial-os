@@ -181,6 +181,7 @@ export default function DrillGroupingModal({
                     <PlayerChip
                       key={p.id}
                       player={p}
+                      allPlayers={players}
                       dragging={false}
                       onDragStart={() => handleDragStart(p.id)}
                     />
