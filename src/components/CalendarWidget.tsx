@@ -16,6 +16,14 @@ interface SavedSession {
   team_id: string | null;
 }
 
+interface PracticeEntry {
+  id: string;
+  practice_date: string;
+  start_time: string;
+  end_time: string;
+  team_id: string | null;
+}
+
 const TEAM_COLORS = [
   { dot: "bg-coaches-red",   text: "text-coaches-red",   border: "border-coaches-red/30",   bg: "bg-coaches-red/10"   },
   { dot: "bg-sky-400",       text: "text-sky-400",       border: "border-sky-400/30",       bg: "bg-sky-400/10"       },
@@ -71,8 +79,9 @@ function gameColorCls(g: Game) {
 }
 
 type DayEvent =
-  | { kind: "session"; data: SavedSession }
-  | { kind: "game";    data: Game };
+  | { kind: "session";  data: SavedSession }
+  | { kind: "game";     data: Game }
+  | { kind: "schedule"; data: PracticeEntry };
 
 export default function CalendarWidget() {
   const router = useRouter();
@@ -82,8 +91,9 @@ export default function CalendarWidget() {
 
   const [year,  setYear]  = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
-  const [sessions, setSessions] = useState<SavedSession[]>([]);
-  const [games,    setGames]    = useState<Game[]>([]);
+  const [sessions,  setSessions]  = useState<SavedSession[]>([]);
+  const [games,     setGames]     = useState<Game[]>([]);
+  const [practices, setPractices] = useState<PracticeEntry[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [dayPopover, setDayPopover] = useState<{ iso: string; events: DayEvent[] } | null>(null);
   const [teamFilter, setTeamFilter] = useState<string>(() =>
@@ -120,10 +130,12 @@ export default function CalendarWidget() {
     Promise.all([
       fetch("/api/sessions").then((r) => r.json()),
       fetch("/api/games").then((r) => r.json()),
+      fetch("/api/practice-schedule").then((r) => r.json()),
     ])
-      .then(([sessionData, gameData]) => {
-        if (Array.isArray(sessionData)) setSessions(sessionData);
-        if (Array.isArray(gameData))    setGames(gameData);
+      .then(([sessionData, gameData, practiceData]) => {
+        if (Array.isArray(sessionData))  setSessions(sessionData);
+        if (Array.isArray(gameData))     setGames(gameData);
+        if (Array.isArray(practiceData)) setPractices(practiceData);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -137,6 +149,10 @@ export default function CalendarWidget() {
     teamFilter === "all" ? games : games.filter((g) => g.team_id === teamFilter),
   [games, teamFilter]);
 
+  const filteredPractices = useMemo(() =>
+    teamFilter === "all" ? practices : practices.filter((p) => p.team_id === teamFilter),
+  [practices, teamFilter]);
+
   const eventsByDate = useMemo(() => {
     const map: Record<string, DayEvent[]> = {};
     filteredSessions.forEach((s) => {
@@ -147,8 +163,15 @@ export default function CalendarWidget() {
       if (!map[g.game_date]) map[g.game_date] = [];
       map[g.game_date].push({ kind: "game", data: g });
     });
+    // Practice schedule entries — skip dates that already have a saved session
+    const sessionDates = new Set(filteredSessions.map((s) => s.date));
+    filteredPractices.forEach((p) => {
+      if (sessionDates.has(p.practice_date)) return;
+      if (!map[p.practice_date]) map[p.practice_date] = [];
+      map[p.practice_date].push({ kind: "schedule", data: p });
+    });
     return map;
-  }, [filteredSessions, filteredGames]);
+  }, [filteredSessions, filteredGames, filteredPractices]);
 
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -186,7 +209,8 @@ export default function CalendarWidget() {
       router.push("/build-a-plan");
     } else if (events.length === 1) {
       const ev = events[0];
-      if (ev.kind === "session") router.push(sessionUrl(ev.data));
+      if (ev.kind === "session")  router.push(sessionUrl(ev.data));
+      else if (ev.kind === "schedule") router.push("/schedules/practice");
       else router.push("/schedules/game");
     } else {
       setDayPopover({ iso: date, events });
@@ -194,12 +218,13 @@ export default function CalendarWidget() {
   }
 
   function openEvent(ev: DayEvent) {
-    if (ev.kind === "session") router.push(sessionUrl(ev.data));
-    else router.push("/schedules/game");
+    if (ev.kind === "session")       router.push(sessionUrl(ev.data));
+    else if (ev.kind === "schedule") router.push("/schedules/practice");
+    else                             router.push("/schedules/game");
     setDayPopover(null);
   }
 
-  // Month event list (sessions + games combined, sorted by date then time)
+  // Month event list (sessions + games + schedule combined, sorted by date)
   const monthEvents: DayEvent[] = useMemo(() => {
     const sessionEvents: DayEvent[] = filteredSessions
       .filter((s) => {
@@ -215,12 +240,20 @@ export default function CalendarWidget() {
       })
       .map((g) => ({ kind: "game", data: g }));
 
-    return [...sessionEvents, ...gameEvents].sort((a, b) => {
-      const dateA = a.kind === "session" ? a.data.date : a.data.game_date;
-      const dateB = b.kind === "session" ? b.data.date : b.data.game_date;
+    const sessionDates = new Set(filteredSessions.map((s) => s.date));
+    const scheduleEvents: DayEvent[] = filteredPractices
+      .filter((p) => {
+        const [y, m] = p.practice_date.split("-").map(Number);
+        return y === year && m === month + 1 && !sessionDates.has(p.practice_date);
+      })
+      .map((p) => ({ kind: "schedule" as const, data: p }));
+
+    return [...sessionEvents, ...gameEvents, ...scheduleEvents].sort((a, b) => {
+      const dateA = a.kind === "session" ? a.data.date : a.kind === "schedule" ? a.data.practice_date : a.data.game_date;
+      const dateB = b.kind === "session" ? b.data.date : b.kind === "schedule" ? b.data.practice_date : b.data.game_date;
       return dateA.localeCompare(dateB);
     });
-  }, [filteredSessions, filteredGames, year, month]);
+  }, [filteredSessions, filteredGames, filteredPractices, year, month]);
 
   return (
     <>
@@ -300,8 +333,8 @@ export default function CalendarWidget() {
             const hasEvents = events.length > 0;
 
             const sortedEvents = [...events].sort((a, b) => {
-              const timeA = a.kind === "session" ? a.data.start_time : (a.data.game_time ?? "00:00");
-              const timeB = b.kind === "session" ? b.data.start_time : (b.data.game_time ?? "00:00");
+              const timeA = a.kind === "session" ? a.data.start_time : a.kind === "schedule" ? a.data.start_time : (a.data.game_time ?? "00:00");
+              const timeB = b.kind === "session" ? b.data.start_time : b.kind === "schedule" ? b.data.start_time : (b.data.game_time ?? "00:00");
               return timeA.localeCompare(timeB);
             });
 
@@ -331,6 +364,16 @@ export default function CalendarWidget() {
                         onMouseLeave={hideTooltip}
                         className={`text-[10px] font-mono font-semibold leading-none px-1 py-px rounded-full text-left ${color.text} ${color.bg} border ${color.border} truncate w-full`}>
                         {formatTimeShort(s.start_time)}{end ? `–${end}` : ""}
+                      </span>
+                    );
+                  } else if (ev.kind === "schedule") {
+                    const p = ev.data;
+                    return (
+                      <span key={`p-${p.id}`}
+                        onMouseEnter={(e) => showTooltip(ev, e)}
+                        onMouseLeave={hideTooltip}
+                        className="text-[10px] font-mono font-semibold leading-none px-1 py-px rounded-full text-left text-sky-400 bg-sky-400/10 border border-sky-400/30 truncate w-full">
+                        {formatTimeShort(p.start_time)}–{formatTimeShort(p.end_time)}
                       </span>
                     );
                   } else {
@@ -378,6 +421,29 @@ export default function CalendarWidget() {
                       </p>
                     </div>
                     {s.date === today && (
+                      <span className="text-[9px] font-mono text-coaches-red bg-coaches-red/10 border border-coaches-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
+                    )}
+                  </button>
+                );
+              } else if (ev.kind === "schedule") {
+                const p = ev.data;
+                const teamName = teams.find((t) => t.id === p.team_id)?.name;
+                return (
+                  <button key={`pl-${p.id}-${i}`} type="button" onClick={() => openEvent(ev)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30 transition-colors text-left">
+                    <div className="w-7 h-7 rounded-lg bg-sky-400/10 border border-sky-400/30 flex items-center justify-center shrink-0">
+                      <Dumbbell size={12} className="text-sky-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium">
+                        {formatDisplayDate(p.practice_date)}
+                        <span className="ml-1.5 text-[9px] font-mono text-sky-400 bg-sky-400/10 border border-sky-400/30 px-1.5 py-0.5 rounded-full">Scheduled</span>
+                      </p>
+                      <p className="text-gray-500 text-[10px] font-mono">
+                        {teamName ? `${teamName} · ` : ""}Practice · {formatTime12(p.start_time)} – {formatTime12(p.end_time)}
+                      </p>
+                    </div>
+                    {p.practice_date === today && (
                       <span className="text-[9px] font-mono text-coaches-red bg-coaches-red/10 border border-coaches-red/20 px-1.5 py-0.5 rounded-full">TODAY</span>
                     )}
                   </button>
@@ -436,6 +502,19 @@ export default function CalendarWidget() {
                       </div>
                     </button>
                   );
+                } else if (ev.kind === "schedule") {
+                  const p        = ev.data;
+                  const teamName = teams.find((t) => t.id === p.team_id)?.name ?? "Practice";
+                  return (
+                    <button key={`pp-${p.id}`} type="button" onClick={() => openEvent(ev)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-sky-400/30 bg-sky-400/10 hover:opacity-90 transition-opacity text-left">
+                      <Dumbbell size={14} className="text-sky-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-sky-400">{teamName}</p>
+                        <p className="text-gray-500 text-xs font-mono">Scheduled Practice · {formatTime12(p.start_time)} – {formatTime12(p.end_time)}</p>
+                      </div>
+                    </button>
+                  );
                 } else {
                   const g        = ev.data;
                   const gcls     = gameColorCls(g);
@@ -488,6 +567,27 @@ export default function CalendarWidget() {
                   {formatTime12(s.start_time)}{end ? ` – ${end}` : ""}{totalMin > 0 ? ` (${totalMin} min)` : ""}
                 </p>
                 {s.label && <p className="text-gray-500 text-[10px] font-mono mt-0.5">{s.label}</p>}
+              </div>
+            </div>
+          );
+        } else if (ev.kind === "schedule") {
+          const p        = ev.data;
+          const teamName = teams.find((t) => t.id === p.team_id)?.name;
+          return (
+            <div
+              className="fixed z-[60] pointer-events-none"
+              style={{ left: x, top: tooltip.y }}
+            >
+              <div className="min-w-[180px] max-w-[220px] rounded-xl border border-sky-400/30 bg-sky-400/10 backdrop-blur-sm p-3 shadow-2xl">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Dumbbell size={12} className="text-sky-400" />
+                  <p className="text-xs font-semibold text-sky-400">Scheduled Practice</p>
+                </div>
+                {teamName && <p className="text-white text-xs font-medium">{teamName}</p>}
+                <p className="text-gray-400 text-[10px] font-mono">{formatDisplayDate(p.practice_date)}</p>
+                <p className="text-gray-400 text-[10px] font-mono">
+                  {formatTime12(p.start_time)} – {formatTime12(p.end_time)}
+                </p>
               </div>
             </div>
           );

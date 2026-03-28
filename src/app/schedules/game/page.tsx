@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus, Edit2, Trash2, ExternalLink, Video,
   X, Save, Loader2, Trophy, ClipboardList, Target,
-  Upload, CheckCircle2, AlertCircle, MapPin,
+  Upload, CheckCircle2, AlertCircle, MapPin, Clock,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import BulkImportModal from "@/components/BulkImportModal";
@@ -12,6 +12,7 @@ import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useLocations } from "@/context/LocationsContext";
 import type { Game, LocationType, GameType, GameDraft } from "@/types/game";
+import type { Location } from "@/types/location";
 import { LOCATION_LABELS, GAME_TYPE_LABELS, EMPTY_DRAFT } from "@/types/game";
 import { seasonOptions } from "@/types/settings";
 import { formatHHMM } from "@/types/session";
@@ -26,6 +27,17 @@ function fmt12h(time: string | null): string {
   const suffix = h >= 12 ? "PM" : "AM";
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${m} ${suffix}`;
+}
+
+function subtractMinutes(hhmm: string, mins: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  let total = h * 60 + m - mins;
+  if (total < 0) total += 24 * 60;
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  const suffix = hh >= 12 ? "PM" : "AM";
+  const h12 = hh % 12 || 12;
+  return `${h12}:${String(mm).padStart(2, "0")} ${suffix}`;
 }
 
 function fmtDate(iso: string): { short: string; month: string; dayNum: string; weekday: string } {
@@ -525,6 +537,7 @@ function GameModal({
 function GameRow({
   game,
   primaryColor,
+  locations,
   onEdit,
   onDelete,
   selected,
@@ -532,12 +545,26 @@ function GameRow({
 }: {
   game: Game;
   primaryColor: string;
+  locations: Location[];
   onEdit: () => void;
   onDelete: () => void;
   selected: boolean;
   onSelect: (checked: boolean) => void;
 }) {
   const { short, weekday } = fmtDate(game.game_date);
+
+  // Departure time for Away / Neutral games with a known tip-off time
+  const matchedLocation = locations.find((l) => {
+    const full = [l.name, l.address, l.city].filter(Boolean).join(", ");
+    return full === game.venue;
+  });
+  const departureTime =
+    (game.location_type === "away" || game.location_type === "neutral") &&
+    game.game_time &&
+    !game.time_tbd &&
+    matchedLocation
+      ? subtractMinutes(game.game_time, matchedLocation.default_travel_time + 35)
+      : null;
   const result = gameResult(game);
 
   const opponentCls = game.game_type === "district"
@@ -585,6 +612,12 @@ function GameRow({
 
         {game.game_note && (
           <p className="text-[10px] font-mono text-purple-400 mt-0.5">{game.game_note}</p>
+        )}
+
+        {departureTime && (
+          <p className="flex items-center gap-1 text-[10px] font-mono text-amber-400 mt-0.5">
+            <Clock size={9} /> Depart by {departureTime}
+          </p>
         )}
 
         {/* Venue */}
@@ -670,6 +703,7 @@ function GameRow({
 export default function GameSchedulePage() {
   const { activeTeam }  = useTeam();
   const { settings }    = useSettings();
+  const { locations }   = useLocations();
   const [games,   setGames]   = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -1039,6 +1073,7 @@ export default function GameSchedulePage() {
                 key={game.id}
                 game={game}
                 primaryColor={settings.primary_color}
+                locations={locations}
                 onEdit={() => setModal({ type: "edit", game })}
                 onDelete={() => setConfirmDelete(game)}
                 selected={selectedIds.has(game.id)}
