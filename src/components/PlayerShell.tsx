@@ -3,24 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RadioTower, ListChecks, CheckSquare, BarChart3, LogOut } from "lucide-react";
+import { RadioTower, ListChecks, Zap, BarChart3, UserCircle } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
-import { logout } from "@/actions/auth";
 
 // ── Bottom nav definition ─────────────────────────────────────────────────
 
 const TABS = [
-  { label: "Calendar",   href: "/",           icon: RadioTower  },
-  { label: "Plans",      href: "/view-plans",  icon: ListChecks  },
-  { label: "Vibe Check", href: "/vibe-check",  icon: CheckSquare },
-  { label: "Reports",    href: "/reports",     icon: BarChart3   },
+  { label: "Schedule",  href: "/",           icon: RadioTower  },
+  { label: "Plans",     href: "/view-plans",  icon: ListChecks  },
+  { label: "Check In",  href: "/vibe-check",  icon: Zap         },
+  { label: "Reports",   href: "/reports",     icon: BarChart3   },
+  { label: "Me",        href: "/account",     icon: UserCircle  },
 ] as const;
 
 // ── Shell ─────────────────────────────────────────────────────────────────
 
 export default function PlayerShell({ children }: { children: React.ReactNode }) {
-  const pathname   = usePathname();
+  const pathname     = usePathname();
   const { settings } = useSettings();
   const { authUser } = useAuth();
 
@@ -45,32 +45,17 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
             <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-8 w-auto object-contain rounded" priority />
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/account"
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"
-          >
-            <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
-              <span className="text-coaches-blue text-xs font-bold">
-                {firstName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <span className="text-xs font-mono text-gray-400 hidden sm:block">{firstName}</span>
-          </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={15} />
-            </button>
-          </form>
-        </div>
+        {/* Tap avatar → account page */}
+        <Link href="/account" className="flex items-center gap-1.5">
+          <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
+            <span className="text-coaches-blue text-xs font-bold">{firstName.charAt(0).toUpperCase()}</span>
+          </div>
+          <span className="text-xs font-mono text-gray-400 hidden sm:block">{firstName}</span>
+        </Link>
       </div>
 
       {/* Page content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 p-4">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 p-4">
         {children}
       </main>
 
@@ -82,17 +67,17 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
         </div>
         <div className="flex">
           {TABS.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href;
+            const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${
                   active ? "text-coaches-blue" : "text-gray-500 hover:text-gray-300"
                 }`}
               >
-                <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />
-                <span className="text-[10px] font-mono uppercase tracking-wide">
+                <Icon size={19} strokeWidth={active ? 2.5 : 1.75} />
+                <span className="text-[9px] font-mono uppercase tracking-wide leading-none">
                   {label}
                 </span>
               </Link>

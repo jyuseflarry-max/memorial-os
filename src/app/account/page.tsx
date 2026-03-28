@@ -3,9 +3,11 @@
 import { Suspense, useActionState, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper } from "lucide-react";
+import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper, Link2, LogOut } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { updateProfile, updatePassword } from "@/actions/account";
+import { logout } from "@/actions/auth";
+import { useAuth } from "@/context/AuthContext";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -31,11 +33,51 @@ function Feedback({ state }: { state: { error?: string; success?: string } | nul
   );
 }
 
+// ── Family link copy card (players only) ───────────────────────────────────
+
+function FamilyLinkCard({ playerId }: { playerId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    const url = `${window.location.origin}/join/family?playerID=${playerId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Link2 size={16} className="text-purple-400" />
+        <h2 className="text-white font-semibold text-sm">Share with Family</h2>
+      </div>
+      <p className="text-gray-400 text-xs leading-relaxed">
+        Send this link to a parent or guardian. They&apos;ll create a free account and be able to see your schedule, game times, and departure info.
+      </p>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border font-semibold text-sm transition-colors ${
+          copied
+            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+            : "bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+        }`}
+      >
+        {copied ? <CheckCircle2 size={15} /> : <Link2 size={15} />}
+        {copied ? "Link copied!" : "Copy family join link"}
+      </button>
+    </div>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 
 function AccountPageInner() {
   const searchParams  = useSearchParams();
   const isWelcome     = searchParams.get("welcome") === "1";
+  const { authUser }  = useAuth();
+
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [profileState, profileAction, profilePending] = useActionState(updateProfile, null);
   const [passwordState, passwordAction, passwordPending] = useActionState(updatePassword, null);
@@ -60,6 +102,9 @@ function AccountPageInner() {
     }
     load();
   }, [profileState?.success]);
+
+  const isPlayer = authUser?.role === "Player";
+  const playerId = authUser?.playerId;
 
   return (
     <DashboardLayout>
@@ -104,9 +149,7 @@ function AccountPageInner() {
 
           <form action={profileAction} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
-                Full Name
-              </label>
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Full Name</label>
               <input
                 name="full_name"
                 type="text"
@@ -117,14 +160,8 @@ function AccountPageInner() {
                 placeholder="Your full name"
               />
             </div>
-
             <Feedback state={profileState} />
-
-            <button
-              type="submit"
-              disabled={profilePending}
-              className="self-start px-5 py-2.5 rounded-xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
-            >
+            <button type="submit" disabled={profilePending} className="self-start px-5 py-2.5 rounded-xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors">
               {profilePending ? "Saving…" : "Save name"}
             </button>
           </form>
@@ -139,46 +176,38 @@ function AccountPageInner() {
 
           <form action={passwordAction} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
-                New Password
-              </label>
-              <input
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="new-password"
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">New Password</label>
+              <input name="password" type="password" required minLength={8} autoComplete="new-password"
                 className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-blue transition-colors"
-                placeholder="Min. 8 characters"
-              />
+                placeholder="Min. 8 characters" />
             </div>
-
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
-                Confirm Password
-              </label>
-              <input
-                name="confirm"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="new-password"
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">Confirm Password</label>
+              <input name="confirm" type="password" required minLength={8} autoComplete="new-password"
                 className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-coaches-blue transition-colors"
-                placeholder="Re-enter password"
-              />
+                placeholder="Re-enter password" />
             </div>
-
             <Feedback state={passwordState} />
-
-            <button
-              type="submit"
-              disabled={passwordPending}
-              className="self-start px-5 py-2.5 rounded-xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
-            >
+            <button type="submit" disabled={passwordPending} className="self-start px-5 py-2.5 rounded-xl bg-coaches-blue hover:bg-coaches-blue-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors">
               {passwordPending ? "Updating…" : "Update password"}
             </button>
           </form>
         </div>
+
+        {/* Family link — players only */}
+        {isPlayer && playerId && <FamilyLinkCard playerId={playerId} />}
+
+        {/* Sign out — accessible from Me tab without needing the top bar */}
+        {isPlayer && (
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-800 text-gray-500 hover:text-red-400 hover:border-red-900/50 text-sm font-medium transition-colors"
+            >
+              <LogOut size={15} /> Sign out
+            </button>
+          </form>
+        )}
       </div>
     </DashboardLayout>
   );
