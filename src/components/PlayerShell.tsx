@@ -45,13 +45,18 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
             <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-8 w-auto object-contain rounded" priority />
           )}
         </div>
-        {/* Tap avatar → account page */}
-        <Link href="/account" className="flex items-center gap-1.5">
-          <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
-            <span className="text-coaches-blue text-xs font-bold">{firstName.charAt(0).toUpperCase()}</span>
-          </div>
-          <span className="text-xs font-mono text-gray-400 hidden sm:block">{firstName}</span>
-        </Link>
+        {/* Coach's OS logo + avatar */}
+        <div className="flex items-center gap-3">
+          {settings.logo_url && (
+            <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-7 w-auto object-contain rounded opacity-80" />
+          )}
+          <Link href="/account" className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">
+              <span className="text-coaches-blue text-xs font-bold">{firstName.charAt(0).toUpperCase()}</span>
+            </div>
+            <span className="text-xs font-mono text-gray-400 hidden sm:block">{firstName}</span>
+          </Link>
+        </div>
       </div>
 
       {/* Page content */}
@@ -61,10 +66,6 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
 
       {/* Bottom navigation */}
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-gray-950 border-t border-gray-800">
-        <div className="flex items-center justify-center py-1 border-b border-gray-800/60">
-          <p className="text-[8px] font-mono text-gray-700 uppercase tracking-widest mr-1.5">Powered by</p>
-          <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={72} height={28} className="h-4 w-auto object-contain rounded opacity-50" />
-        </div>
         <div className="flex">
           {TABS.map(({ label, href, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
