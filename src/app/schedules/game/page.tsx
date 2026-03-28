@@ -688,6 +688,24 @@ export default function GameSchedulePage() {
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [bulkDeleting,   setBulkDeleting]   = useState(false);
   const [showCsvImport,  setShowCsvImport]  = useState(false);
+  const [filterLocation, setFilterLocation] = useState<Set<LocationType>>(new Set());
+  const [filterGameType, setFilterGameType] = useState<Set<GameType>>(new Set());
+
+  function toggleLocation(loc: LocationType) {
+    setFilterLocation((prev) => {
+      const next = new Set(prev);
+      next.has(loc) ? next.delete(loc) : next.add(loc);
+      return next;
+    });
+  }
+
+  function toggleGameType(gt: GameType) {
+    setFilterGameType((prev) => {
+      const next = new Set(prev);
+      next.has(gt) ? next.delete(gt) : next.add(gt);
+      return next;
+    });
+  }
 
   // Load ALL games for the team — filter client-side so season switching is instant
   useEffect(() => {
@@ -714,10 +732,15 @@ export default function GameSchedulePage() {
     return seasonOptions().filter((s) => set.has(s));
   }, [games, settings.current_season]);
 
-  // Games visible under the active season filter
+  // Games visible under all active filters
   const visibleGames = useMemo(() =>
-    activeSeason === "all" ? games : games.filter((g) => g.season === activeSeason),
-  [games, activeSeason]);
+    games.filter((g) => {
+      if (activeSeason !== "all" && g.season !== activeSeason) return false;
+      if (filterLocation.size > 0 && !filterLocation.has(g.location_type)) return false;
+      if (filterGameType.size > 0 && !filterGameType.has(g.game_type)) return false;
+      return true;
+    }),
+  [games, activeSeason, filterLocation, filterGameType]);
 
   // Record summary for visible games — scrimmages excluded from all record counts
   const { wins, losses, districtW, districtL, upcoming, homeW, homeL, awayW, awayL, neutralW, neutralL } = useMemo(() => {
@@ -854,6 +877,55 @@ export default function GameSchedulePage() {
             }`}
           >
             All Seasons
+          </button>
+        )}
+      </div>
+
+      {/* Location filter pills */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider shrink-0">Location</span>
+        {(["home", "away", "neutral"] as LocationType[]).map((loc) => (
+          <button
+            key={loc}
+            type="button"
+            onClick={() => toggleLocation(loc)}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors font-mono capitalize ${
+              filterLocation.has(loc)
+                ? loc === "home"    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                : loc === "away"   ? "bg-sky-500/20 border-sky-500/50 text-sky-300"
+                :                    "bg-gray-500/20 border-gray-500/50 text-gray-300"
+                : "border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-500"
+            }`}
+          >
+            {LOCATION_LABELS[loc]}
+          </button>
+        ))}
+      </div>
+
+      {/* Game type filter pills */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider shrink-0">Type</span>
+        {(["non-district", "district", "scrimmage", "tournament", "playoffs"] as GameType[]).map((gt) => (
+          <button
+            key={gt}
+            type="button"
+            onClick={() => toggleGameType(gt)}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors font-mono ${
+              filterGameType.has(gt)
+                ? "bg-coaches-red/20 border-coaches-red/50 text-coaches-red"
+                : "border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-500"
+            }`}
+          >
+            {GAME_TYPE_LABELS[gt]}
+          </button>
+        ))}
+        {(filterLocation.size > 0 || filterGameType.size > 0) && (
+          <button
+            type="button"
+            onClick={() => { setFilterLocation(new Set()); setFilterGameType(new Set()); }}
+            className="px-3 py-1 rounded-lg text-xs font-semibold border border-gray-700 text-gray-600 hover:text-white hover:border-gray-500 transition-colors font-mono"
+          >
+            Clear filters
           </button>
         )}
       </div>
