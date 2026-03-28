@@ -16,6 +16,7 @@ export interface Game {
   highlights_url: string | null;
   box_score_url: string | null;
   game_writeup: string | null;
+  game_note: string | null;
   venue: string | null;
   created_at: string;
   updated_at: string;
@@ -51,5 +52,6 @@ export const EMPTY_DRAFT: GameDraft = {
   highlights_url: null,
   box_score_url:  null,
   game_writeup:   null,
+  game_note:      null,
   venue:          null,
 };

@@ -90,4 +90,6 @@ export interface Drill {
   space?: number | null;
   /** Standardized objective tags from DRILL_OBJECTIVES list */
   objectives?: string[];
+  /** Link to a StatImpact by ID */
+  primary_stat_id?: string | null;
 }

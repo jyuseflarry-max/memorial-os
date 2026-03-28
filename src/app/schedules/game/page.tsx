@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus, Edit2, Trash2, ExternalLink, FileText, Video,
   X, Save, Loader2, Trophy, ClipboardList, Target,
-  Upload, CheckCircle2, AlertCircle, MapPin, Sparkles,
+  Upload, CheckCircle2, AlertCircle, MapPin,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import BulkImportModal from "@/components/BulkImportModal";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
 import type { Game, LocationType, GameType, GameDraft } from "@/types/game";
@@ -356,6 +357,17 @@ function GameModal({
             </div>
 
             <div className="flex flex-col gap-1">
+              <label className={labelCls}>Game Note <span className="normal-case tracking-normal text-gray-600">(e.g. Senior Night, Alumni Game)</span></label>
+              <input
+                type="text"
+                value={draft.game_note ?? ""}
+                onChange={(e) => patch("game_note", e.target.value || null)}
+                placeholder="e.g. Senior Night"
+                className={inputCls}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
               <label className={labelCls}>Venue / Address <span className="normal-case tracking-normal text-gray-600">(for directions)</span></label>
               <input
                 type="text"
@@ -574,7 +586,16 @@ function GameRow({
 
       {/* Opponent + sub-info */}
       <div className="flex-1 min-w-0">
-        <p className={opponentCls}>{game.opponent}</p>
+        {/* Opponent + chips on same line */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className={opponentCls}>{game.opponent}</p>
+          <LocationBadge type={game.location_type} />
+          <TypeBadge type={game.game_type} />
+        </div>
+
+        {game.game_note && (
+          <p className="text-[10px] font-mono text-purple-400 mt-0.5">{game.game_note}</p>
+        )}
 
         {/* Venue */}
         {game.venue && venueUrl && (
@@ -622,33 +643,16 @@ function GameRow({
               <ExternalLink size={10} /> Box Score
             </span>
           )}
-          {game.box_score_url ? (
-            <button
-              onClick={onViewWriteup}
-              className={`flex items-center gap-1 text-[10px] font-mono transition-colors ${
-                game.game_writeup
-                  ? "text-amber-400 hover:text-amber-300"
-                  : "text-gray-600 hover:text-gray-400"
-              }`}
-            >
-              <Sparkles size={10} /> AI Story
+          {game.game_writeup ? (
+            <button onClick={onViewWriteup} className="flex items-center gap-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 transition-colors">
+              <FileText size={10} /> Writeup
             </button>
           ) : (
-            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
-              <Sparkles size={10} /> AI Story
-            </span>
+            <button onClick={onViewWriteup} className="flex items-center gap-1 text-[10px] font-mono text-gray-600 hover:text-gray-400 transition-colors">
+              <FileText size={10} /> Writeup
+            </button>
           )}
         </div>
-      </div>
-
-      {/* Location */}
-      <div className="w-20 shrink-0 hidden sm:block pt-0.5">
-        <LocationBadge type={game.location_type} />
-      </div>
-
-      {/* Game type */}
-      <div className="w-28 shrink-0 hidden md:block pt-0.5">
-        <TypeBadge type={game.game_type} />
       </div>
 
       {/* Result */}
@@ -703,6 +707,7 @@ export default function GameSchedulePage() {
   const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [bulkDeleting,   setBulkDeleting]   = useState(false);
+  const [showCsvImport,  setShowCsvImport]  = useState(false);
 
   // Load ALL games for the team — filter client-side so season switching is instant
   useEffect(() => {
@@ -735,16 +740,28 @@ export default function GameSchedulePage() {
   [games, activeSeason]);
 
   // Record summary for visible games — scrimmages excluded from all record counts
-  const { wins, losses, districtW, districtL, upcoming } = useMemo(() => {
+  const { wins, losses, districtW, districtL, upcoming, homeW, homeL, awayW, awayL, neutralW, neutralL } = useMemo(() => {
     let wins = 0, losses = 0, districtW = 0, districtL = 0, upcoming = 0;
+    let homeW = 0, homeL = 0, awayW = 0, awayL = 0, neutralW = 0, neutralL = 0;
     for (const g of visibleGames) {
       const result = gameResult(g);
       if (result === "upcoming") { upcoming++; continue; }
       if (g.game_type === "scrimmage") continue; // scrimmages never affect record
-      if (result === "win") { wins++; if (g.game_type === "district") districtW++; }
-      else { losses++; if (g.game_type === "district") districtL++; }
+      if (result === "win") {
+        wins++;
+        if (g.game_type === "district") districtW++;
+        if (g.location_type === "home") homeW++;
+        else if (g.location_type === "away") awayW++;
+        else neutralW++;
+      } else {
+        losses++;
+        if (g.game_type === "district") districtL++;
+        if (g.location_type === "home") homeL++;
+        else if (g.location_type === "away") awayL++;
+        else neutralL++;
+      }
     }
-    return { wins, losses, districtW, districtL, upcoming };
+    return { wins, losses, districtW, districtL, upcoming, homeW, homeL, awayW, awayL, neutralW, neutralL };
   }, [visibleGames]);
 
   // Group visible games by month
@@ -809,6 +826,14 @@ export default function GameSchedulePage() {
               <Trash2 size={15} /> Delete Selected ({selectedIds.size})
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setShowCsvImport(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white text-sm font-medium transition-colors"
+          >
+            <Upload size={15} />
+            Import CSV
+          </button>
           <button
             onClick={() => setModal({ type: "add" })}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
@@ -878,6 +903,29 @@ export default function GameSchedulePage() {
               <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Remaining</p>
             </div>
           </div>
+          <div className="bg-gray-800 border border-emerald-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-emerald-500/60 shrink-0" />
+            <div>
+              <p className="text-white font-bold font-mono text-lg">{homeW}–{homeL}</p>
+              <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Home</p>
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-sky-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-sky-500/60 shrink-0" />
+            <div>
+              <p className="text-white font-bold font-mono text-lg">{awayW}–{awayL}</p>
+              <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Away</p>
+            </div>
+          </div>
+          {(neutralW + neutralL) > 0 && (
+            <div className="bg-gray-800 border border-gray-600/40 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-gray-500/60 shrink-0" />
+              <div>
+                <p className="text-white font-bold font-mono text-lg">{neutralW}–{neutralL}</p>
+                <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">Neutral</p>
+              </div>
+            </div>
+          )}
         </div>
         <p className="text-[10px] font-mono text-gray-600 -mt-3 mb-3">
           * Scrimmages are not counted in the record.
@@ -899,8 +947,6 @@ export default function GameSchedulePage() {
           </div>
           <div className="w-24 shrink-0">Date</div>
           <div className="flex-1">Opponent</div>
-          <div className="w-20 shrink-0 hidden sm:block">Location</div>
-          <div className="w-28 shrink-0 hidden md:block">Type</div>
           <div className="w-20 shrink-0 text-right">Result</div>
           <div className="w-16 shrink-0" />
         </div>
@@ -997,6 +1043,22 @@ export default function GameSchedulePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* CSV Import modal */}
+      {showCsvImport && (
+        <BulkImportModal
+          teamId={activeTeam?.id ?? null}
+          onClose={() => setShowCsvImport(false)}
+          onImported={() => {
+            const params = new URLSearchParams();
+            if (activeTeam) params.set("team_id", activeTeam.id);
+            fetch(`/api/games?${params}`)
+              .then((r) => r.json())
+              .then((d) => { if (!d.error) setGames(d); })
+              .catch(() => {});
+          }}
+        />
       )}
 
       {/* Bulk delete confirm */}

@@ -27,6 +27,8 @@ import {
   ListChecks,
   LogOut,
   CircleUser,
+  CalendarDays,
+  MapPin,
 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 import { logout } from "@/actions/auth";
@@ -44,9 +46,10 @@ const NAV_GROUPS = [
       { label: "Vibe Check", href: "/vibe-check",   icon: Users,      staff: false, playerOk: true,  coachHide: true  },
       { label: "Vibe Check", href: "/players",       icon: Users,      staff: false, playerOk: false, coachHide: false },
       { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false, coachHide: false },
-      { label: "Roster",     href: "/admin/roster",  icon: UserCog,    staff: true,  playerOk: false, coachHide: false },
-      { label: "Teams",      href: "/admin/teams",   icon: Users,      staff: true,  playerOk: false, coachHide: false },
-      { label: "Users",      href: "/admin/users",   icon: UsersRound, staff: true,  playerOk: false, coachHide: false },
+      { label: "Roster",     href: "/admin/roster",     icon: UserCog,    staff: true,  playerOk: false, coachHide: false },
+      { label: "Teams",      href: "/admin/teams",      icon: Users,      staff: true,  playerOk: false, coachHide: false },
+      { label: "Users",      href: "/admin/users",      icon: UsersRound, staff: true,  playerOk: false, coachHide: false },
+      { label: "Locations",  href: "/admin/locations",  icon: MapPin,     staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
@@ -69,8 +72,10 @@ const NAV_GROUPS = [
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game",     href: "/schedules/game", icon: Gamepad2,   staff: false, playerOk: true,  coachHide: false },
-      { label: "Calendar", href: "/",               icon: RadioTower, staff: false, playerOk: true,  coachHide: false },
+      { label: "Game",        href: "/schedules/game",     icon: Gamepad2,    staff: false, playerOk: true,  coachHide: false },
+      { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,    staff: false, playerOk: false, coachHide: false },
+      { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, staff: false, playerOk: true,  coachHide: false },
+      { label: "Calendar",    href: "/",                   icon: RadioTower,  staff: false, playerOk: true,  coachHide: false },
     ],
   },
   {

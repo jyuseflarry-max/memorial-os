@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useStatImpacts } from "@/context/StatImpactsContext";
 import {
   Droplets, FileText, Zap, CheckCircle2, Loader2, Plus, MoreVertical, BookmarkPlus, Scissors,
 } from "lucide-react";
@@ -21,6 +22,12 @@ import { SYSTEM_DRILL_IDS } from "@/lib/quick-actions";
 import { totalDuration, totalShots, formatHHMM, GeneratedDrill, SessionDrill, isSplitGroup } from "@/types/session";
 
 const TODAY = new Date().toISOString().split("T")[0];
+
+function fmt12h(time: string): string {
+  const [hStr, mStr] = time.split(":");
+  const h = parseInt(hStr, 10);
+  return `${h % 12 === 0 ? 12 : h % 12}:${mStr} ${h >= 12 ? "PM" : "AM"}`;
+}
 
 export interface PlanEditorProps {
   mode: "new" | "edit";
@@ -72,6 +79,58 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
     defaultStartTime: settings.default_start_time,
   });
 
+  const [todayGame, setTodayGame] = useState<import("@/types/game").Game | null>(null);
+
+  useEffect(() => {
+    if (!session.date || !activeTeam) { setTodayGame(null); return; }
+    const params = new URLSearchParams({ team_id: activeTeam.id });
+    fetch(`/api/games?${params}`)
+      .then((r) => r.json())
+      .then((games: import("@/types/game").Game[]) => {
+        const match = Array.isArray(games) ? games.find((g) => g.game_date === session.date) : null;
+        setTodayGame(match ?? null);
+      })
+      .catch(() => setTodayGame(null));
+  }, [session.date, activeTeam]);
+
+  const [tomorrowGame, setTomorrowGame] = useState<import("@/types/game").Game | null>(null);
+
+  useEffect(() => {
+    if (!session.date || !activeTeam) { setTomorrowGame(null); return; }
+    const tomorrow = new Date(session.date + "T12:00:00");
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split("T")[0];
+    const params = new URLSearchParams({ team_id: activeTeam.id });
+    fetch(`/api/games?${params}`)
+      .then((r) => r.json())
+      .then((games: import("@/types/game").Game[]) => {
+        const match = Array.isArray(games) ? games.find((g) => g.game_date === tomorrowStr && g.game_type !== "scrimmage") : null;
+        setTomorrowGame(match ?? null);
+      })
+      .catch(() => setTomorrowGame(null));
+  }, [session.date, activeTeam]);
+
+  const [weekGameCount, setWeekGameCount] = useState(0);
+
+  useEffect(() => {
+    if (!session.date || !activeTeam) { setWeekGameCount(0); return; }
+    const d = new Date(session.date + "T12:00:00");
+    const dayOfWeek = d.getDay();
+    const sunday = new Date(d); sunday.setDate(d.getDate() - dayOfWeek);
+    const saturday = new Date(sunday); saturday.setDate(sunday.getDate() + 6);
+    const from = sunday.toISOString().split("T")[0];
+    const to   = saturday.toISOString().split("T")[0];
+    const params = new URLSearchParams({ team_id: activeTeam.id });
+    fetch(`/api/games?${params}`)
+      .then((r) => r.json())
+      .then((games: import("@/types/game").Game[]) => {
+        if (!Array.isArray(games)) { setWeekGameCount(0); return; }
+        const count = games.filter((g) => g.game_date >= from && g.game_date <= to && g.game_type !== "scrimmage").length;
+        setWeekGameCount(count);
+      })
+      .catch(() => setWeekGameCount(0));
+  }, [session.date, activeTeam]);
+
   function resolveAndLoadPlan(plan: GeneratedDrill[]) {
     const drills: SessionDrill[] = plan.flatMap(({ drill_id, duration }) => {
       const drill = vaultDrills.find((d) => d.id === drill_id);
@@ -93,6 +152,28 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   const totalMin      = totalDuration(session.drills);
   const totalShotsNum = Math.round(totalShots(session.drills));
   const title         = mode === "edit" ? "Planner" : "Build a Plan";
+
+  const { statImpacts } = useStatImpacts();
+
+  // Compute minutes per stat impact
+  const statImpactMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of session.drills) {
+      if (isSplitGroup(item)) continue;
+      const sd = item as SessionDrill;
+      if (sd.drill.primary_stat_id) {
+        map.set(sd.drill.primary_stat_id, (map.get(sd.drill.primary_stat_id) ?? 0) + sd.duration);
+      }
+    }
+    return map;
+  }, [session.drills]);
+
+  const statImpactEntries = useMemo(() =>
+    statImpacts
+      .filter((s) => statImpactMap.has(s.id))
+      .map((s) => ({ ...s, minutes: statImpactMap.get(s.id)! }))
+      .sort((a, b) => b.minutes - a.minutes),
+  [statImpacts, statImpactMap]);
   const emptyHint     = mode === "edit" ? "BUILD YOUR PRACTICE PLAN" : "DESCRIBE YOUR PRACTICE OR ADD DRILLS BELOW";
 
   return (
@@ -244,6 +325,65 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
       {(mode === "new" || !loadingDate) && (
         <div className="flex flex-col gap-4 print:hidden">
 
+          {/* Game Day Alert */}
+          {todayGame && (
+            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+              <div className="text-amber-400 shrink-0 mt-0.5">⚠️</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-amber-300 text-sm font-semibold">Game Day</p>
+                <p className="text-amber-400/80 text-xs mt-0.5">
+                  {todayGame.location_type === "home" ? "Home" : todayGame.location_type === "away" ? "Away" : "Neutral"} vs. <strong>{todayGame.opponent}</strong>
+                  {todayGame.game_note && ` · ${todayGame.game_note}`}
+                  {todayGame.game_time && ` · Tip-off ${fmt12h(todayGame.game_time)}`}
+                </p>
+                {(todayGame.location_type === "away" || todayGame.location_type === "neutral") && todayGame.game_time && (() => {
+                  // Departure = tipoff - 35min buffer - travel time (use 45min default if no location data)
+                  const [h, m] = todayGame.game_time.split(":").map(Number);
+                  const tipoffMins = h * 60 + m;
+                  const departureMins = tipoffMins - 35 - 45; // 45 min default travel
+                  const depH = Math.floor(departureMins / 60);
+                  const depM = departureMins % 60;
+                  const depStr = `${depH % 12 === 0 ? 12 : depH % 12}:${String(depM).padStart(2, "0")} ${depH >= 12 ? "PM" : "AM"}`;
+                  return <p className="text-amber-400/70 text-xs mt-0.5 font-mono">Suggested departure: {depStr}</p>;
+                })()}
+                {todayGame.venue && (
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(todayGame.venue)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[11px] font-mono text-amber-500/70 hover:text-amber-400 transition-colors mt-0.5"
+                  >
+                    📍 {todayGame.venue}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Week intensity suggestion */}
+          {weekGameCount >= 3 && (
+            <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/30 rounded-xl px-4 py-2.5">
+              <span className="text-purple-400 text-base">💡</span>
+              <p className="text-purple-300 text-xs">
+                <strong>{weekGameCount} games</strong> this week — consider a low-intensity practice.
+              </p>
+            </div>
+          )}
+
+          {/* Dead Day alert — game tomorrow, no practice planned */}
+          {tomorrowGame && session.drills.length === 0 && (
+            <div className="flex items-start gap-3 bg-sky-500/10 border border-sky-500/30 rounded-xl px-4 py-3">
+              <div className="text-sky-400 shrink-0 mt-0.5">📋</div>
+              <div>
+                <p className="text-sky-300 text-sm font-semibold">Game Tomorrow — No Practice Planned</p>
+                <p className="text-sky-400/80 text-xs mt-0.5">
+                  Tomorrow: {tomorrowGame.location_type === "home" ? "Home" : "Away"} vs. <strong>{tomorrowGame.opponent}</strong>
+                  {tomorrowGame.game_note && ` · ${tomorrowGame.game_note}`}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Attendance */}
           <AttendancePanel
             date={session.date}
@@ -321,6 +461,25 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
           >
             <Plus size={16} /> Add Drill
           </button>
+
+          {statImpactEntries.length > 0 && (
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4">
+              <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-3">Stat Impact Summary</p>
+              <div className="flex flex-col gap-2">
+                {statImpactEntries.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="flex-1 text-gray-300 text-xs">{s.name}</span>
+                    <span className="text-white text-xs font-mono font-semibold">{s.minutes}m</span>
+                    {/* Progress bar */}
+                    <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden hidden sm:block">
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, (s.minutes / totalMin) * 100)}%`, backgroundColor: s.color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

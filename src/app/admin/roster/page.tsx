@@ -21,6 +21,7 @@ import { NewPlayerData } from "@/context/PlayerContext";
 import { useTeamPlayers } from "@/hooks/useTeamPlayers";
 import { useTeam } from "@/context/TeamContext";
 import { Player, PlayerStatus } from "@/types/player";
+import CsvImportModal from "@/components/BulkImportModal";
 
 // ── Delete confirmation ───────────────────────────────────────────────────
 
@@ -260,6 +261,7 @@ export default function RosterPage() {
   const [editing, setEditing]         = useState<Player | null>(null);
   const [deleting, setDeleting]       = useState<Player | null>(null);
   const [showBulk, setShowBulk]       = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedIds,      setSelectedIds]      = useState<Set<string>>(new Set());
   const [showBulkDelete,   setShowBulkDelete]   = useState(false);
@@ -340,6 +342,14 @@ export default function RosterPage() {
               <Trash2 size={15} /> Delete Selected ({selectedIds.size})
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setShowCsvImport(true)}
+            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors text-gray-300 hover:text-white text-sm font-medium px-4 py-2.5 rounded-lg"
+          >
+            <Upload size={15} />
+            Import CSV
+          </button>
           <button
             type="button"
             onClick={() => setShowBulk(true)}
@@ -489,6 +499,13 @@ export default function RosterPage() {
           loading={loading}
           onImport={handleBulk}
           onClose={() => setShowBulk(false)}
+        />
+      )}
+      {showCsvImport && (
+        <CsvImportModal
+          teamId={activeTeam?.id ?? null}
+          onClose={() => setShowCsvImport(false)}
+          onImported={refresh}
         />
       )}
     </DashboardLayout>

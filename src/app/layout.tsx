@@ -8,6 +8,8 @@ import { DrillCategoryProvider } from "@/context/DrillCategoryContext";
 import { DrillObjectivesProvider } from "@/context/DrillObjectivesContext";
 import { DrillProvider } from "@/context/DrillContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { LocationsProvider } from "@/context/LocationsContext";
+import { StatImpactsProvider } from "@/context/StatImpactsContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
 
 const geistSans = Geist({
@@ -53,11 +55,15 @@ export default function RootLayout({
             <DrillCategoryProvider>
               <DrillObjectivesProvider>
                 <PrintOrientationStyle />
-                <TeamProvider>
-                  <PlayerProvider>
-                    <DrillProvider>{children}</DrillProvider>
-                  </PlayerProvider>
-                </TeamProvider>
+                <LocationsProvider>
+                  <StatImpactsProvider>
+                    <TeamProvider>
+                      <PlayerProvider>
+                        <DrillProvider>{children}</DrillProvider>
+                      </PlayerProvider>
+                    </TeamProvider>
+                  </StatImpactsProvider>
+                </LocationsProvider>
               </DrillObjectivesProvider>
             </DrillCategoryProvider>
           </SettingsProvider>

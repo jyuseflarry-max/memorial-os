@@ -5,6 +5,7 @@ import { X, Trash2, Plus } from "lucide-react";
 import { Drill, ShotType, IntensityLevel, SessionPosition, INTENSITY_TIERS, COURT_SPACES, DRILL_LEVELS } from "@/types/drill";
 import { useDrillCategories, hexToRgba } from "@/context/DrillCategoryContext";
 import { useDrillObjectives } from "@/context/DrillObjectivesContext";
+import { useStatImpacts } from "@/context/StatImpactsContext";
 
 interface Props {
   initialDrill?: Drill;
@@ -27,6 +28,7 @@ function blankForm(drill?: Drill) {
     level:            drill?.level            ?? null as number | null,
     space:            drill?.space            ?? null as number | null,
     objectives:       drill?.objectives       ?? [] as string[],
+    primary_stat_id:  drill?.primary_stat_id  ?? null as string | null,
   };
 }
 
@@ -72,6 +74,7 @@ function InlineAddField({
 export default function DrillForm({ initialDrill, onSave, onDelete, onClose }: Props) {
   const { categories, addCategory, getCatColor } = useDrillCategories();
   const { objectives, addObjective, getObjColor } = useDrillObjectives();
+  const { statImpacts } = useStatImpacts();
   const editing = !!initialDrill;
 
   const [form, setForm]         = useState(blankForm(initialDrill));
@@ -359,6 +362,37 @@ export default function DrillForm({ initialDrill, onSave, onDelete, onClose }: P
             <label className={labelCls}>Video URL (optional)</label>
             <input type="url" placeholder="https://..." className={inputCls}
               value={form.video_url} onChange={(e) => set("video_url", e.target.value)} />
+          </div>
+
+          {/* Stat Impact */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Primary Stat Impact</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, primary_stat_id: null }))}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                  !form.primary_stat_id ? "bg-gray-600 border-gray-500 text-white" : "border-gray-700 text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                None
+              </button>
+              {statImpacts.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, primary_stat_id: s.id }))}
+                  style={form.primary_stat_id === s.id ? { backgroundColor: s.color + "33", borderColor: s.color + "66", color: s.color } : undefined}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                    form.primary_stat_id === s.id ? "" : "border-gray-700 text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Actions */}
