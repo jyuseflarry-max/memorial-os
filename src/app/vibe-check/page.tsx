@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { usePlayers } from "@/context/PlayerContext";
 import { VibeScale, computeVibeScore } from "@/types/player";
-import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile, LogOut } from "lucide-react";
-import { logout } from "@/actions/auth";
+import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile } from "lucide-react";
+import PlayerShell from "@/components/PlayerShell";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -86,6 +86,7 @@ function ScaleButtons({
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function VibeCheckPage() {
+  const router = useRouter();
   const { players } = usePlayers();
   const [stepIndex, setStepIndex] = useState(0);
   const [form, setForm] = useState<FormState>({
@@ -100,6 +101,13 @@ export default function VibeCheckPage() {
 
   const step = STEPS[stepIndex];
   const surveyStep = stepIndex - 1; // 0-indexed survey progress (step 1-4 = survey)
+
+  // Auto-redirect home after submission
+  useEffect(() => {
+    if (step !== "done") return;
+    const t = setTimeout(() => router.push("/schedules/weekly"), 2500);
+    return () => clearTimeout(t);
+  }, [step, router]);
 
   async function next() {
     if (step === "mood") {
@@ -138,29 +146,8 @@ export default function VibeCheckPage() {
   const selectedPlayer = players.find((p) => p.id === form.playerId);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-5 py-10">
-      {/* Wordmark + sign out */}
-      <div className="flex items-center justify-between w-full max-w-sm mb-8">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mustang-logo.png" alt="Memorial Mustangs" width={24} height={24} />
-          </div>
-          <span className="text-gray-400 text-sm font-mono tracking-widest uppercase">
-            Vibe Check
-          </span>
-        </div>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="flex items-center gap-1.5 text-xs font-mono text-gray-600 hover:text-gray-300 transition-colors"
-          >
-            <LogOut size={13} />
-            Sign out
-          </button>
-        </form>
-      </div>
-
+    <PlayerShell>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-1">
       <div className="w-full max-w-sm flex flex-col gap-6">
         {/* Progress */}
         {step !== "intro" && step !== "done" && (
@@ -320,15 +307,8 @@ export default function VibeCheckPage() {
             </div>
 
             <p className="text-gray-600 text-xs font-mono">
-              See you at practice.
+              Heading back to your schedule…
             </p>
-
-            <Link
-              href="/schedules/game"
-              className="w-full flex items-center justify-center gap-2 min-h-[52px] rounded-2xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold transition-colors hover:bg-gray-700"
-            >
-              View Schedule
-            </Link>
           </div>
         )}
 
@@ -359,6 +339,7 @@ export default function VibeCheckPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </PlayerShell>
   );
 }

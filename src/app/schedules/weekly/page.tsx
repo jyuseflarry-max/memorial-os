@@ -5,6 +5,7 @@ import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
+import { useAuth } from "@/context/AuthContext";
 import type { Game } from "@/types/game";
 import { GAME_TYPE_LABELS } from "@/types/game";
 import type { PracticeSchedule } from "@/types/practice-schedule";
@@ -80,6 +81,12 @@ export default function WeeklyEventsPage() {
   const [practices, setPractices] = useState<PracticeSchedule[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [filterTeam, setFilterTeam] = useState<string>("all");
+
+  // Import auth to default players to their own team
+  const { authUser, isPlayer } = useAuth();
+  useEffect(() => {
+    if (isPlayer && authUser?.teamId) setFilterTeam(authUser.teamId);
+  }, [isPlayer, authUser?.teamId]);
 
   const weekLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 

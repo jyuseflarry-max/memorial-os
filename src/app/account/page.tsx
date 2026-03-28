@@ -3,7 +3,7 @@
 import { Suspense, useActionState, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper, Link2, LogOut } from "lucide-react";
+import { User, KeyRound, CheckCircle2, AlertCircle, PartyPopper, Link2, Share2, LogOut } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { updateProfile, updatePassword } from "@/actions/account";
 import { logout } from "@/actions/auth";
@@ -38,18 +38,26 @@ function Feedback({ state }: { state: { error?: string; success?: string } | nul
 function FamilyLinkCard({ playerId }: { playerId: string }) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopy() {
+  function handleShare() {
     const url = `${window.location.origin}/join/family?playerID=${playerId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
+    if (navigator.share) {
+      navigator.share({
+        title: "Join my team on The Coach's OS",
+        text: "Tap this link to create a free family account and follow my schedule.",
+        url,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      });
+    }
   }
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <Link2 size={16} className="text-purple-400" />
+        <Share2 size={16} className="text-purple-400" />
         <h2 className="text-white font-semibold text-sm">Share with Family</h2>
       </div>
       <p className="text-gray-400 text-xs leading-relaxed">
@@ -57,15 +65,15 @@ function FamilyLinkCard({ playerId }: { playerId: string }) {
       </p>
       <button
         type="button"
-        onClick={handleCopy}
+        onClick={handleShare}
         className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border font-semibold text-sm transition-colors ${
           copied
             ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
             : "bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
         }`}
       >
-        {copied ? <CheckCircle2 size={15} /> : <Link2 size={15} />}
-        {copied ? "Link copied!" : "Copy family join link"}
+        {copied ? <CheckCircle2 size={15} /> : <Share2 size={15} />}
+        {copied ? "Link copied!" : "Add a Family Member"}
       </button>
     </div>
   );

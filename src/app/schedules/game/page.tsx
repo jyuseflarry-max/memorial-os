@@ -11,6 +11,7 @@ import BulkImportModal from "@/components/BulkImportModal";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useLocations } from "@/context/LocationsContext";
+import { useAuth } from "@/context/AuthContext";
 import type { Game, LocationType, GameType, GameDraft } from "@/types/game";
 import type { Location } from "@/types/location";
 import { LOCATION_LABELS, GAME_TYPE_LABELS, EMPTY_DRAFT } from "@/types/game";
@@ -542,6 +543,7 @@ function GameRow({
   onDelete,
   selected,
   onSelect,
+  isPlayer,
 }: {
   game: Game;
   primaryColor: string;
@@ -550,10 +552,11 @@ function GameRow({
   onDelete: () => void;
   selected: boolean;
   onSelect: (checked: boolean) => void;
+  isPlayer: boolean;
 }) {
   const { short, weekday } = fmtDate(game.game_date);
 
-  // Departure time for Away / Neutral games with a known tip-off time
+  // Away / Neutral: depart early enough to arrive 90 min before tip-off
   const matchedLocation = locations.find((l) => {
     const full = [l.name, l.address, l.city].filter(Boolean).join(", ");
     return full === game.venue;
@@ -563,8 +566,15 @@ function GameRow({
     game.game_time &&
     !game.time_tbd &&
     matchedLocation
-      ? subtractMinutes(game.game_time, matchedLocation.default_travel_time + 35)
+      ? subtractMinutes(game.game_time, matchedLocation.default_travel_time + 90)
       : null;
+
+  // Home: arrive 90 min before tip-off
+  const arrivalTime =
+    game.location_type === "home" && game.game_time && !game.time_tbd
+      ? subtractMinutes(game.game_time, 90)
+      : null;
+
   const result = gameResult(game);
 
   const opponentCls = game.game_type === "district"
@@ -583,116 +593,129 @@ function GameRow({
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3.5 border-b border-gray-700/50 last:border-0 hover:bg-gray-800/30 transition-colors group ${selected ? "bg-red-500/5" : ""}`}
+      className={`flex flex-col border-b border-gray-700/50 last:border-0 hover:bg-gray-800/30 transition-colors group ${!isPlayer && selected ? "bg-red-500/5" : ""}`}
       style={rowBg}
     >
-      {/* Checkbox */}
-      <div className="shrink-0 pt-1">
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={(e) => onSelect(e.target.checked)}
-          className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
-        />
-      </div>
-      {/* Date */}
-      <div className="w-24 shrink-0 pt-0.5">
-        <p className="text-white font-mono text-sm font-semibold">{short}</p>
-        <p className="text-gray-600 font-mono text-[10px]">{weekday}{game.time_tbd ? " · TBD" : game.game_time ? ` · ${fmt12h(game.game_time)}` : ""}</p>
-      </div>
+      {/* Main row */}
+      <div className="flex items-start gap-3 px-4 pt-3.5 pb-1.5">
+        {/* Checkbox — coaches only */}
+        {!isPlayer && (
+          <div className="shrink-0 pt-1">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => onSelect(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+            />
+          </div>
+        )}
 
-      {/* Opponent + sub-info */}
-      <div className="flex-1 min-w-0">
-        {/* Opponent + chips on same line */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className={opponentCls}>{game.opponent}</p>
-          <LocationBadge type={game.location_type} />
-          <TypeBadge type={game.game_type} />
+        {/* Date + result below */}
+        <div className="w-24 shrink-0 pt-0.5">
+          <p className="text-white font-mono text-sm font-semibold">{short}</p>
+          <p className="text-gray-600 font-mono text-[10px]">{weekday}{game.time_tbd ? " · TBD" : game.game_time ? ` · ${fmt12h(game.game_time)}` : ""}</p>
+          <div className="mt-1">
+            <ResultChip game={game} />
+            {result === "upcoming" && (
+              <p className="text-[9px] font-mono text-gray-700 uppercase tracking-wider">Upcoming</p>
+            )}
+          </div>
         </div>
 
-        {game.game_note && (
-          <p className="text-[10px] font-mono text-purple-400 mt-0.5">{game.game_note}</p>
-        )}
+        {/* Opponent + sub-info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className={opponentCls}>{game.opponent}</p>
+            <LocationBadge type={game.location_type} />
+            <TypeBadge type={game.game_type} />
+          </div>
 
-        {departureTime && (
-          <p className="flex items-center gap-1 text-[10px] font-mono text-amber-400 mt-0.5">
-            <Clock size={9} /> Depart by {departureTime}
-          </p>
-        )}
+          {game.game_note && (
+            <p className="text-[10px] font-mono text-purple-400 mt-0.5">{game.game_note}</p>
+          )}
 
-        {/* Venue */}
-        {game.venue && venueUrl && (
+          {/* Away / Neutral: departure time (arrive 90 min early + travel) */}
+          {departureTime && (
+            <p className="flex items-center gap-1 text-[10px] font-mono text-amber-400 mt-0.5">
+              <Clock size={9} /> Depart by {departureTime}
+            </p>
+          )}
+
+          {/* Home: arrival time (be there 90 min early) */}
+          {arrivalTime && (
+            <p className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 mt-0.5">
+              <Clock size={9} /> Be there by {arrivalTime}
+            </p>
+          )}
+
+          {/* Venue */}
+          {game.venue && venueUrl && (
+            <a
+              href={venueUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] font-mono text-gray-500 hover:text-coaches-blue transition-colors mt-0.5 truncate"
+            >
+              <MapPin size={9} />
+              {game.venue}
+            </a>
+          )}
+        </div>
+
+        {/* Edit / Delete — coaches only, show on hover */}
+        {!isPlayer && (
+          <div className="flex items-center gap-1 shrink-0 pt-0.5">
+            <button
+              onClick={onEdit}
+              title="Edit game"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-white hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Edit2 size={13} />
+            </button>
+            <button
+              onClick={onDelete}
+              title="Delete game"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-coaches-red hover:bg-coaches-red/10 transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Scout / Highlights / Box Score — full-width bar */}
+      <div className="flex items-center gap-3 px-4 pb-2.5 border-t border-gray-800/50 pt-1.5 mt-0.5">
+        <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default" title="Scouting Report (coming soon)">
+          <Target size={10} /> Scout
+        </span>
+        {game.highlights_url ? (
           <a
-            href={venueUrl}
+            href={game.highlights_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[10px] font-mono text-gray-500 hover:text-coaches-blue transition-colors mt-0.5 truncate"
+            className="flex items-center gap-1 text-[10px] font-mono text-sky-400 hover:text-sky-300 transition-colors"
           >
-            <MapPin size={9} />
-            {game.venue}
+            <Video size={10} /> Highlights
           </a>
-        )}
-
-        {/* Content links — always visible, dimmed when no content */}
-        <div className="flex items-center gap-2.5 mt-1.5">
-          <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default" title="Scouting Report (coming soon)">
-            <Target size={10} /> Scout
+        ) : (
+          <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
+            <Video size={10} /> Highlights
           </span>
-          {game.highlights_url ? (
-            <a
-              href={game.highlights_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[10px] font-mono text-sky-400 hover:text-sky-300 transition-colors"
-            >
-              <Video size={10} /> Highlights
-            </a>
-          ) : (
-            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
-              <Video size={10} /> Highlights
-            </span>
-          )}
-          {game.box_score_url ? (
-            <a
-              href={game.box_score_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
-              <ExternalLink size={10} /> Box Score
-            </a>
-          ) : (
-            <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
-              <ExternalLink size={10} /> Box Score
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Result */}
-      <div className="w-20 shrink-0 text-right pt-0.5">
-        <ResultChip game={game} />
-        {result === "upcoming" && (
-          <p className="text-[9px] font-mono text-gray-700 uppercase tracking-wider">Upcoming</p>
         )}
-      </div>
-
-      {/* Edit / Delete — show on hover */}
-      <div className="flex items-center gap-1 shrink-0 pt-0.5">
-        <button
-          onClick={onEdit}
-          title="Edit game"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-white hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <Edit2 size={13} />
-        </button>
-        <button
-          onClick={onDelete}
-          title="Delete game"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-coaches-red hover:bg-coaches-red/10 transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <Trash2 size={13} />
-        </button>
+        {game.box_score_url ? (
+          <a
+            href={game.box_score_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            <ExternalLink size={10} /> Box Score
+          </a>
+        ) : (
+          <span className="flex items-center gap-1 text-[10px] font-mono text-gray-700 cursor-default">
+            <ExternalLink size={10} /> Box Score
+          </span>
+        )}
       </div>
     </div>
   );
@@ -704,6 +727,7 @@ export default function GameSchedulePage() {
   const { activeTeam }  = useTeam();
   const { settings }    = useSettings();
   const { locations }   = useLocations();
+  const { isPlayer }    = useAuth();
   const [games,   setGames]   = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -853,32 +877,34 @@ export default function GameSchedulePage() {
             {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · {activeSeason === "all" ? "ALL SEASONS" : activeSeason}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {selectedIds.size > 0 && (
+        {!isPlayer && (
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowBulkDelete(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+              >
+                <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setShowBulkDelete(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+              onClick={() => setShowCsvImport(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white text-sm font-medium transition-colors"
             >
-              <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+              <Upload size={15} />
+              Import CSV
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowCsvImport(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white text-sm font-medium transition-colors"
-          >
-            <Upload size={15} />
-            Import CSV
-          </button>
-          <button
-            onClick={() => setModal({ type: "add" })}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
-          >
-            <Plus size={15} />
-            Add Game
-          </button>
-        </div>
+            <button
+              onClick={() => setModal({ type: "add" })}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors"
+            >
+              <Plus size={15} />
+              Add Game
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Season filter bar */}
@@ -1019,8 +1045,8 @@ export default function GameSchedulePage() {
         </>
       )}
 
-      {/* Column headers */}
-      {visibleGames.length > 0 && (
+      {/* Column headers — coaches only */}
+      {!isPlayer && visibleGames.length > 0 && (
         <div className="flex items-center gap-3 px-4 py-2 text-[10px] font-mono text-gray-600 uppercase tracking-wider border-b border-gray-700 mb-0">
           <div className="shrink-0">
             <input
@@ -1033,7 +1059,6 @@ export default function GameSchedulePage() {
           </div>
           <div className="w-24 shrink-0">Date</div>
           <div className="flex-1">Opponent</div>
-          <div className="w-20 shrink-0 text-right">Result</div>
           <div className="w-16 shrink-0" />
         </div>
       )}
@@ -1053,12 +1078,14 @@ export default function GameSchedulePage() {
             <p className="text-gray-500 font-mono text-xs mb-3">
               {games.length === 0 ? "NO GAMES SCHEDULED" : `NO GAMES FOR ${activeSeason === "all" ? "ANY SEASON" : activeSeason}`}
             </p>
-            <button
-              onClick={() => setModal({ type: "add" })}
-              className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold transition-colors"
-            >
-              <Plus size={13} /> Add Game
-            </button>
+            {!isPlayer && (
+              <button
+                onClick={() => setModal({ type: "add" })}
+                className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold transition-colors"
+              >
+                <Plus size={13} /> Add Game
+              </button>
+            )}
           </div>
         )}
 
@@ -1082,6 +1109,7 @@ export default function GameSchedulePage() {
                   if (checked) next.add(game.id); else next.delete(game.id);
                   return next;
                 })}
+                isPlayer={isPlayer}
               />
             ))}
           </div>

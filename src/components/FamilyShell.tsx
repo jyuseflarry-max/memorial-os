@@ -8,10 +8,10 @@ import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 
 const TABS = [
-  { label: "Schedule",   href: "/family",          icon: CalendarDays },
-  { label: "Games",      href: "/family/games",     icon: Swords       },
-  { label: "My Players", href: "/family/players",   icon: Users        },
-  { label: "Me",         href: "/family/account",   icon: UserCircle   },
+  { label: "Schedule",   href: "/family/schedule",  icon: CalendarDays },
+  { label: "Games",      href: "/family/games",      icon: Swords       },
+  { label: "My Players", href: "/family/players",    icon: Users        },
+  { label: "Me",         href: "/family/account",    icon: UserCircle   },
 ] as const;
 
 export default function FamilyShell({ children }: { children: React.ReactNode }) {
@@ -62,9 +62,7 @@ export default function FamilyShell({ children }: { children: React.ReactNode })
         </div>
         <div className="flex">
           {TABS.map(({ label, href, icon: Icon }) => {
-            const active = href === "/family"
-              ? pathname === "/family"
-              : pathname === href || pathname.startsWith(href + "/");
+            const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}

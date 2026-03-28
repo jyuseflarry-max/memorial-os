@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Link2, CheckCircle2 } from "lucide-react";
+import { Users, Link2, Share2, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import FamilyShell from "@/components/FamilyShell";
 import { useAuth } from "@/context/AuthContext";
@@ -15,27 +15,35 @@ const RELATIONSHIP_COLORS: Record<string, string> = {
 function CopyLinkButton({ playerId }: { playerId: string }) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopy() {
+  function handleShare() {
     const url = `${window.location.origin}/join/family?playerID=${playerId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
+    if (navigator.share) {
+      navigator.share({
+        title: "Join my team on The Coach's OS",
+        text: "Tap this link to create a free family account and follow the schedule.",
+        url,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      });
+    }
   }
 
   return (
     <button
       type="button"
-      onClick={handleCopy}
-      title="Copy join link for another family member"
+      onClick={handleShare}
+      title="Add a family member for this player"
       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold border transition-colors ${
         copied
           ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/25"
           : "text-purple-400 bg-purple-400/10 border-purple-400/25 hover:bg-purple-400/20"
       }`}
     >
-      {copied ? <CheckCircle2 size={10} /> : <Link2 size={10} />}
-      {copied ? "Copied!" : "Share link"}
+      {copied ? <CheckCircle2 size={10} /> : <Share2 size={10} />}
+      {copied ? "Copied!" : "Add Family"}
     </button>
   );
 }

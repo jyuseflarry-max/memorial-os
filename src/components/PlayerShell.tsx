@@ -10,11 +10,11 @@ import { useAuth } from "@/context/AuthContext";
 // ── Bottom nav definition ─────────────────────────────────────────────────
 
 const TABS = [
-  { label: "Schedule",  href: "/",           icon: RadioTower  },
-  { label: "Plans",     href: "/view-plans",  icon: ListChecks  },
-  { label: "Check In",  href: "/vibe-check",  icon: Zap         },
-  { label: "Reports",   href: "/reports",     icon: BarChart3   },
-  { label: "Me",        href: "/account",     icon: UserCircle  },
+  { label: "Schedule",  href: "/schedules/weekly", icon: RadioTower  },
+  { label: "Plans",     href: "/view-plans",        icon: ListChecks  },
+  { label: "Check In",  href: "/vibe-check",        icon: Zap         },
+  { label: "Reports",   href: "/reports",           icon: BarChart3   },
+  { label: "Me",        href: "/account",           icon: UserCircle  },
 ] as const;
 
 // ── Shell ─────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
         </div>
         <div className="flex">
           {TABS.map(({ label, href, icon: Icon }) => {
-            const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+            const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}
