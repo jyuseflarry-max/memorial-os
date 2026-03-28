@@ -35,6 +35,14 @@ function fmt12h(time: string): string {
   return `${h % 12 === 0 ? 12 : h % 12}:${mStr} ${h >= 12 ? "PM" : "AM"}`;
 }
 
+function addMins(time: string, mins: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total  = h * 60 + m + mins;
+  const hh = Math.floor(total / 60) % 24;
+  const mm = total % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 function fmtDate(iso: string) {
   const d = new Date(iso + "T12:00:00");
   return {
@@ -180,7 +188,9 @@ export default function WeeklyEventsPage() {
                 } else if (ev.kind === "session") {
                   const totalMin = ev.session.drills.reduce((s, d) => s + d.duration, 0);
                   typeLabel = "Practice" + (ev.session.label ? ` — ${ev.session.label}` : "");
-                  timeStr   = fmt12h(ev.session.start_time) + (totalMin > 0 ? ` · ${totalMin}m` : "");
+                  timeStr   = totalMin > 0
+                    ? `${fmt12h(ev.session.start_time)} – ${fmt12h(addMins(ev.session.start_time, totalMin))}`
+                    : fmt12h(ev.session.start_time);
                   dotColor  = "bg-coaches-blue";
                 } else {
                   typeLabel = "Practice";
