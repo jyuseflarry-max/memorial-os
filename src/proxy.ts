@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/login", "/register", "/vibe-check"];
+const PUBLIC_ROUTES = ["/login", "/register", "/vibe-check", "/join"];
 
 export async function proxy(request: NextRequest) {
   // Start with a pass-through response so cookies can be written onto it
