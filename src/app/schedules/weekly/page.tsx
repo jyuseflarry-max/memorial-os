@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, Gamepad2, Dumbbell, MapPin, Clock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import type { Game } from "@/types/game";
-import { LOCATION_LABELS, GAME_TYPE_LABELS } from "@/types/game";
+import { GAME_TYPE_LABELS } from "@/types/game";
 import type { PracticeSchedule } from "@/types/practice-schedule";
 
 interface SavedSession {
@@ -19,10 +19,10 @@ interface SavedSession {
 
 function getWeekBounds(date: Date): { start: Date; end: Date } {
   const start = new Date(date);
-  start.setDate(date.getDate() - date.getDay()); // Sunday
+  start.setDate(date.getDate() - date.getDay());
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
-  end.setDate(start.getDate() + 6); // Saturday
+  end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
   return { start, end };
 }
@@ -42,12 +42,6 @@ function fmtDate(iso: string) {
     short:   d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
   };
 }
-
-const LOCATION_STYLES = {
-  home:    "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  away:    "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  neutral: "bg-gray-500/15 text-gray-400 border-gray-500/30",
-};
 
 type EventItem =
   | { kind: "game";     date: string; time: string | null; game: Game }
@@ -72,7 +66,6 @@ export default function WeeklyEventsPage() {
     setLoading(true);
     const pp = new URLSearchParams();
     if (activeTeam) pp.set("team_id", activeTeam.id);
-
     Promise.all([
       fetch("/api/games").then((r) => r.json()),
       fetch("/api/sessions").then((r) => r.json()),
@@ -90,35 +83,19 @@ export default function WeeklyEventsPage() {
     const toStr   = toISO(end);
 
     const gameEvents: EventItem[] = games
-      .filter((g) => {
-        if (g.game_date < fromStr || g.game_date > toStr) return false;
-        if (filterTeam !== "all" && g.team_id !== filterTeam) return false;
-        return true;
-      })
+      .filter((g) => g.game_date >= fromStr && g.game_date <= toStr && (filterTeam === "all" || g.team_id === filterTeam))
       .map((g) => ({ kind: "game", date: g.game_date, time: g.game_time, game: g }));
 
     const sessionEvents: EventItem[] = sessions
-      .filter((s) => {
-        if (s.date < fromStr || s.date > toStr) return false;
-        if (filterTeam !== "all" && s.team_id !== filterTeam) return false;
-        return true;
-      })
+      .filter((s) => s.date >= fromStr && s.date <= toStr && (filterTeam === "all" || s.team_id === filterTeam))
       .map((s) => ({ kind: "session", date: s.date, time: s.start_time, session: s }));
 
+    const sessionDates = new Set(sessionEvents.map((e) => e.date));
     const scheduleEvents: EventItem[] = practices
-      .filter((p) => {
-        if (p.practice_date < fromStr || p.practice_date > toStr) return false;
-        if (filterTeam !== "all" && p.team_id !== filterTeam) return false;
-        return true;
-      })
+      .filter((p) => p.practice_date >= fromStr && p.practice_date <= toStr && !sessionDates.has(p.practice_date) && (filterTeam === "all" || p.team_id === filterTeam))
       .map((p) => ({ kind: "schedule", date: p.practice_date, time: p.start_time, practice: p }));
 
-    // Deduplicate: if a date already has a saved session, don't also show the schedule placeholder for that date
-    const sessionDates = new Set(sessionEvents.map((e) => e.date));
-    const filteredSchedule = scheduleEvents.filter((e) => !sessionDates.has(e.date));
-
-    const all = [...gameEvents, ...sessionEvents, ...filteredSchedule];
-    return all.sort((a, b) => {
+    return [...gameEvents, ...sessionEvents, ...scheduleEvents].sort((a, b) => {
       const dc = a.date.localeCompare(b.date);
       if (dc !== 0) return dc;
       return (a.time ?? "23:59").localeCompare(b.time ?? "23:59");
@@ -172,122 +149,53 @@ export default function WeeklyEventsPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-5">
-        {byDate.map(([date, items]) => {
+      {/* Event list */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden">
+        {byDate.map(([date, items], di) => {
           const { weekday, short } = fmtDate(date);
           const isToday = date === toISO(today);
           return (
-            <div key={date}>
-              <div className={`flex items-center gap-2 mb-2 px-1 ${isToday ? "text-coaches-red" : "text-gray-500"}`}>
-                <p className="text-[10px] font-mono uppercase tracking-widest">{weekday}</p>
-                <p className="text-[10px] font-mono">{short}</p>
+            <div key={date} className={di > 0 ? "border-t border-gray-700" : ""}>
+              {/* Day header */}
+              <div className={`flex items-center gap-3 px-4 py-2 ${isToday ? "bg-coaches-red/10" : "bg-gray-800/40"}`}>
+                <p className={`text-xs font-mono font-semibold uppercase tracking-wider ${isToday ? "text-coaches-red" : "text-gray-400"}`}>
+                  {weekday}
+                </p>
+                <p className={`text-xs font-mono ${isToday ? "text-coaches-red/80" : "text-gray-500"}`}>{short}</p>
                 {isToday && <span className="text-[9px] font-mono bg-coaches-red text-white px-1.5 py-0.5 rounded-full">TODAY</span>}
               </div>
-              <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden">
-                {items.map((ev, i) => {
-                  const key = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
-                  return (
-                    <div key={key} className={`flex items-center gap-3 px-4 py-3.5 ${i < items.length - 1 ? "border-b border-gray-700/50" : ""}`}>
-                      {ev.kind === "game" && (
-                        <>
-                          <div className="w-7 h-7 rounded-lg bg-coaches-red/10 border border-coaches-red/20 flex items-center justify-center shrink-0">
-                            <Gamepad2 size={13} className="text-coaches-red" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-white text-sm font-semibold">vs. {ev.game.opponent}</p>
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border uppercase tracking-wide ${LOCATION_STYLES[ev.game.location_type]}`}>
-                                {LOCATION_LABELS[ev.game.location_type]}
-                              </span>
-                              <span className="text-[10px] font-mono text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">{GAME_TYPE_LABELS[ev.game.game_type]}</span>
-                              {ev.game.game_note && <span className="text-[10px] font-mono text-purple-400">{ev.game.game_note}</span>}
-                            </div>
-                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                              {ev.game.game_time && !ev.game.time_tbd && (
-                                <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500"><Clock size={9} />{fmt12h(ev.game.game_time)}</span>
-                              )}
-                              {ev.game.time_tbd && <span className="text-[11px] font-mono text-gray-600">Time TBD</span>}
-                              {ev.game.venue && (
-                                <a href={`https://maps.google.com/maps?q=${encodeURIComponent(ev.game.venue)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-mono text-coaches-blue hover:text-blue-300 transition-colors truncate">
-                                  <MapPin size={9} />{ev.game.venue}
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
 
-                      {ev.kind === "session" && (() => {
-                        const totalMin = ev.session.drills.reduce((s, d) => s + d.duration, 0);
-                        const teamName = teams.find((t) => t.id === ev.session.team_id)?.name;
-                        const planUrl  = `/view-plans/${ev.session.date}${ev.session.team_id || ev.session.label ? `?${new URLSearchParams({ ...(ev.session.team_id ? { team_id: ev.session.team_id } : {}), ...(ev.session.label ? { label: ev.session.label } : {}) })}` : ""}`;
-                        return (
-                          <>
-                            <div className="w-7 h-7 rounded-lg bg-coaches-blue/10 border border-coaches-blue/20 flex items-center justify-center shrink-0">
-                              <Dumbbell size={13} className="text-coaches-blue" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-white text-sm font-semibold">Practice Plan</p>
-                                {ev.session.label && (
-                                  <span className="text-[9px] font-mono text-gray-400 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded-full">{ev.session.label}</span>
-                                )}
-                                {teamName && <span className="text-[10px] font-mono text-gray-500">{teamName}</span>}
-                              </div>
-                              <div className="flex items-center gap-3 mt-0.5">
-                                <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
-                                  <Clock size={9} />{fmt12h(ev.session.start_time)}
-                                  {totalMin > 0 && ` · ${totalMin}m`}
-                                </span>
-                                <span className="text-[11px] font-mono text-gray-600">{ev.session.drills.length} drills</span>
-                              </div>
-                            </div>
-                            <a href={planUrl} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-coaches-blue/10 border border-coaches-blue/20 text-coaches-blue hover:bg-coaches-blue/20 text-xs font-semibold transition-colors shrink-0">
-                              View <ExternalLink size={10} />
-                            </a>
-                          </>
-                        );
-                      })()}
+              {/* Events for this day */}
+              {items.map((ev, i) => {
+                const key = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
 
-                      {ev.kind === "schedule" && (
-                        <>
-                          <div className="w-7 h-7 rounded-lg bg-sky-900/40 border border-sky-800/40 flex items-center justify-center shrink-0">
-                            <Dumbbell size={13} className="text-sky-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-semibold">
-                              Practice
-                              <span className="ml-2 text-[9px] font-mono text-gray-500 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded-full align-middle">SCHEDULED</span>
-                            </p>
-                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                              <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500">
-                                <Clock size={9} />{fmt12h(ev.practice.start_time)}–{fmt12h(ev.practice.end_time)}
-                              </span>
-                              {ev.practice.location && (
-                                ev.practice.location.address ? (
-                                  <a href={`https://maps.google.com/maps?q=${encodeURIComponent(ev.practice.location.address + ", " + (ev.practice.location.city ?? ""))}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-mono text-coaches-blue hover:text-blue-300 transition-colors truncate">
-                                    <MapPin size={9} />{ev.practice.location.name}
-                                  </a>
-                                ) : (
-                                  <span className="flex items-center gap-1 text-[11px] font-mono text-gray-500 truncate">
-                                    <MapPin size={9} />{ev.practice.location.name}
-                                  </span>
-                                )
-                              )}
-                            </div>
-                          </div>
-                          <a
-                            href={`/planner?date=${ev.practice.practice_date}${ev.practice.team_id ? `&team_id=${ev.practice.team_id}` : ""}`}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-coaches-red/10 border border-coaches-red/30 text-coaches-red hover:bg-coaches-red/20 text-xs font-semibold transition-colors shrink-0"
-                          >
-                            Plan <ExternalLink size={10} />
-                          </a>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                let typeLabel = "";
+                let timeStr   = "";
+                let dotColor  = "";
+
+                if (ev.kind === "game") {
+                  typeLabel = `Game — vs. ${ev.game.opponent} (${GAME_TYPE_LABELS[ev.game.game_type]}, ${ev.game.location_type === "home" ? "Home" : ev.game.location_type === "away" ? "Away" : "Neutral"})`;
+                  timeStr   = ev.game.time_tbd ? "Time TBD" : ev.game.game_time ? fmt12h(ev.game.game_time) : "Time TBD";
+                  dotColor  = "bg-coaches-red";
+                } else if (ev.kind === "session") {
+                  const totalMin = ev.session.drills.reduce((s, d) => s + d.duration, 0);
+                  typeLabel = "Practice" + (ev.session.label ? ` — ${ev.session.label}` : "");
+                  timeStr   = fmt12h(ev.session.start_time) + (totalMin > 0 ? ` · ${totalMin}m` : "");
+                  dotColor  = "bg-coaches-blue";
+                } else {
+                  typeLabel = "Practice";
+                  timeStr   = `${fmt12h(ev.practice.start_time)} – ${fmt12h(ev.practice.end_time)}`;
+                  dotColor  = "bg-sky-400";
+                }
+
+                return (
+                  <div key={key} className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""}`}>
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                    <p className="flex-1 text-white text-sm">{typeLabel}</p>
+                    <p className="text-gray-500 text-xs font-mono shrink-0">{timeStr}</p>
+                  </div>
+                );
+              })}
             </div>
           );
         })}
