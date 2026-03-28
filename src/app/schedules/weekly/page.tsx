@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
+import { useLocations } from "@/context/LocationsContext";
 import type { Game } from "@/types/game";
 import { GAME_TYPE_LABELS } from "@/types/game";
 import type { PracticeSchedule } from "@/types/practice-schedule";
@@ -43,6 +44,17 @@ function addMins(time: string, mins: number): string {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+function subtractMins(hhmm: string, mins: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  let total = h * 60 + m - mins;
+  if (total < 0) total += 24 * 60;
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  const suffix = hh >= 12 ? "PM" : "AM";
+  const h12 = hh % 12 || 12;
+  return `${h12}:${String(mm).padStart(2, "0")} ${suffix}`;
+}
+
 function fmtDate(iso: string) {
   const d = new Date(iso + "T12:00:00");
   return {
@@ -58,6 +70,7 @@ type EventItem =
 
 export default function WeeklyEventsPage() {
   const { teams, activeTeam } = useTeam();
+  const { locations } = useLocations();
   const [today]  = useState(() => new Date());
   const [weekOf, setWeekOf] = useState(() => new Date());
   const { start, end } = getWeekBounds(weekOf);
@@ -177,15 +190,38 @@ export default function WeeklyEventsPage() {
               {items.map((ev, i) => {
                 const key = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
 
+                if (ev.kind === "game") {
+                  const g = ev.game;
+                  const timeStr = g.time_tbd ? "Time TBD" : g.game_time ? fmt12h(g.game_time) : "Time TBD";
+                  const locLabel = g.location_type === "home" ? "Home" : g.location_type === "away" ? "Away" : "Neutral";
+                  const matchedLoc = g.venue ? locations.find((l) => [l.name, l.address, l.city].filter(Boolean).join(", ") === g.venue) : null;
+                  const departureTime =
+                    (g.location_type === "away" || g.location_type === "neutral") &&
+                    g.game_time && !g.time_tbd && matchedLoc
+                      ? subtractMins(g.game_time, matchedLoc.default_travel_time + 35)
+                      : null;
+                  return (
+                    <div key={key} className={`flex items-start gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""}`}>
+                      <div className="w-2 h-2 rounded-full shrink-0 bg-coaches-red mt-1.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm">Game — vs. {g.opponent} <span className="text-gray-500 text-xs font-mono">({GAME_TYPE_LABELS[g.game_type]}, {locLabel})</span></p>
+                        {g.game_note && <p className="text-purple-400 text-[11px] font-mono mt-0.5">{g.game_note}</p>}
+                        {departureTime && (
+                          <p className="flex items-center gap-1 text-amber-400 text-[11px] font-mono mt-0.5">
+                            <Clock size={9} /> Depart by {departureTime}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-gray-500 text-xs font-mono shrink-0 mt-0.5">{timeStr}</p>
+                    </div>
+                  );
+                }
+
                 let typeLabel = "";
                 let timeStr   = "";
                 let dotColor  = "";
 
-                if (ev.kind === "game") {
-                  typeLabel = `Game — vs. ${ev.game.opponent} (${GAME_TYPE_LABELS[ev.game.game_type]}, ${ev.game.location_type === "home" ? "Home" : ev.game.location_type === "away" ? "Away" : "Neutral"})`;
-                  timeStr   = ev.game.time_tbd ? "Time TBD" : ev.game.game_time ? fmt12h(ev.game.game_time) : "Time TBD";
-                  dotColor  = "bg-coaches-red";
-                } else if (ev.kind === "session") {
+                if (ev.kind === "session") {
                   const totalMin = ev.session.drills.reduce((s, d) => s + d.duration, 0);
                   typeLabel = "Practice" + (ev.session.label ? ` — ${ev.session.label}` : "");
                   timeStr   = totalMin > 0

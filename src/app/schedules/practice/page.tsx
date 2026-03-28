@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Edit2, Trash2, Loader2, MapPin, CalendarDays, Clock, X, Save, ExternalLink, Upload } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, MapPin, CalendarDays, Clock, X, Save, ExternalLink, Upload, CheckSquare } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
@@ -130,6 +130,9 @@ export default function PracticeSchedulePage() {
   const [modal, setModal]         = useState<ModalMode | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<PracticeSchedule | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting]   = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -167,6 +170,18 @@ export default function PracticeSchedulePage() {
     setConfirmDelete(null);
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    await Promise.all([...selectedIds].map((id) => fetch(`/api/practice-schedule/${id}`, { method: "DELETE" })));
+    setPractices((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+    setBulkDeleting(false);
+  }
+
+  const allSelected = practices.length > 0 && practices.every((p) => selectedIds.has(p.id));
+  const someSelected = !allSelected && practices.some((p) => selectedIds.has(p.id));
+
   const planLink = (p: PracticeSchedule) => {
     const qp = new URLSearchParams({ date: p.practice_date });
     if (p.team_id) qp.set("team_id", p.team_id);
@@ -181,6 +196,15 @@ export default function PracticeSchedulePage() {
           <p className="text-gray-400 text-sm mt-0.5 font-mono">{activeTeam?.name.toUpperCase() ?? "ALL TEAMS"}</p>
         </div>
         <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowBulkDelete(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+            >
+              <Trash2 size={15} /> Delete Selected ({selectedIds.size})
+            </button>
+          )}
           <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors">
             <Upload size={15} /> Import CSV
           </button>
@@ -189,6 +213,21 @@ export default function PracticeSchedulePage() {
           </button>
         </div>
       </div>
+
+      {/* Select-all bar */}
+      {!loading && practices.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 mb-1 text-[10px] font-mono text-gray-600 uppercase tracking-wider">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            ref={(el) => { if (el) el.indeterminate = someSelected; }}
+            onChange={(e) => setSelectedIds(e.target.checked ? new Set(practices.map((p) => p.id)) : new Set())}
+            className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+          />
+          <span>{allSelected ? "Deselect All" : "Select All"}</span>
+          {selectedIds.size > 0 && <span className="text-coaches-red">{selectedIds.size} selected</span>}
+        </div>
+      )}
 
       {loading && <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-coaches-red" /></div>}
       {error   && <p className="text-red-400 text-sm font-mono">{error}</p>}
@@ -215,8 +254,19 @@ export default function PracticeSchedulePage() {
                 const mapsUrl = loc?.address && loc?.city
                   ? `https://maps.google.com/maps?q=${encodeURIComponent(loc.address + ", " + loc.city)}`
                   : null;
+                const isSelected = selectedIds.has(p.id);
                 return (
-                  <div key={p.id} className={`flex items-center gap-3 px-4 py-3.5 ${i < items.length - 1 ? "border-b border-gray-700/50" : ""} hover:bg-gray-800/30 transition-colors group`}>
+                  <div key={p.id} className={`flex items-center gap-3 px-4 py-3.5 ${i < items.length - 1 ? "border-b border-gray-700/50" : ""} hover:bg-gray-800/30 transition-colors group ${isSelected ? "bg-red-500/5" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => setSelectedIds((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(p.id); else next.delete(p.id);
+                        return next;
+                      })}
+                      className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600 shrink-0"
+                    />
                     <div className="w-24 shrink-0">
                       <p className="text-white font-mono text-sm font-semibold">{short}</p>
                       <p className="text-gray-600 font-mono text-[10px]">{weekday}</p>
@@ -286,6 +336,22 @@ export default function PracticeSchedulePage() {
             <div className="flex gap-3 justify-end">
               <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-lg text-xs font-semibold border border-gray-700 text-gray-400 hover:text-white transition-colors">Cancel</button>
               <button onClick={() => handleDelete(confirmDelete)} className="px-4 py-2 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-white font-semibold text-base mb-2">Delete {selectedIds.size} Practice{selectedIds.size > 1 ? "s" : ""}?</h3>
+            <p className="text-gray-400 text-sm mb-6">This will permanently remove the selected practices from the schedule. This cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowBulkDelete(false)} disabled={bulkDeleting} className="px-4 py-2 rounded-lg text-xs font-semibold border border-gray-700 text-gray-400 hover:text-white transition-colors disabled:opacity-50">Cancel</button>
+              <button onClick={handleBulkDelete} disabled={bulkDeleting} className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50">
+                {bulkDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                {bulkDeleting ? "Deleting…" : `Delete ${selectedIds.size}`}
+              </button>
             </div>
           </div>
         </div>
