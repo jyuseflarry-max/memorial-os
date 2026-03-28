@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Edit2, Trash2, Loader2, MapPin, CalendarDays, Clock, X, Save, ExternalLink } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, MapPin, CalendarDays, Clock, X, Save, ExternalLink, Upload } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
+import BulkImportModal from "@/components/BulkImportModal";
 import type { PracticeSchedule, PracticeScheduleDraft } from "@/types/practice-schedule";
 import { EMPTY_PRACTICE_DRAFT } from "@/types/practice-schedule";
 
@@ -128,6 +129,7 @@ export default function PracticeSchedulePage() {
   const [error, setError]         = useState<string | null>(null);
   const [modal, setModal]         = useState<ModalMode | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<PracticeSchedule | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -178,9 +180,14 @@ export default function PracticeSchedulePage() {
           <h1 className="text-white text-2xl font-bold tracking-tight">Practice Schedule</h1>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">{activeTeam?.name.toUpperCase() ?? "ALL TEAMS"}</p>
         </div>
-        <button onClick={() => setModal({ type: "add" })} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors">
-          <Plus size={15} /> Schedule Practice
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors">
+            <Upload size={15} /> Import CSV
+          </button>
+          <button onClick={() => setModal({ type: "add" })} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold transition-colors">
+            <Plus size={15} /> Schedule Practice
+          </button>
+        </div>
       </div>
 
       {loading && <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-coaches-red" /></div>}
@@ -254,6 +261,20 @@ export default function PracticeSchedulePage() {
           </div>
         ))}
       </div>
+
+      {showImport && (
+        <BulkImportModal
+          teamId={activeTeam?.id ?? null}
+          onClose={() => setShowImport(false)}
+          onImported={() => {
+            const params = new URLSearchParams();
+            if (activeTeam) params.set("team_id", activeTeam.id);
+            fetch(`/api/practice-schedule?${params}`)
+              .then((r) => r.json())
+              .then((d) => { if (!d.error) setPractices(d); });
+          }}
+        />
+      )}
 
       {modal && <PracticeModal mode={modal} teamId={activeTeam?.id ?? null} onSave={handleSaved} onClose={() => setModal(null)} />}
 
