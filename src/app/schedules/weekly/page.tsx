@@ -199,23 +199,46 @@ export default function WeeklyEventsPage() {
 
                 if (ev.kind === "game") {
                   const g = ev.game;
-                  const timeStr = g.time_tbd ? "Time TBD" : g.game_time ? fmt12h(g.game_time) : "Time TBD";
+                  const timeStr  = g.time_tbd ? "Time TBD" : g.game_time ? fmt12h(g.game_time) : "Time TBD";
                   const locLabel = g.location_type === "home" ? "Home" : g.location_type === "away" ? "Away" : "Neutral";
                   const matchedLoc = g.venue ? locations.find((l) => [l.name, l.address, l.city].filter(Boolean).join(", ") === g.venue) : null;
+
+                  // Away / Neutral: depart = game_time − 90 min − travel_time
                   const departureTime =
                     (g.location_type === "away" || g.location_type === "neutral") &&
                     g.game_time && !g.time_tbd && matchedLoc
-                      ? subtractMins(g.game_time, matchedLoc.default_travel_time + 35)
+                      ? subtractMins(g.game_time, matchedLoc.default_travel_time + 90)
                       : null;
+
+                  // Home: arrive = game_time − 90 min
+                  const arrivalTime =
+                    g.location_type === "home" && g.game_time && !g.time_tbd
+                      ? subtractMins(g.game_time, 90)
+                      : null;
+
                   return (
                     <div key={key} className={`flex items-start gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""}`}>
                       <div className="w-2 h-2 rounded-full shrink-0 bg-coaches-red mt-1.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm">Game — vs. {g.opponent} <span className="text-gray-500 text-xs font-mono">({GAME_TYPE_LABELS[g.game_type]}, {locLabel})</span></p>
-                        {g.game_note && <p className="text-purple-400 text-[11px] font-mono mt-0.5">{g.game_note}</p>}
+                        {/* Line 1: opponent */}
+                        <p className="text-white text-sm font-medium">Game — vs. {g.opponent}</p>
+                        {/* Line 2: game type + location */}
+                        <p className="text-gray-500 text-[11px] font-mono mt-0.5">
+                          {GAME_TYPE_LABELS[g.game_type]} · {locLabel}
+                        </p>
+                        {/* Game note */}
+                        {g.game_note && (
+                          <p className="text-purple-400 text-[11px] font-mono mt-0.5">{g.game_note}</p>
+                        )}
+                        {/* Line 3: depart / arrive */}
                         {departureTime && (
                           <p className="flex items-center gap-1 text-amber-400 text-[11px] font-mono mt-0.5">
                             <Clock size={9} /> Depart by {departureTime}
+                          </p>
+                        )}
+                        {arrivalTime && (
+                          <p className="flex items-center gap-1 text-emerald-400 text-[11px] font-mono mt-0.5">
+                            <Clock size={9} /> Be there by {arrivalTime}
                           </p>
                         )}
                       </div>
