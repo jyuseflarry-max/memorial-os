@@ -13,7 +13,7 @@ interface PlayerContextValue {
   dbConnected: boolean;
   /** Non-null when the last fetch failed */
   dbError: string | null;
-  addPlayer: (data: NewPlayerData) => Promise<void>;
+  addPlayer: (data: NewPlayerData, idempotencyKey?: string) => Promise<void>;
   updatePlayer: (id: string, updates: Partial<Player>) => Promise<void>;
   deletePlayer: (id: string) => Promise<void>;
   bulkImport: (rows: NewPlayerData[]) => Promise<{ added: number }>;
@@ -70,14 +70,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // ── CRUD operations ────────────────────────────────────────────────────
 
-  async function addPlayer(data: NewPlayerData) {
+  async function addPlayer(data: NewPlayerData, idempotencyKey?: string) {
     const payload = { ...data, latest_vibe_score: 3.0 };
 
     setLoading(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+
       const res = await fetch("/api/players", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
       const player: Player = await res.json();

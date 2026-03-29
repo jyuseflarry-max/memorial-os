@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useIdempotencyKey } from "@/hooks/useIdempotencyKey";
 import {
   UserPlus,
   Pencil,
@@ -298,9 +299,14 @@ export default function RosterPage() {
   const [selectedIds,      setSelectedIds]      = useState<Set<string>>(new Set());
   const [showBulkDelete,   setShowBulkDelete]   = useState(false);
   const [bulkDeleting,     setBulkDeleting]     = useState(false);
+  const { key: addPlayerKey, refresh: refreshAddPlayerKey } = useIdempotencyKey();
 
   async function handleAdd(data: NewPlayerData) {
-    try { await addPlayer(data); setShowAdd(false); }
+    try {
+      await addPlayer(data, addPlayerKey);
+      refreshAddPlayerKey();
+      setShowAdd(false);
+    }
     catch (e) { setActionError(e instanceof Error ? e.message : "Add failed"); }
   }
 

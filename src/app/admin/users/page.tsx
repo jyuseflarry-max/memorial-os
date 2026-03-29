@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useIdempotencyKey } from "@/hooks/useIdempotencyKey";
 import {
   UserPlus, Trash2, RefreshCw, CheckCircle2,
   AlertTriangle, X, Loader2, ShieldCheck, KeyRound,
@@ -339,6 +340,8 @@ export default function StaffPage() {
   const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [bulkDeleting,   setBulkDeleting]   = useState(false);
+  const { key: inviteKey, refresh: refreshInviteKey }     = useIdempotencyKey();
+  const { key: createKey, refresh: refreshCreateKey }     = useIdempotencyKey();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -372,22 +375,24 @@ export default function StaffPage() {
   async function handleAdd(full_name: string, email: string, role: string) {
     const res = await fetch("/api/staff", {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": inviteKey },
       body:    JSON.stringify({ full_name, email, role }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? "Invite failed");
+    refreshInviteKey();
     await load();
   }
 
   async function handleAddUser(full_name: string, email: string, role: string, password: string) {
     const res = await fetch("/api/staff", {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": createKey },
       body:    JSON.stringify({ full_name, email, role, password }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? "Failed to create user");
+    refreshCreateKey();
     await load();
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
+import { withIdempotency } from "@/lib/idempotency";
 
 /** GET /api/players — list all players ordered by jersey number */
 export async function GET() {
@@ -19,16 +20,20 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const db = await getDb();
-    const { data, error } = await db
-      .insert("players", { ...body, updated_at: new Date().toISOString() })
-      .select()
-      .single();
-    if (error) throw error;
-    return Response.json(data, { status: 201 });
+    return withIdempotency(request, db.tenantId, async () => {
+      const { data, error } = await db
+        .insert("players", { ...body, updated_at: new Date().toISOString() })
+        .select()
+        .single();
+      if (error) {
+        if ((error as { code?: string }).code === "23505") {
+          return Response.json({ error: "That jersey number is already taken on this team. Choose a different number." }, { status: 409 });
+        }
+        throw error;
+      }
+      return Response.json(data, { status: 201 });
+    });
   } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && (err as Record<string, unknown>).code === "23505") {
-      return Response.json({ error: "That jersey number is already taken on this team. Choose a different number." }, { status: 409 });
-    }
     return apiError(err);
   }
 }

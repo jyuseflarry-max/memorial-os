@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
+import { withIdempotency } from "@/lib/idempotency";
 
 /**
  * GET /api/drills
@@ -32,26 +33,28 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDb();
-    const { data, error } = await db
-      .insert("drills", {
-        name,
-        categories: categories ?? [],
-        shot_density,
-        shot_type,
-        intensity,
-        default_duration: default_duration ?? 10,
-        session_position: session_position ?? null,
-        coaching_notes: coaching_notes ?? null,
-        video_url: video_url ?? "",
-        level: level ?? null,
-        space: space ?? null,
-        objectives: objectives ?? [],
-      })
-      .select()
-      .single();
+    return withIdempotency(request, db.tenantId, async () => {
+      const { data, error } = await db
+        .insert("drills", {
+          name,
+          categories: categories ?? [],
+          shot_density,
+          shot_type,
+          intensity,
+          default_duration: default_duration ?? 10,
+          session_position: session_position ?? null,
+          coaching_notes: coaching_notes ?? null,
+          video_url: video_url ?? "",
+          level: level ?? null,
+          space: space ?? null,
+          objectives: objectives ?? [],
+        })
+        .select()
+        .single();
 
-    if (error) throw error;
-    return Response.json(data, { status: 201 });
+      if (error) throw error;
+      return Response.json(data, { status: 201 });
+    });
   } catch (err: unknown) {
     return apiError(err);
   }

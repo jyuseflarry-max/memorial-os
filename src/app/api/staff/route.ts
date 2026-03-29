@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
+import { withIdempotency } from "@/lib/idempotency";
 
 /** GET /api/staff — list all users in the caller's tenant */
 export async function GET() {
@@ -48,7 +49,8 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { full_name, email, role, password } = await request.json();
+    const body = await request.json();
+    const { full_name, email, role, password } = body;
 
     if (!full_name || !email || !role) {
       return apiError("full_name, email, and role are required", 400);
@@ -72,40 +74,43 @@ export async function POST(request: NextRequest) {
       .single();
     if (!myRecord) return apiError("Admin record not found", 403);
 
-    let userId: string;
+    // Idempotency: auth user creation + email invite must not run twice
+    return withIdempotency(request, myRecord.tenant_id, async () => {
+      let userId: string;
 
-    if (password) {
-      // Manual creation — set password immediately, no email
-      const { data: created, error: createError } = await service.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (createError) throw createError;
-      userId = created.user.id;
-    } else {
-      // Invite flow — send "set your password" email
-      const { data: invited, error: inviteError } =
-        await service.auth.admin.inviteUserByEmail(email, {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      if (password) {
+        // Manual creation — set password immediately, no email
+        const { data: created, error: createError } = await service.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
         });
-      if (inviteError) {
-        console.error("[staff invite] inviteUserByEmail failed:", inviteError.message);
-        if (!invited?.user) throw inviteError;
+        if (createError) throw createError;
+        userId = created.user.id;
+      } else {
+        // Invite flow — send "set your password" email
+        const { data: invited, error: inviteError } =
+          await service.auth.admin.inviteUserByEmail(email, {
+            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+          });
+        if (inviteError) {
+          console.error("[staff invite] inviteUserByEmail failed:", inviteError.message);
+          if (!invited?.user) throw inviteError;
+        }
+        userId = invited!.user!.id;
       }
-      userId = invited!.user!.id;
-    }
 
-    // Create the users table record
-    const { error: insertError } = await service.from("users").insert({
-      id:        userId,
-      tenant_id: myRecord.tenant_id,
-      role,
-      full_name,
+      // Create the users table record
+      const { error: insertError } = await service.from("users").insert({
+        id:        userId,
+        tenant_id: myRecord.tenant_id,
+        role,
+        full_name,
+      });
+      if (insertError) throw insertError;
+
+      return Response.json({ ok: true }, { status: 201 });
     });
-    if (insertError) throw insertError;
-
-    return Response.json({ ok: true }, { status: 201 });
   } catch (err: unknown) {
     return apiError(err);
   }

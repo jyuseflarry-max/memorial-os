@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
+import { withIdempotency } from "@/lib/idempotency";
 
 /** GET /api/games?team_id=xxx — list games ordered by date */
 export async function GET(request: NextRequest) {
@@ -31,14 +32,14 @@ export async function POST(request: NextRequest) {
   try {
     const db   = await getDb();
     const body = await request.json();
-
-    const { data, error } = await db
-      .insert("games", { ...body, updated_at: new Date().toISOString() })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return Response.json(data, { status: 201 });
+    return withIdempotency(request, db.tenantId, async () => {
+      const { data, error } = await db
+        .insert("games", { ...body, updated_at: new Date().toISOString() })
+        .select()
+        .single();
+      if (error) throw error;
+      return Response.json(data, { status: 201 });
+    });
   } catch (err: unknown) {
     return apiError(err);
   }
