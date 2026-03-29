@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/games?team_id=xxx — list games ordered by date */
@@ -7,11 +7,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const teamId = searchParams.get("team_id");
-    const season = searchParams.get("season");
+    const season  = searchParams.get("season");
 
-    const supabase = getSupabaseServer();
-    let query = supabase
-      .from("games")
+    const db = await getDb();
+    let query = db.from("games")
       .select("*")
       .order("game_date", { ascending: true })
       .order("game_time", { ascending: true, nullsFirst: true });
@@ -30,19 +29,11 @@ export async function GET(request: NextRequest) {
 /** POST /api/games — create a new game */
 export async function POST(request: NextRequest) {
   try {
+    const db   = await getDb();
     const body = await request.json();
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const supabase = getSupabaseServer();
-    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
-    const { data, error } = await supabase
-      .from("games")
-      .insert([{ ...body, tenant_id: myRecord.tenant_id, updated_at: new Date().toISOString() }])
+    const { data, error } = await db
+      .insert("games", { ...body, updated_at: new Date().toISOString() })
       .select()
       .single();
 
