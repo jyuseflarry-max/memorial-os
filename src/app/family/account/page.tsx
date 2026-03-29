@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { User, KeyRound, CheckCircle2, AlertCircle, LogOut } from "lucide-react";
+import { User, KeyRound, CheckCircle2, AlertCircle, LogOut, Sun, Moon } from "lucide-react";
 import FamilyShell from "@/components/FamilyShell";
 import { updateProfile, updatePassword } from "@/actions/account";
 import { logout } from "@/actions/auth";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 
 function Feedback({ state }: { state: { error?: string; success?: string } | null }) {
@@ -23,6 +24,7 @@ function Feedback({ state }: { state: { error?: string; success?: string } | nul
 
 export default function FamilyAccountPage() {
   const { authUser } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [email, setEmail] = useState("");
 
   const [profileState, profileAction, profilePending] = useActionState(updateProfile, null);
@@ -104,6 +106,32 @@ export default function FamilyAccountPage() {
               {passwordPending ? "Updating…" : "Update password"}
             </button>
           </form>
+        </div>
+
+        {/* Appearance */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <p className="text-white text-sm font-semibold">Color Mode</p>
+            <p className="text-gray-400 text-xs font-mono mt-0.5">Stored on this device</p>
+          </div>
+          <div className="flex bg-gray-800 border border-gray-700 rounded-xl p-1 gap-1">
+            <button
+              onClick={() => setTheme("light")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                theme === "light" ? "bg-white text-gray-900 shadow-sm" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <Sun size={13} /> Light
+            </button>
+            <button
+              onClick={() => setTheme("dark")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                theme === "dark" ? "bg-gray-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <Moon size={13} /> Dark
+            </button>
+          </div>
         </div>
 
         {/* Sign out */}

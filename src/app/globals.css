@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode (Tailwind v4) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── Brand Palette ──────────────────────────────────────────────────────── */
 
 @theme inline {
@@ -42,18 +45,100 @@
 /* ── Global Defaults ────────────────────────────────────────────────────── */
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   overflow-x: hidden;
   max-width: 100vw;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 body {
-  background-color: var(--color-mustang-black);
-  color: var(--color-mustang-white);
+  background-color: #ffffff;
+  color: #111827;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
   max-width: 100vw;
 }
+
+html.dark body {
+  background-color: var(--color-mustang-black);
+  color: var(--color-mustang-white);
+}
+
+/* ── Light mode overrides ────────────────────────────────────────────────
+   These remap the dark-mode Tailwind gray utilities to light equivalents
+   without touching any component files. Works because the compound
+   selector :root:not(.dark) has higher specificity than a plain class.
+   ────────────────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+:root:not(.dark) .bg-gray-950 { background-color: #ffffff; }
+:root:not(.dark) .bg-gray-900 { background-color: #f9fafb; }
+:root:not(.dark) .bg-gray-800 { background-color: #f3f4f6; }
+:root:not(.dark) .bg-gray-700 { background-color: #e9ecef; }
+
+/* Opacity / slash variants */
+:root:not(.dark) .bg-gray-950\/50  { background-color: rgb(255 255 255 / 0.7); }
+:root:not(.dark) .bg-gray-900\/50  { background-color: rgb(249 250 251 / 0.7); }
+:root:not(.dark) .bg-gray-800\/40  { background-color: rgb(243 244 246 / 0.6); }
+:root:not(.dark) .bg-gray-800\/50  { background-color: rgb(243 244 246 / 0.7); }
+:root:not(.dark) .bg-gray-800\/20  { background-color: rgb(243 244 246 / 0.4); }
+:root:not(.dark) .bg-gray-700\/50  { background-color: rgb(233 236 239 / 0.6); }
+
+/* Hover backgrounds */
+:root:not(.dark) .hover\:bg-gray-950:hover { background-color: #f3f4f6; }
+:root:not(.dark) .hover\:bg-gray-900:hover { background-color: #f3f4f6; }
+:root:not(.dark) .hover\:bg-gray-800:hover { background-color: #e5e7eb; }
+:root:not(.dark) .hover\:bg-gray-700:hover { background-color: #d1d5db; }
+
+/* Borders */
+:root:not(.dark) .border-gray-800 { border-color: #e5e7eb; }
+:root:not(.dark) .border-gray-700 { border-color: #d1d5db; }
+:root:not(.dark) .border-gray-600 { border-color: #9ca3af; }
+
+/* Opacity border variants */
+:root:not(.dark) .border-gray-700\/50 { border-color: rgb(209 213 219 / 0.5); }
+:root:not(.dark) .border-gray-800\/50 { border-color: rgb(229 231 235 / 0.5); }
+
+/* Divide */
+:root:not(.dark) .divide-gray-700 > * + * { border-color: #d1d5db; }
+:root:not(.dark) .divide-gray-800 > * + * { border-color: #e5e7eb; }
+
+/* Text */
+:root:not(.dark) .text-white   { color: #111827; }
+:root:not(.dark) .text-gray-400 { color: #374151; }
+
+/* Restore white text on elements that ALSO carry a coloured background class.
+   The compound selector (no space) targets the same element. */
+:root:not(.dark) [class*="bg-coaches-"].text-white,
+:root:not(.dark) [class*="bg-red-"].text-white,
+:root:not(.dark) [class*="bg-green-"].text-white,
+:root:not(.dark) [class*="bg-blue-"].text-white,
+:root:not(.dark) [class*="bg-purple-"].text-white,
+:root:not(.dark) [class*="bg-amber-"].text-white,
+:root:not(.dark) [class*="bg-emerald-"].text-white,
+:root:not(.dark) [class*="bg-sky-"].text-white,
+:root:not(.dark) [class*="bg-indigo-"].text-white,
+:root:not(.dark) [class*="bg-teal-"].text-white,
+:root:not(.dark) [class*="bg-orange-"].text-white,
+:root:not(.dark) [class*="bg-rose-"].text-white,
+:root:not(.dark) [class*="bg-violet-"].text-white,
+:root:not(.dark) [class*="bg-cyan-"].text-white,
+:root:not(.dark) [class*="bg-fuchsia-"].text-white,
+:root:not(.dark) [class*="bg-yellow-"].text-white,
+:root:not(.dark) [class*="bg-lime-"].text-white,
+:root:not(.dark) [class*="bg-pink-"].text-white,
+:root:not(.dark) [class*="bg-mustang-"].text-white,
+:root:not(.dark) [class*="bg-slate-"].text-white,
+:root:not(.dark) [class*="bg-zinc-"].text-white,
+:root:not(.dark) [class*="bg-stone-"].text-white,
+:root:not(.dark) [class*="bg-neutral-"].text-white { color: #ffffff; }
+
+/* Ring colours */
+:root:not(.dark) .ring-gray-700 { --tw-ring-color: #d1d5db; }
+:root:not(.dark) .ring-gray-800 { --tw-ring-color: #e5e7eb; }
 
 /* ── Print — Mission Script layout ─────────────────────────────────────── */
 

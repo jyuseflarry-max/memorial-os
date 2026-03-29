@@ -9,6 +9,7 @@ import { DrillObjectivesProvider } from "@/context/DrillObjectivesContext";
 import { DrillProvider } from "@/context/DrillContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { LocationsProvider } from "@/context/LocationsContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { StatImpactsProvider } from "@/context/StatImpactsContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
 
@@ -49,7 +50,16 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased overflow-x-hidden`}
     >
+      <head>
+        {/* Runs synchronously before paint — prevents flash of wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
+        <ThemeProvider>
         <AuthProvider>
           <SettingsProvider>
             <DrillCategoryProvider>
@@ -68,6 +78,7 @@ export default function RootLayout({
             </DrillCategoryProvider>
           </SettingsProvider>
         </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
