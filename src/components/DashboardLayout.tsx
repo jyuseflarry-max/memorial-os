@@ -9,7 +9,7 @@ import PlayerShell from "./PlayerShell";
 import { useAuth } from "@/context/AuthContext";
 
 // Routes players are allowed to visit. Everything else redirects to /.
-const PLAYER_ALLOWED = ["/", "/view-plans", "/vibe-check", "/reports", "/account", "/schedules"];
+const PLAYER_ALLOWED = ["/", "/view-plans", "/vibe-check", "/reports", "/account", "/schedules", "/messages"];
 
 export default function DashboardLayout({
   children,

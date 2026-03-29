@@ -3,18 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RadioTower, ListChecks, Zap, BarChart3, UserCircle } from "lucide-react";
+import { RadioTower, ListChecks, Zap, BarChart3, UserCircle, MessageSquare } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 
 // ── Bottom nav definition ─────────────────────────────────────────────────
 
 const TABS = [
-  { label: "Schedule",  href: "/schedules/weekly", icon: RadioTower  },
-  { label: "Plans",     href: "/view-plans",        icon: ListChecks  },
-  { label: "Check In",  href: "/vibe-check",        icon: Zap         },
-  { label: "Reports",   href: "/reports",           icon: BarChart3   },
-  { label: "Me",        href: "/account",           icon: UserCircle  },
+  { label: "Schedule",  href: "/schedules/weekly", icon: RadioTower    },
+  { label: "Plans",     href: "/view-plans",        icon: ListChecks    },
+  { label: "Check In",  href: "/vibe-check",        icon: Zap           },
+  { label: "Messages",  href: "/messages",          icon: MessageSquare },
+  { label: "Me",        href: "/account",           icon: UserCircle    },
 ] as const;
 
 // ── Shell ─────────────────────────────────────────────────────────────────

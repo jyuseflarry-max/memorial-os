@@ -33,7 +33,16 @@
       "Bash(find /c/Users/larryj/memorial-os -name *.sql -type f)",
       "Bash(find /c/Users/larryj/memorial-os -name schema* -type f)",
       "Bash(grep -r from.*sessions /c/Users/larryj/memorial-os/src --include=*.ts --include=*.tsx)",
-      "Bash(grep -r tenant_id /c/Users/larryj/memorial-os/src/app/api --include=*.ts)"
+      "Bash(grep -r tenant_id /c/Users/larryj/memorial-os/src/app/api --include=*.ts)",
+      "Bash(grep -r \"CREATE TABLE.*drills\\\\|CREATE TABLE.*drill_categories\" /c/Users/larryj/memorial-os --include=*.sql --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"session_drills\\\\|from.*drills\" /c/Users/larryj/memorial-os/src --include=*.ts --include=*.tsx)",
+      "Bash(.tsx$ \")",
+      "Bash(mkdir -p \"C:/Users/larryj/memorial-os/src/app/api/locations/[id]\")",
+      "Bash(mkdir -p \"C:/Users/larryj/memorial-os/src/app/api/practice-schedule/[id]\")",
+      "Bash(mkdir -p \"C:/Users/larryj/memorial-os/src/app/api/stat-impacts/[id]\")",
+      "Bash(ls:*)",
+      "Bash(find /c/Users/larryj/memorial-os -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
+      "Bash(find /c/Users/larryj/memorial-os -maxdepth 3 -type f \\\\\\(-name *.sql -o -name *README* -o -name *DATABASE* \\\\\\))"
     ]
   }
 }

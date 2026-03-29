@@ -29,6 +29,7 @@ import {
   CircleUser,
   CalendarDays,
   MapPin,
+  MessageSquare,
 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 import { logout } from "@/actions/auth";
@@ -262,8 +263,20 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           })}
       </nav>
 
-      {/* Settings link — hidden for players */}
-      <div className="mt-auto px-1 pb-1">
+      {/* Messages + Settings links */}
+      <div className="mt-auto px-1 pb-1 flex flex-col gap-0.5">
+        <Link
+          href="/messages"
+          onClick={onClose}
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            pathname.startsWith("/messages")
+              ? "bg-coaches-blue/15 text-coaches-blue"
+              : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+          }`}
+        >
+          <MessageSquare size={14} className={pathname.startsWith("/messages") ? "text-coaches-blue" : "text-gray-600"} />
+          Messages
+        </Link>
         {userRole !== "Player" && (
           <Link
             href="/settings"

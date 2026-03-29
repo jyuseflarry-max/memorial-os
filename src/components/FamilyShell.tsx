@@ -3,15 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Swords, Users, UserCircle } from "lucide-react";
+import { CalendarDays, Swords, Users, UserCircle, MessageSquare } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 
 const TABS = [
-  { label: "Schedule",   href: "/family/schedule",  icon: CalendarDays },
-  { label: "Games",      href: "/family/games",      icon: Swords       },
-  { label: "My Players", href: "/family/players",    icon: Users        },
-  { label: "Me",         href: "/family/account",    icon: UserCircle   },
+  { label: "Schedule",   href: "/family/schedule",  icon: CalendarDays  },
+  { label: "Games",      href: "/family/games",      icon: Swords        },
+  { label: "Messages",   href: "/family/messages",   icon: MessageSquare },
+  { label: "Me",         href: "/family/account",    icon: UserCircle    },
 ] as const;
 
 export default function FamilyShell({ children }: { children: React.ReactNode }) {
