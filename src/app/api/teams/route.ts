@@ -1,15 +1,12 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/teams — all teams ordered by name */
 export async function GET() {
   try {
-    const supabase = getSupabaseServer();
-    const { data, error } = await supabase
-      .from("teams")
-      .select("*")
-      .order("name", { ascending: true });
+    const db = await getDb();
+    const { data, error } = await db.from("teams").select("*").order("name", { ascending: true });
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
@@ -23,17 +20,9 @@ export async function POST(request: NextRequest) {
     const { name } = await request.json();
     if (!name?.trim()) return Response.json({ error: "Name is required" }, { status: 400 });
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const supabase = getSupabaseServer();
-    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
-    const { data, error } = await supabase
-      .from("teams")
-      .insert({ name: name.trim(), tenant_id: myRecord.tenant_id })
+    const db = await getDb();
+    const { data, error } = await db
+      .insert("teams", { name: name.trim() })
       .select()
       .single();
     if (error) {

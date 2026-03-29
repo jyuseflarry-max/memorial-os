@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions/[date]/list?team_id=X — all sessions for a date+team */
@@ -10,9 +10,9 @@ export async function GET(
   try {
     const { date } = await params;
     const teamId   = request.nextUrl.searchParams.get("team_id");
-    const supabase = getSupabaseServer();
+    const db       = await getDb();
 
-    let query = supabase
+    let query = db
       .from("sessions")
       .select("id, label, start_time, drills")
       .eq("date", date)

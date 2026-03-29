@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** PATCH /api/games/[id] — partial update */
@@ -10,11 +10,10 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const supabase = getSupabaseServer();
+    const db = await getDb();
 
-    const { data, error } = await supabase
-      .from("games")
-      .update({ ...body, updated_at: new Date().toISOString() })
+    const { data, error } = await db
+      .update("games", { ...body, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();
@@ -33,9 +32,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = getSupabaseServer();
-
-    const { error } = await supabase.from("games").delete().eq("id", id);
+    const db = await getDb();
+    const { error } = await db.delete("games").eq("id", id);
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {

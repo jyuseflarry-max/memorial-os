@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 type Params = { params: Promise<{ id: string }> };
@@ -9,10 +9,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const supabase = getSupabaseServer();
-    const { data, error } = await supabase
-      .from("teams")
-      .update({ name: body.name })
+    const db = await getDb();
+    const { data, error } = await db
+      .update("teams", { name: body.name })
       .eq("id", id)
       .select()
       .single();
@@ -27,8 +26,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 export async function DELETE(_: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const supabase = getSupabaseServer();
-    const { error } = await supabase.from("teams").delete().eq("id", id);
+    const db = await getDb();
+    const { error } = await db.delete("teams").eq("id", id);
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {

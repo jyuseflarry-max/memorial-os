@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: "player_id is required" }, { status: 400 });
     }
 
-    const supabase = getSupabaseServer();
-    const { data, error } = await supabase
+    const db = await getDb();
+    const { data, error } = await db
       .from("player_maxes")
       .select("back_squat, power_clean, bench_press, recorded_on")
       .eq("player_id", playerId)

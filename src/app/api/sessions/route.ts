@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions?team_id=X — list all saved sessions for a team */
 export async function GET(request: NextRequest) {
   try {
-    const teamId   = request.nextUrl.searchParams.get("team_id");
-    const supabase = getSupabaseServer();
+    const teamId = request.nextUrl.searchParams.get("team_id");
+    const db = await getDb();
 
-    let query = supabase
+    let query = db
       .from("sessions")
       .select("id, date, start_time, drills, team_id, label")
       .order("date", { ascending: true });
@@ -36,18 +36,11 @@ export async function POST(request: NextRequest) {
 
     if (!date) return Response.json({ error: "date is required" }, { status: 400 });
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const supabase  = getSupabaseServer();
-    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
+    const db = await getDb();
     const tidOrNull = team_id ?? null;
 
     // Find existing row by natural key (team_id may be null)
-    let findQuery = supabase
+    let findQuery = db
       .from("sessions")
       .select("id")
       .eq("date", date)
@@ -60,16 +53,14 @@ export async function POST(request: NextRequest) {
 
     let result, err;
     if (existing?.id) {
-      ({ data: result, error: err } = await supabase
-        .from("sessions")
-        .update({ start_time, drills, updated_at: new Date().toISOString() })
+      ({ data: result, error: err } = await db
+        .update("sessions", { start_time, drills, updated_at: new Date().toISOString() })
         .eq("id", existing.id)
         .select()
         .single());
     } else {
-      ({ data: result, error: err } = await supabase
-        .from("sessions")
-        .insert({ date, start_time, drills, team_id: tidOrNull, label, tenant_id: myRecord.tenant_id, updated_at: new Date().toISOString() })
+      ({ data: result, error: err } = await db
+        .insert("sessions", { date, start_time, drills, team_id: tidOrNull, label, updated_at: new Date().toISOString() })
         .select()
         .single());
     }
@@ -79,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Sync session_drills — delete old rows then re-insert from JSON blob.
     // This keeps usage tracking and reports accurate on every save/update.
     if (result) {
-      await supabase.from("session_drills").delete().eq("session_id", result.id);
+      await db.delete("session_drills").eq("session_id", result.id);
 
       type DrillInstance = { drill?: { id?: string }; duration?: number };
       const drillRows = ((drills ?? []) as DrillInstance[])
@@ -90,11 +81,10 @@ export async function POST(request: NextRequest) {
           date,
           team_id:    tidOrNull,
           duration:   sd.duration ?? 0,
-          tenant_id:  myRecord.tenant_id,
         }));
 
       if (drillRows.length > 0) {
-        await supabase.from("session_drills").insert(drillRows);
+        await db.insert("session_drills", drillRows);
       }
     }
 

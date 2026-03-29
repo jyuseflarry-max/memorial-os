@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -10,12 +10,9 @@ export async function GET(request: NextRequest) {
   try {
     const teamId      = request.nextUrl.searchParams.get("team_id");
     const seasonStart = request.nextUrl.searchParams.get("season_start");
-    const supabase    = getSupabaseServer();
+    const db          = await getDb();
 
-    let query = supabase
-      .from("session_drills")
-      .select("drill_id, date");
-
+    let query = db.from("session_drills").select("drill_id, date");
     if (teamId)      query = query.eq("team_id", teamId);
     if (seasonStart) query = query.gte("date", seasonStart);
 

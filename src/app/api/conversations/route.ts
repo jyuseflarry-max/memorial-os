@@ -86,22 +86,46 @@ export async function GET() {
   return NextResponse.json(conversations);
 }
 
-// POST /api/conversations — find or create a 1:1 conversation with another user
+// POST /api/conversations
+// 1:1:   { recipientId: string }
+// Group: { recipientIds: string[], title: string }
 export async function POST(req: Request) {
   const supabase = await getSupabaseUser();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { recipientId } = await req.json();
-  if (!recipientId) return NextResponse.json({ error: "recipientId required" }, { status: 400 });
-
+  const body = await req.json();
   const sb = getSupabaseServer();
   const { data: profile } = await sb.from("users").select("tenant_id").eq("id", user.id).single();
   if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const tenantId = profile.tenant_id;
 
-  // Check if a 1:1 conversation already exists between these two users
+  // ── Group conversation ──────────────────────────────────────────────────
+  if (body.recipientIds) {
+    const recipientIds: string[] = body.recipientIds;
+    const title: string = body.title ?? "Group";
+
+    const { data: conv, error: convErr } = await sb
+      .from("conversations")
+      .insert({ tenant_id: tenantId, created_by: user.id, title })
+      .select("id")
+      .single();
+
+    if (convErr || !conv) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+
+    const allIds = [user.id, ...recipientIds.filter((id) => id !== user.id)];
+    await sb.from("conversation_participants").insert(
+      allIds.map((uid) => ({ conversation_id: conv.id, user_id: uid, tenant_id: tenantId }))
+    );
+
+    return NextResponse.json({ id: conv.id, existing: false });
+  }
+
+  // ── 1:1 conversation — find existing or create ──────────────────────────
+  const { recipientId } = body;
+  if (!recipientId) return NextResponse.json({ error: "recipientId or recipientIds required" }, { status: 400 });
+
   const { data: myConvs } = await sb
     .from("conversation_participants")
     .select("conversation_id")
@@ -118,12 +142,10 @@ export async function POST(req: Request) {
       .in("conversation_id", myConvIds);
 
     if (theirConvs && theirConvs.length > 0) {
-      // Return the first existing conversation
       return NextResponse.json({ id: theirConvs[0].conversation_id, existing: true });
     }
   }
 
-  // Create new conversation
   const { data: conv, error: convErr } = await sb
     .from("conversations")
     .insert({ tenant_id: tenantId, created_by: user.id })
@@ -132,7 +154,6 @@ export async function POST(req: Request) {
 
   if (convErr || !conv) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
 
-  // Add both participants
   await sb.from("conversation_participants").insert([
     { conversation_id: conv.id, user_id: user.id, tenant_id: tenantId },
     { conversation_id: conv.id, user_id: recipientId, tenant_id: tenantId },

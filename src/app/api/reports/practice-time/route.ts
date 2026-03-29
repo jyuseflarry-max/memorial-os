@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 export interface SubCategoryRow {
@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
     const from   = searchParams.get("from");
     const to     = searchParams.get("to");
 
-    const supabase = getSupabaseServer();
+    const db = await getDb();
 
     // 1. Fetch drills lookup (category + sub_category by id)
-    const { data: drillsData, error: drillsError } = await supabase
+    const { data: drillsData, error: drillsError } = await db
       .from("drills")
       .select("id, category, sub_category");
     if (drillsError) throw drillsError;
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Fetch session_drills with date/team filters
-    let sdQuery = supabase
+    let sdQuery = db
       .from("session_drills")
       .select("duration, date, drill_id")
       .order("date", { ascending: true });

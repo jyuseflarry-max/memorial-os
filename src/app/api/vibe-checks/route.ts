@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -10,9 +10,9 @@ import { apiError } from "@/lib/api-error";
 export async function GET(request: NextRequest) {
   try {
     const seasonStart = request.nextUrl.searchParams.get("season_start");
-    const supabase    = getSupabaseServer();
+    const db          = await getDb();
 
-    let query = supabase
+    let query = db
       .from("vibe_checks")
       .select("*")
       .order("submitted_at", { ascending: false });
@@ -48,24 +48,17 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "player_id and vibe_score are required" }, { status: 400 });
     }
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const supabase = getSupabaseServer();
-    const { data: myRecord } = await supabase.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
+    const db = await getDb();
 
     // 1. Insert the full vibe check record
-    const { error: insertError } = await supabase.from("vibe_checks").insert({
-      player_id, sleep_hours, soreness, stress, mood_energy, vibe_score, tenant_id: myRecord.tenant_id,
+    const { error: insertError } = await db.insert("vibe_checks", {
+      player_id, sleep_hours, soreness, stress, mood_energy, vibe_score,
     });
     if (insertError) throw insertError;
 
     // 2. Update the player's latest_vibe_score so dashboards reflect it immediately
-    const { error: updateError } = await supabase
-      .from("players")
-      .update({ latest_vibe_score: vibe_score, updated_at: new Date().toISOString() })
+    const { error: updateError } = await db
+      .update("players", { latest_vibe_score: vibe_score, updated_at: new Date().toISOString() })
       .eq("id", player_id);
     if (updateError) throw updateError;
 

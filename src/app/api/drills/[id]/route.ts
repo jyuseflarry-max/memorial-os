@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 type Params = { params: Promise<{ id: string }> };
@@ -12,15 +12,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const supabase = getSupabaseServer();
-
-    const { data, error } = await supabase
-      .from("drills")
-      .update(body)
-      .eq("id", id)
-      .select()
-      .single();
-
+    const db = await getDb();
+    const { data, error } = await db.update("drills", body).eq("id", id).select().single();
     if (error) throw error;
     return Response.json(data);
   } catch (err: unknown) {
@@ -34,9 +27,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 export async function DELETE(_: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const supabase = getSupabaseServer();
-
-    const { error } = await supabase.from("drills").delete().eq("id", id);
+    const db = await getDb();
+    const { error } = await db.delete("drills").eq("id", id);
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** PATCH /api/strength/phases/[id] — update name, description, and/or blocks array */
@@ -10,11 +10,10 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const supabase = getSupabaseServer();
+    const db = await getDb();
 
-    const { data, error } = await supabase
-      .from("strength_phases")
-      .update({ ...body, updated_at: new Date().toISOString() })
+    const { data, error } = await db
+      .update("strength_phases", { ...body, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();
@@ -33,8 +32,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = getSupabaseServer();
-    const { error } = await supabase.from("strength_phases").delete().eq("id", id);
+    const db = await getDb();
+    const { error } = await db.delete("strength_phases").eq("id", id);
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err: unknown) {

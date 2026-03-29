@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions/[date]?team_id=X&label=Y — fetch one session by date + team + label */
@@ -11,9 +11,9 @@ export async function GET(
     const { date } = await params;
     const teamId   = request.nextUrl.searchParams.get("team_id");
     const label    = request.nextUrl.searchParams.get("label") ?? "";
-    const supabase = getSupabaseServer();
+    const db       = await getDb();
 
-    let query = supabase.from("sessions").select("*").eq("date", date).eq("label", label);
+    let query = db.from("sessions").select("*").eq("date", date).eq("label", label);
     if (teamId) query = query.eq("team_id", teamId);
     const { data, error } = await query.single();
 
@@ -36,9 +36,9 @@ export async function DELETE(
     const { date } = await params;
     const teamId   = request.nextUrl.searchParams.get("team_id");
     const label    = request.nextUrl.searchParams.get("label") ?? "";
-    const supabase = getSupabaseServer();
+    const db       = await getDb();
 
-    let query = supabase.from("sessions").delete().eq("date", date).eq("label", label);
+    let query = db.delete("sessions").eq("date", date).eq("label", label);
     if (teamId) query = query.eq("team_id", teamId);
     const { error } = await query;
     if (error) throw error;

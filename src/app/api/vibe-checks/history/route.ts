@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 /**
@@ -10,9 +10,9 @@ import { apiError } from "@/lib/api-error";
 export async function GET(request: NextRequest) {
   try {
     const seasonStart = request.nextUrl.searchParams.get("season_start");
-    const supabase    = getSupabaseServer();
+    const db          = await getDb();
 
-    let query = supabase
+    let query = db
       .from("vibe_checks")
       .select("*")
       .order("submitted_at", { ascending: false });
