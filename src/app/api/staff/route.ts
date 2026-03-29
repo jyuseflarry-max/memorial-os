@@ -20,7 +20,7 @@ export async function GET() {
 
     const { data, error } = await service
       .from("users")
-      .select("id, full_name, role, created_at")
+      .select("id, full_name, role, created_at, last_login_at")
       .eq("tenant_id", myRecord.tenant_id)
       .order("created_at", { ascending: true });
 

@@ -10,11 +10,25 @@ import DashboardLayout from "@/components/DashboardLayout";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface StaffMember {
-  id:         string;
-  full_name:  string | null;
-  email:      string | null;
-  role:       string;
-  created_at: string;
+  id:            string;
+  full_name:     string | null;
+  email:         string | null;
+  role:          string;
+  created_at:    string;
+  last_login_at: string | null;
+}
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return "Never";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  <  1) return "Just now";
+  if (mins  < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days  <  7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -456,7 +470,7 @@ export default function StaffPage() {
                   className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
                 />
               </th>
-              {["Name", "Email", "Role", "Actions"].map((h) => (
+              {["Name", "Email", "Role", "Last Login", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
                   {h}
                 </th>
@@ -466,14 +480,14 @@ export default function StaffPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={6} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   LOADING…
                 </td>
               </tr>
             )}
             {!loading && staff.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
+                <td colSpan={6} className="px-4 py-12 text-center text-gray-500 font-mono text-xs">
                   NO STAFF — INVITE YOUR FIRST COACH
                 </td>
               </tr>
@@ -510,6 +524,9 @@ export default function StaffPage() {
                   <span className={`text-[10px] font-mono font-semibold uppercase tracking-wide border px-2 py-0.5 rounded-full ${ROLE_COLORS[member.role] ?? "text-gray-400 bg-gray-700 border-gray-600"}`}>
                     {member.role}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-gray-400 font-mono text-xs whitespace-nowrap">
+                  {relativeTime(member.last_login_at)}
                 </td>
                 <td className="px-4 py-3">
                   {member.role === "Admin" ? (

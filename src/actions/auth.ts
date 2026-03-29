@@ -17,7 +17,7 @@ export async function login(
 
   if (error) return { error: error.message };
 
-  // Redirect Family users to their dedicated dashboard
+  // Redirect Family users to their dedicated dashboard + stamp last_login_at
   if (authResult?.user) {
     const service = getSupabaseServer();
     const { data: record } = await service
@@ -25,6 +25,13 @@ export async function login(
       .select("role")
       .eq("id", authResult.user.id)
       .single();
+
+    // Always update last login timestamp
+    await service
+      .from("users")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("id", authResult.user.id);
+
     if (record?.role === "Family") redirect("/family");
   }
 
