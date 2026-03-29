@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
 
 /** GET /api/sessions?team_id=X — list all saved sessions for a team */
@@ -69,8 +70,10 @@ export async function POST(request: NextRequest) {
 
     // Sync session_drills — delete old rows then re-insert from JSON blob.
     // This keeps usage tracking and reports accurate on every save/update.
+    // Use raw client scoped by session_id (session already tenant-scoped).
     if (result) {
-      await db.delete("session_drills").eq("session_id", result.id);
+      const sb = getSupabaseServer();
+      await sb.from("session_drills").delete().eq("session_id", result.id);
 
       type DrillInstance = { drill?: { id?: string }; duration?: number };
       const drillRows = ((drills ?? []) as DrillInstance[])
@@ -81,10 +84,11 @@ export async function POST(request: NextRequest) {
           date,
           team_id:    tidOrNull,
           duration:   sd.duration ?? 0,
+          tenant_id:  db.tenantId,
         }));
 
       if (drillRows.length > 0) {
-        await db.insert("session_drills", drillRows);
+        await sb.from("session_drills").insert(drillRows);
       }
     }
 
