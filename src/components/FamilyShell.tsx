@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Swords, Users, UserCircle, MessageSquare } from "lucide-react";
+import { CalendarDays, Swords, UserCircle, MessageSquare } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const TABS = [
   { label: "Schedule",   href: "/family/schedule",  icon: CalendarDays  },
@@ -18,6 +19,7 @@ export default function FamilyShell({ children }: { children: React.ReactNode })
   const pathname     = usePathname();
   const { settings } = useSettings();
   const { authUser } = useAuth();
+  const unread       = useUnreadMessages();
 
   const firstName = authUser?.fullName?.split(" ")[0] ?? "Family";
 
@@ -64,6 +66,7 @@ export default function FamilyShell({ children }: { children: React.ReactNode })
         <div className="flex">
           {TABS.map(({ label, href, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
+            const showBadge = href === "/family/messages" && unread > 0;
             return (
               <Link
                 key={href}
@@ -72,7 +75,14 @@ export default function FamilyShell({ children }: { children: React.ReactNode })
                   active ? "text-purple-400" : "text-gray-500 hover:text-gray-300"
                 }`}
               >
-                <Icon size={19} strokeWidth={active ? 2.5 : 1.75} />
+                <div className="relative">
+                  <Icon size={19} strokeWidth={active ? 2.5 : 1.75} />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center leading-none">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[9px] font-mono uppercase tracking-wide leading-none">{label}</span>
               </Link>
             );

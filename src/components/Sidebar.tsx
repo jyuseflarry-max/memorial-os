@@ -36,6 +36,7 @@ import { logout } from "@/actions/auth";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 // ── Nav structure ─────────────────────────────────────────────────────────
 
@@ -166,6 +167,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { dbConnected, dbError, loading } = usePlayers();
   const { teams, activeTeam, setActiveTeam } = useTeam();
   const { settings } = useSettings();
+  const unread = useUnreadMessages();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userRole,  setUserRole]  = useState<string | null>(null);
 
@@ -276,6 +278,11 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
         >
           <MessageSquare size={14} className={pathname.startsWith("/messages") ? "text-coaches-blue" : "text-gray-600"} />
           Messages
+          {unread > 0 && (
+            <span className="ml-auto min-w-[18px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </Link>
         {userRole !== "Player" && (
           <Link
