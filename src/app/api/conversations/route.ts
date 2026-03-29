@@ -25,20 +25,21 @@ export async function GET() {
 
   const convIds = participations.map((p) => p.conversation_id);
 
-  // For each conversation, get participants + last message
-  const { data: participants } = await sb
-    .from("conversation_participants")
-    .select("conversation_id, user_id")
-    .in("conversation_id", convIds);
+  // Fetch participants and last messages in parallel — both only depend on convIds
+  const [{ data: participants }, { data: lastMessages }] = await Promise.all([
+    sb
+      .from("conversation_participants")
+      .select("conversation_id, user_id")
+      .in("conversation_id", convIds),
+    sb
+      .from("messages")
+      .select("id, conversation_id, sender_id, body, created_at")
+      .in("conversation_id", convIds)
+      .eq("is_deleted", false)
+      .order("created_at", { ascending: false }),
+  ]);
 
-  const { data: lastMessages } = await sb
-    .from("messages")
-    .select("id, conversation_id, sender_id, body, created_at")
-    .in("conversation_id", convIds)
-    .eq("is_deleted", false)
-    .order("created_at", { ascending: false });
-
-  // Get unique user IDs from participants
+  // Fetch user profiles for all participants (depends on participants result above)
   const allUserIds = [...new Set((participants ?? []).map((p) => p.user_id))];
   const { data: userProfiles } = await sb
     .from("users")
@@ -76,11 +77,11 @@ export async function GET() {
     };
   });
 
-  // Sort by last message date desc
+  // Sort by last message date desc (numeric timestamp comparison, not localeCompare)
   conversations.sort((a, b) => {
-    const aTime = a.lastMessage?.created_at ?? "";
-    const bTime = b.lastMessage?.created_at ?? "";
-    return bTime.localeCompare(aTime);
+    const aTime = a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0;
+    const bTime = b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0;
+    return bTime - aTime;
   });
 
   return NextResponse.json(conversations);

@@ -27,13 +27,15 @@ export async function GET() {
 
     if (error) throw error;
 
-    // Attach email from auth.users for each staff member
-    const withEmails = await Promise.all(
-      (data ?? []).map(async (u) => {
-        const { data: authUser } = await service.auth.admin.getUserById(u.id);
-        return { ...u, email: authUser?.user?.email ?? null };
-      })
-    );
+    // Fetch all auth users in a single call, then join by ID in memory.
+    // Previously this was N getUserById() calls — one per staff member.
+    const { data: authList } = await service.auth.admin.listUsers({ perPage: 1000 });
+    const emailMap = new Map((authList?.users ?? []).map((u) => [u.id, u.email ?? null]));
+
+    const withEmails = (data ?? []).map((u) => ({
+      ...u,
+      email: emailMap.get(u.id) ?? null,
+    }));
 
     return Response.json(withEmails);
   } catch (err: unknown) {

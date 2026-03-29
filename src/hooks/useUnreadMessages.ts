@@ -24,12 +24,10 @@ export function useUnreadMessages() {
   const refresh = useCallback(async () => {
     if (onMessagesPage) { setUnread(0); return; }
     try {
-      const res = await fetch("/api/conversations");
+      const res = await fetch("/api/conversations/unread-count");
       if (!res.ok) return;
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setUnread(data.filter((c: { hasUnread: boolean }) => c.hasUnread).length);
-      }
+      const { count } = await res.json();
+      if (typeof count === "number") setUnread(count);
     } catch {
       // silently ignore
     }

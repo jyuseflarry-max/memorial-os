@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useCallback, useState, ReactNode } from "react";
 
 export interface DrillCategoryRow {
   id: string;
@@ -43,15 +43,21 @@ export function DrillCategoryProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  function getCatColor(name: string): string {
-    const cat = categories.find((c) => c.name === name);
-    return cat?.color ?? "#9ca3af";
-  }
+  // O(1) lookup map — rebuilt only when categories array changes
+  const categoryByName = useMemo(
+    () => new Map(categories.map((c) => [c.name, c])),
+    [categories]
+  );
 
-  function isRestCat(name: string): boolean {
-    const cat = categories.find((c) => c.name === name);
-    return cat?.is_rest ?? false;
-  }
+  const getCatColor = useCallback(
+    (name: string) => categoryByName.get(name)?.color ?? "#9ca3af",
+    [categoryByName]
+  );
+
+  const isRestCat = useCallback(
+    (name: string) => categoryByName.get(name)?.is_rest ?? false,
+    [categoryByName]
+  );
 
   async function addCategory(name: string, isRest = false): Promise<DrillCategoryRow> {
     const res = await fetch("/api/drill-categories", {
