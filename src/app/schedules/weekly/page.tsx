@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X, List } from "lucide-react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X, List, Eye, Pencil, Printer } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
@@ -89,7 +89,9 @@ export default function WeeklyEventsPage() {
   const [view,         setView]         = useState<ViewMode>("agenda");
   const [selectedDay,  setSelectedDay]  = useState<string | null>(null);
 
-  const { authUser, isPlayer } = useAuth();
+  const { authUser, isPlayer, isAdmin, isCoach, isManager } = useAuth();
+  const canEdit    = isAdmin || isCoach || isManager;
+  const canPreview = isAdmin || isCoach || isManager || isPlayer;
   useEffect(() => {
     if (isPlayer && authUser?.teamId) setFilterTeam(authUser.teamId);
   }, [isPlayer, authUser?.teamId]);
@@ -361,7 +363,7 @@ export default function WeeklyEventsPage() {
                     <X size={14} />
                   </button>
                 </div>
-                {renderEventItems(selectedDayItems, isPlayer, reportedDates, locations, setAbsenceSheet)}
+                {renderEventItems(selectedDayItems, isPlayer, canEdit, canPreview, reportedDates, locations, setAbsenceSheet)}
               </div>
             );
           })()}
@@ -388,7 +390,7 @@ export default function WeeklyEventsPage() {
                   <p className={`text-xs font-mono ${isToday ? "text-coaches-red/80" : "text-gray-500"}`}>{short}</p>
                   {isToday && <span className="text-[9px] font-mono bg-coaches-red text-white px-1.5 py-0.5 rounded-full">TODAY</span>}
                 </div>
-                {renderEventItems(items, isPlayer, reportedDates, locations, setAbsenceSheet)}
+                {renderEventItems(items, isPlayer, canEdit, canPreview, reportedDates, locations, setAbsenceSheet)}
               </div>
             );
           })}
@@ -449,6 +451,8 @@ export default function WeeklyEventsPage() {
 function renderEventItems(
   items: EventItem[],
   isPlayer: boolean,
+  canEdit: boolean,
+  canPreview: boolean,
   reportedDates: Set<string>,
   locations: ReturnType<typeof useLocations>["locations"],
   setAbsenceSheet: (ev: EventItem) => void,
@@ -456,6 +460,77 @@ function renderEventItems(
   return items.map((ev, i) => {
     const key = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
 
+    // ── Action buttons ──────────────────────────────────────────────────────
+    function ActionButtons({ ev }: { ev: EventItem }) {
+      if (!canPreview && !canEdit) return null;
+
+      if (ev.kind === "session") {
+        const qp = new URLSearchParams({ date: ev.session.date });
+        if (ev.session.team_id) qp.set("team_id", ev.session.team_id);
+        if (ev.session.label)   qp.set("label", ev.session.label);
+        const viewUrl  = `/view-plans/${ev.session.date}?${qp}`;
+        const editUrl  = `/planner?${qp}`;
+        const printUrl = `${viewUrl}&autoprint=1`;
+
+        return (
+          <div className="flex items-center gap-1 mt-1">
+            {canPreview && (
+              <a href={viewUrl} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Eye size={10} /> Preview
+              </a>
+            )}
+            {canEdit && (
+              <a href={editUrl} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Pencil size={10} /> Edit
+              </a>
+            )}
+            {canEdit && (
+              <a href={printUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Printer size={10} /> Print
+              </a>
+            )}
+          </div>
+        );
+      }
+
+      if (ev.kind === "schedule") {
+        return (
+          <div className="flex items-center gap-1 mt-1">
+            {canPreview && (
+              <a href="/schedules/practice" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Eye size={10} /> Preview
+              </a>
+            )}
+            {canEdit && (
+              <a href="/schedules/practice" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Pencil size={10} /> Edit
+              </a>
+            )}
+          </div>
+        );
+      }
+
+      if (ev.kind === "game") {
+        return (
+          <div className="flex items-center gap-1 mt-1">
+            {canPreview && (
+              <a href="/schedules/game" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Eye size={10} /> Preview
+              </a>
+            )}
+            {canEdit && (
+              <a href="/schedules/game" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-700/60 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 text-[10px] font-mono transition-colors">
+                <Pencil size={10} /> Edit
+              </a>
+            )}
+          </div>
+        );
+      }
+
+      return null;
+    }
+
+    // ── Game row ────────────────────────────────────────────────────────────
     if (ev.kind === "game") {
       const g = ev.game;
       const timeStr  = g.time_tbd ? "Time TBD" : g.game_time ? fmt12h(g.game_time) : "Time TBD";
@@ -492,6 +567,7 @@ function renderEventItems(
                 <Clock size={9} /> Be there by {arrivalTime}
               </p>
             )}
+            <ActionButtons ev={ev} />
           </div>
           <div className="flex flex-col items-end shrink-0 mt-0.5 gap-1">
             <p className="text-gray-500 text-xs font-mono">{timeStr}</p>
@@ -503,6 +579,7 @@ function renderEventItems(
       );
     }
 
+    // ── Practice / Session row ──────────────────────────────────────────────
     let typeLabel = "";
     let timeStr   = "";
     let dotColor  = "";
@@ -524,10 +601,13 @@ function renderEventItems(
       <div
         key={key}
         onClick={() => isPlayer && setAbsenceSheet(ev)}
-        className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""} ${isPlayer ? "cursor-pointer active:bg-gray-800/50" : ""}`}
+        className={`flex items-start gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-800" : ""} ${isPlayer ? "cursor-pointer active:bg-gray-800/50" : ""}`}
       >
-        <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
-        <p className="flex-1 text-white text-sm">{typeLabel}</p>
+        <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${dotColor}`} />
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm">{typeLabel}</p>
+          <ActionButtons ev={ev} />
+        </div>
         <div className="flex flex-col items-end shrink-0 gap-1">
           <p className="text-gray-500 text-xs font-mono">{timeStr}</p>
           {isPlayer && reportedDates.has(ev.date) && (
