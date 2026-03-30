@@ -16,7 +16,7 @@ export async function GET() {
     since14.setDate(since14.getDate() - 14);
 
     const [playersRes, allVibeRes, windowVibeRes] = await Promise.all([
-      db.from('players').select('id, name, jersey_number, team_id, class_year').eq('status', 'Active'),
+      db.from('players').select('id, name, jersey_number, team_id, class_year, status'),
       db.from('vibe_checks')
         .select('player_id, sleep_hours, soreness, stress, mood_energy, vibe_score, submitted_at')
         .order('submitted_at', { ascending: false }),
@@ -53,7 +53,7 @@ export async function GET() {
       windowMap.set(v.player_id, arr);
     }
 
-    const rows = (players as { id: string; name: string; jersey_number: number | null; team_id: string | null; class_year: string | null }[]).map(p => {
+    const rows = (players as { id: string; name: string; jersey_number: number | null; team_id: string | null; class_year: string | null; status: string }[]).map(p => {
       const vibe   = latestVibe.get(p.id) ?? null;
       const window = windowMap.get(p.id)  ?? [];
 
@@ -77,6 +77,7 @@ export async function GET() {
         jersey_number:  p.jersey_number,
         team_id:        p.team_id,
         class_year:     p.class_year,
+        player_status:  p.status,
         status,
         load_pct:       status ? Math.round(readinessLoadFactor(status) * 100) : null,
         avg_load_pct:   avgLoadPct,

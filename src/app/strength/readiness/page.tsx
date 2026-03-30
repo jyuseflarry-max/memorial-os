@@ -21,6 +21,7 @@ interface ReadinessRow {
   stress:         number | null;
   mood_energy:    number | null;
   submitted_at:   string | null;
+  player_status:  string;
   avg_sleep:      number | null;
   avg_soreness:   number | null;
   avg_stress:     number | null;
@@ -132,6 +133,12 @@ function ReadinessCard({ row }: { row: ReadinessRow }) {
           <div className="flex items-center gap-1.5 mt-0.5">
             {row.jersey_number != null && <span className="text-gray-500 text-[10px] font-mono">#{row.jersey_number}</span>}
             {row.class_year && <span className="text-gray-600 text-[10px] font-mono">{row.class_year}</span>}
+            {row.player_status === "Out" && (
+              <span className="text-[9px] font-mono font-bold uppercase text-red-400 bg-red-400/10 border border-red-400/20 px-1.5 py-0.5 rounded-full">Out</span>
+            )}
+            {row.player_status === "Restricted" && (
+              <span className="text-[9px] font-mono font-bold uppercase text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-full">Restricted</span>
+            )}
           </div>
         </div>
         {row.status ? (
