@@ -6,6 +6,8 @@ import { usePlayers } from "@/context/PlayerContext";
 import { VibeScale, computeVibeScore } from "@/types/player";
 import { CheckCircle, ChevronRight, ChevronLeft, Moon, Zap, Brain, Smile } from "lucide-react";
 import PlayerShell from "@/components/PlayerShell";
+import { TrafficLightBadge, READINESS_LABELS } from "@/components/strength/TrafficLightBadge";
+import { vibeToReadinessStatus, readinessLoadFactor } from "@/lib/strength-utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -25,7 +27,7 @@ type Step = (typeof STEPS)[number];
 // ── Sub-components ────────────────────────────────────────────────────────
 
 function ProgressBar({ step }: { step: number }) {
-  const total = 4; // survey steps only (not intro/done)
+  const total = 4;
   const filled = Math.min(step, total);
   return (
     <div className="flex gap-1.5 w-full">
@@ -58,13 +60,8 @@ function ScaleButtons({
         {([1, 2, 3, 4, 5] as VibeScale[]).map((n) => (
           <button
             key={n}
-            // touch-action: manipulation removes the 300ms tap delay on mobile
-            // without it, quick taps can be silently dropped on iOS/Android
             style={{ touchAction: "manipulation" }}
-            onClick={() => {
-              console.log("Button Tapped", n);
-              onChange(n);
-            }}
+            onClick={() => onChange(n)}
             className={`flex-1 rounded-2xl text-xl font-bold min-h-[56px] transition-colors duration-150 ${
               value === n
                 ? "bg-coaches-red text-white shadow-lg shadow-coaches-red/30"
@@ -98,14 +95,32 @@ export default function VibeCheckPage() {
   });
   const [submittedScore, setSubmittedScore] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [autoPlayer, setAutoPlayer] = useState<{ id: string; name: string } | null>(null);
+  const [autoLoading, setAutoLoading] = useState(true);
+
+  // Try to auto-detect the logged-in player
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => {
+        if (d?.playerId) {
+          setAutoPlayer({ id: d.playerId, name: d.fullName ?? "" });
+          setForm(f => ({ ...f, playerId: d.playerId }));
+          // Skip intro name selector — go straight to first question
+          setStepIndex(1);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAutoLoading(false));
+  }, []);
 
   const step = STEPS[stepIndex];
-  const surveyStep = stepIndex - 1; // 0-indexed survey progress (step 1-4 = survey)
+  const surveyStep = stepIndex - 1;
 
   // Auto-redirect home after submission
   useEffect(() => {
     if (step !== "done") return;
-    const t = setTimeout(() => router.push("/schedules/weekly"), 2500);
+    const t = setTimeout(() => router.push("/schedules/weekly"), 3500);
     return () => clearTimeout(t);
   }, [step, router]);
 
@@ -143,7 +158,15 @@ export default function VibeCheckPage() {
     setStepIndex((i) => Math.max(i - 1, 0));
   }
 
-  const selectedPlayer = players.find((p) => p.id === form.playerId);
+  const selectedPlayer = autoPlayer ?? players.find((p) => p.id === form.playerId);
+
+  // Readiness status derived from submitted inputs
+  const readinessStatus = submittedScore !== null
+    ? vibeToReadinessStatus(form.sleepHours, form.soreness, form.moodEnergy)
+    : null;
+  const loadPct = readinessStatus ? Math.round(readinessLoadFactor(readinessStatus) * 100) : null;
+
+  if (autoLoading) return null;
 
   return (
     <PlayerShell>
@@ -154,7 +177,7 @@ export default function VibeCheckPage() {
           <ProgressBar step={surveyStep} />
         )}
 
-        {/* ── Intro ──────────────────────────────────────────────── */}
+        {/* ── Intro (only shown when not auto-detected) ────────────── */}
         {step === "intro" && (
           <div className="flex flex-col gap-6">
             <div>
@@ -187,10 +210,7 @@ export default function VibeCheckPage() {
             <button
               disabled={!form.playerId}
               style={{ touchAction: "manipulation" }}
-              onClick={() => {
-                console.log("Button Tapped: Let's go");
-                next();
-              }}
+              onClick={next}
               className="flex items-center justify-center gap-2 w-full min-h-[56px] rounded-2xl bg-coaches-red disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors"
             >
               Let&apos;s go <ChevronRight size={18} />
@@ -201,6 +221,9 @@ export default function VibeCheckPage() {
         {/* ── Sleep ──────────────────────────────────────────────── */}
         {step === "sleep" && (
           <div className="flex flex-col gap-6">
+            {autoPlayer && (
+              <p className="text-gray-500 text-sm font-mono">Hey {autoPlayer.name.split(" ")[0]} 👋</p>
+            )}
             <div className="flex items-center gap-3">
               <Moon size={28} className="text-coaches-red shrink-0" />
               <h2 className="text-white text-2xl font-bold leading-tight">
@@ -285,30 +308,46 @@ export default function VibeCheckPage() {
         )}
 
         {/* ── Done ───────────────────────────────────────────────── */}
-        {step === "done" && submittedScore !== null && (
-          <div className="flex flex-col items-center gap-6 text-center">
+        {step === "done" && submittedScore !== null && readinessStatus && (
+          <div className="flex flex-col items-center gap-5 text-center">
             <CheckCircle size={56} className="text-green-400" />
             <div>
               <h2 className="text-white text-2xl font-bold">Locked in.</h2>
               <p className="text-gray-400 mt-1 text-sm">
-                Thanks, {selectedPlayer?.name.split(" ")[0]}. Your coaches have your data.
+                Thanks{selectedPlayer ? `, ${selectedPlayer.name.split(" ")[0]}` : ""}. Your coaches have your data.
               </p>
             </div>
 
-            {/* Score pill */}
-            <div className="bg-gray-800 border border-gray-700 rounded-2xl px-8 py-5 flex flex-col items-center gap-1">
+            {/* Vibe score */}
+            <div className="bg-gray-800 border border-gray-700 rounded-2xl px-8 py-4 flex flex-col items-center gap-1 w-full">
               <p className="text-5xl font-bold font-mono text-white">
                 {submittedScore.toFixed(1)}
                 <span className="text-gray-500 text-xl font-normal"> / 5</span>
               </p>
               <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">
-                Your Vibe Score
+                Vibe Score
               </p>
             </div>
 
-            <p className="text-gray-600 text-xs font-mono">
-              Heading back to your schedule…
-            </p>
+            {/* Readiness + load recommendation */}
+            <div className="bg-gray-800 border border-gray-700 rounded-2xl px-6 py-4 flex flex-col items-center gap-3 w-full">
+              <TrafficLightBadge status={readinessStatus} size="lg" pulse />
+              <div>
+                <p className="text-white font-semibold">{READINESS_LABELS[readinessStatus]}</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Recommended load today:{" "}
+                  <span className="text-white font-bold">{loadPct}%</span>
+                </p>
+              </div>
+              {readinessStatus === "red" && (
+                <p className="text-red-400 text-xs font-mono">Consider a recovery session today.</p>
+              )}
+              {readinessStatus === "yellow" && (
+                <p className="text-yellow-400 text-xs font-mono">Reduce intensity by ~10% today.</p>
+              )}
+            </div>
+
+            <p className="text-gray-600 text-xs font-mono">Heading back to your schedule…</p>
           </div>
         )}
 
@@ -317,10 +356,7 @@ export default function VibeCheckPage() {
           <div className="flex gap-3 pt-2">
             <button
               style={{ touchAction: "manipulation" }}
-              onClick={() => {
-                console.log("Button Tapped: Back");
-                back();
-              }}
+              onClick={back}
               className="flex items-center justify-center px-5 min-h-[56px] rounded-2xl border border-gray-700 text-gray-400 transition-colors"
             >
               <ChevronLeft size={18} />
@@ -328,10 +364,7 @@ export default function VibeCheckPage() {
             <button
               disabled={submitting}
               style={{ touchAction: "manipulation" }}
-              onClick={() => {
-                console.log("Button Tapped: Next/Submit");
-                next();
-              }}
+              onClick={next}
               className="flex-1 flex items-center justify-center gap-2 min-h-[56px] rounded-2xl bg-coaches-red disabled:opacity-50 text-white font-semibold text-base transition-colors"
             >
               {submitting ? "Saving…" : step === "mood" ? "Submit" : "Next"} <ChevronRight size={18} />

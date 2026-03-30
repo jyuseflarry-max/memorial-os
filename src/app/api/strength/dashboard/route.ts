@@ -2,7 +2,7 @@
 import { getDb }          from '@/lib/db';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { decryptField }   from '@/lib/strength-crypto';
-import { calcSWR, calcLiftTrafficLight, compositeTrafficLight } from '@/lib/strength-utils';
+import { calcSWR, calcLiftTrafficLight, compositeTrafficLight, vibeToReadinessStatus } from '@/lib/strength-utils';
 import { apiError }       from '@/lib/api-error';
 import type { PlayerStrengthCard } from '@/types/strength';
 
@@ -13,22 +13,25 @@ export async function GET() {
     const [playersRes, liftsRes, readinessRes, biosRes] = await Promise.all([
       db.from('players').select('id, name, jersey_number, team_id, class_year'),
       db.from('strength_lifts').select('player_id, exercise_id, weight_lbs, estimated_1rm, recorded_at, strength_exercises(name, is_primary_lift)'),
-      db.from('strength_readiness').select('player_id, score_date, status').gte('score_date', (() => { const d = new Date(); d.setDate(d.getDate()-28); return d.toISOString().split('T')[0]; })()).order('score_date', { ascending: false }),
+      db.from('vibe_checks').select('player_id, check_date, sleep_hours, soreness, mood_energy').gte('check_date', (() => { const d = new Date(); d.setDate(d.getDate()-28); return d.toISOString().split('T')[0]; })()).order('check_date', { ascending: false }),
       db.from('strength_biometrics').select('player_id, bw_enc'),
     ]);
 
     const players   = playersRes.data   ?? [];
     const allLifts  = liftsRes.data     ?? [];
-    const readiness = readinessRes.data ?? [];
+    const vibeRows  = readinessRes.data ?? [];
     const bios      = biosRes.data      ?? [];
+
+    type VibeRow = { player_id: string; check_date: string; sleep_hours: number; soreness: number; mood_energy: number };
 
     // Build lookup maps
     const bioMap = new Map(bios.map((b: Record<string,unknown>) => [b.player_id, b]));
-    const readinessMap = new Map<string, string[]>();
-    for (const r of readiness as { player_id: string; status: string }[]) {
-      const arr = readinessMap.get(r.player_id) ?? [];
-      arr.push(r.status);
-      readinessMap.set(r.player_id, arr);
+    const vibeMap = new Map<string, Array<'green'|'yellow'|'red'>>();
+    for (const r of vibeRows as VibeRow[]) {
+      const status = vibeToReadinessStatus(r.sleep_hours, r.soreness, r.mood_energy);
+      const arr = vibeMap.get(r.player_id) ?? [];
+      arr.push(status);
+      vibeMap.set(r.player_id, arr);
     }
     const today = new Date().toISOString().split('T')[0];
 
@@ -47,10 +50,12 @@ export async function GET() {
       const playerLifts = primaryLifts.map(l => ({ weight_lbs: Number(l.weight_lbs), recorded_at: l.recorded_at as string }));
       const liftStatus  = calcLiftTrafficLight(playerLifts);
 
-      // Readiness history
-      const recentReadiness = (readinessMap.get(p.id) ?? []) as Array<'green'|'yellow'|'red'>;
-      const todayReadiness  = (readiness as { player_id: string; score_date: string; status: string }[])
-        .find(r => r.player_id === p.id && r.score_date === today)?.status as 'green'|'yellow'|'red'|undefined ?? null;
+      // Readiness derived from vibe checks
+      const recentReadiness = vibeMap.get(p.id) ?? [];
+      const todayVibe = (vibeRows as VibeRow[]).find(r => r.player_id === p.id && r.check_date === today);
+      const todayReadiness = todayVibe
+        ? vibeToReadinessStatus(todayVibe.sleep_hours, todayVibe.soreness, todayVibe.mood_energy)
+        : null;
 
       const trafficLight = compositeTrafficLight(liftStatus, recentReadiness);
 
