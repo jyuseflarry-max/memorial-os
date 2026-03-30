@@ -91,6 +91,15 @@ const NAV_GROUPS = [
       { label: "Programs",    href: "/strength/programs",     icon: Dumbbell,  staff: false, playerOk: false, coachHide: false },
     ],
   },
+  {
+    label: "Settings",
+    icon: ShieldCheck,
+    alwaysShow: true,
+    coachOnly: true,
+    items: [
+      { label: "Settings", href: "/admin", icon: ShieldCheck, staff: false, playerOk: false, coachHide: false },
+    ],
+  },
 ];
 
 // ── Collapsible nav group ─────────────────────────────────────────────────
@@ -253,9 +262,13 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       )}
 
       {/* Collapsible nav groups */}
-      <nav className="flex flex-col gap-3">
+      <nav className="flex flex-col gap-3 flex-1">
         {NAV_GROUPS
-          .filter((g) => ("alwaysShow" in g && g.alwaysShow) || (settings.enabled_modules ?? []).includes(g.label))
+          .filter((g) => {
+            if ("coachOnly" in g && g.coachOnly && userRole === "Player") return false;
+            if ("alwaysShow" in g && g.alwaysShow) return true;
+            return (settings.enabled_modules ?? []).includes(g.label);
+          })
           .map((group) => {
             const isPlayer = userRole === "Player";
             const visibleItems = isPlayer
@@ -263,43 +276,19 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
               : group.items.filter((i) => !i.coachHide);
             if (visibleItems.length === 0) return null;
             return (
-              <NavGroup
-                key={group.label}
-                label={group.label}
-                icon={group.icon}
-                items={visibleItems}
-                pathname={pathname}
-                onClose={onClose}
-                badge={group.label === "Messages" ? unread : undefined}
-              />
+              <div key={group.label} className={group.label === "Settings" ? "mt-auto" : undefined}>
+                <NavGroup
+                  label={group.label}
+                  icon={group.icon}
+                  items={visibleItems}
+                  pathname={pathname}
+                  onClose={onClose}
+                  badge={group.label === "Messages" ? unread : undefined}
+                />
+              </div>
             );
           })}
       </nav>
-
-      {/* Settings link */}
-      <div className="mt-auto px-1 pb-1 flex flex-col gap-0.5">
-        {userRole !== "Player" && (
-          <Link
-            href="/admin"
-            onClick={onClose}
-            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              pathname === "/admin" || pathname.startsWith("/admin") || pathname === "/settings"
-                ? "bg-amber-500/10 text-amber-400"
-                : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-            }`}
-          >
-            <ShieldCheck
-              size={14}
-              className={
-                pathname === "/admin" || pathname.startsWith("/admin") || pathname === "/settings"
-                  ? "text-amber-400"
-                  : "text-gray-600"
-              }
-            />
-            Settings
-          </Link>
-        )}
-      </div>
 
       {/* User account section */}
       {userEmail && (
