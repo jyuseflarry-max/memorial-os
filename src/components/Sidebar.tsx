@@ -17,7 +17,6 @@ import {
   ChevronDown,
   Dumbbell,
   Lock,
-  Settings,
   Swords,
   Gamepad2,
   Flame,
@@ -290,39 +289,25 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           )}
         </Link>
         {userRole !== "Player" && (
-          <>
-            <Link
-              href="/admin"
-              onClick={onClose}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                pathname === "/admin" || (pathname.startsWith("/admin") && !pathname.startsWith("/admin/strength"))
-                  ? "bg-amber-500/10 text-amber-400"
-                  : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-              }`}
-            >
-              <ShieldCheck
-                size={14}
-                className={
-                  pathname === "/admin" || (pathname.startsWith("/admin") && !pathname.startsWith("/admin/strength"))
-                    ? "text-amber-400"
-                    : "text-gray-600"
-                }
-              />
-              Admin
-            </Link>
-            <Link
-              href="/settings"
-              onClick={onClose}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                pathname === "/settings"
-                  ? "bg-coaches-blue/15 text-coaches-blue"
-                  : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-              }`}
-            >
-              <Settings size={14} className={pathname === "/settings" ? "text-coaches-blue" : "text-gray-600"} />
-              Settings
-            </Link>
-          </>
+          <Link
+            href="/admin"
+            onClick={onClose}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              pathname === "/admin" || pathname.startsWith("/admin") || pathname === "/settings"
+                ? "bg-amber-500/10 text-amber-400"
+                : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+            }`}
+          >
+            <ShieldCheck
+              size={14}
+              className={
+                pathname === "/admin" || pathname.startsWith("/admin") || pathname === "/settings"
+                  ? "text-amber-400"
+                  : "text-gray-600"
+              }
+            />
+            Settings
+          </Link>
         )}
       </div>
 

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, CheckCircle2, Loader2, Upload, X, Sun, Moon } from "lucide-react";
+import { Save, CheckCircle2, Loader2, Upload, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useSettings } from "@/context/SettingsContext";
-import { useTheme } from "@/context/ThemeContext";
 import { seasonOptions, currentSeasonLabel } from "@/types/settings";
 import { formatHHMM } from "@/types/session";
 
@@ -12,7 +11,6 @@ type SaveStatus = "idle" | "saving" | "saved";
 
 export default function SettingsPage() {
   const { settings, loading, save } = useSettings();
-  const { theme, setTheme } = useTheme();
   const [form, setForm] = useState(settings);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -419,40 +417,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
-          </section>
-          {/* Appearance */}
-          <section className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-5">
-            <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono border-b border-gray-700 pb-3">
-              Appearance
-            </h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white text-sm font-medium">Color Mode</p>
-                <p className="text-gray-400 text-xs font-mono mt-0.5">Stored per device in your browser</p>
-              </div>
-              <div className="flex bg-gray-900 border border-gray-700 rounded-xl p-1 gap-1">
-                <button
-                  onClick={() => setTheme("light")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    theme === "light"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <Sun size={13} /> Light
-                </button>
-                <button
-                  onClick={() => setTheme("dark")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    theme === "dark"
-                      ? "bg-gray-700 text-white shadow-sm"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <Moon size={13} /> Dark
-                </button>
-              </div>
-            </div>
           </section>
         </div>
       </div>
