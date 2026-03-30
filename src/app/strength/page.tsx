@@ -1,14 +1,21 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2, TrendingUp, TrendingDown, Minus, Clock, Zap } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { TrafficLightBadge, READINESS_LABELS } from "@/components/strength/TrafficLightBadge";
+import { useTeam } from "@/context/TeamContext";
 import type { PlayerStrengthCard } from "@/types/strength";
 
+const CLASS_YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
+
 export default function StrengthDashboardPage() {
-  const [cards, setCards]   = useState<PlayerStrengthCard[]>([]);
+  const [cards, setCards]     = useState<PlayerStrengthCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
+  const [teamFilter, setTeamFilter]   = useState<string>("all");
+  const [classFilter, setClassFilter] = useState<string>("all");
+
+  const { teams } = useTeam();
 
   useEffect(() => {
     fetch("/api/strength/dashboard")
@@ -21,11 +28,17 @@ export default function StrengthDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const filtered = useMemo(() => cards.filter(c => {
+    if (teamFilter !== "all" && c.team_id !== teamFilter) return false;
+    if (classFilter !== "all" && c.class_year !== classFilter) return false;
+    return true;
+  }), [cards, teamFilter, classFilter]);
+
   const counts = {
-    green:  cards.filter(c => c.traffic_light === "green").length,
-    yellow: cards.filter(c => c.traffic_light === "yellow").length,
-    red:    cards.filter(c => c.traffic_light === "red").length,
-    gray:   cards.filter(c => c.traffic_light === "gray").length,
+    green:  filtered.filter(c => c.traffic_light === "green").length,
+    yellow: filtered.filter(c => c.traffic_light === "yellow").length,
+    red:    filtered.filter(c => c.traffic_light === "red").length,
+    gray:   filtered.filter(c => c.traffic_light === "gray").length,
   };
 
   return (
@@ -37,22 +50,58 @@ export default function StrengthDashboardPage() {
             <h1 className="text-white text-2xl font-bold tracking-tight">S&C Dashboard</h1>
             <p className="text-gray-400 text-sm mt-0.5 font-mono">EXECUTIVE TRAFFIC LIGHT — ROSTER OVERVIEW</p>
           </div>
-          {!loading && cards.length > 0 && (
+          {!loading && filtered.length > 0 && (
             <div className="flex items-center gap-3">
-              {[
-                { status: "green"  as const, count: counts.green  },
-                { status: "yellow" as const, count: counts.yellow },
-                { status: "red"    as const, count: counts.red    },
-                { status: "gray"   as const, count: counts.gray   },
-              ].map(({ status, count }) => count > 0 && (
+              {(["green", "yellow", "red", "gray"] as const).map(status => counts[status] > 0 && (
                 <div key={status} className="flex items-center gap-1.5">
                   <TrafficLightBadge status={status} size="sm" />
-                  <span className="text-sm font-semibold text-white">{count}</span>
+                  <span className="text-sm font-semibold text-white">{counts[status]}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        {/* Filters */}
+        {!loading && cards.length > 0 && (
+          <div className="flex flex-wrap gap-4 mb-5">
+            {/* Team filter */}
+            {teams.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Team</span>
+                <div className="flex gap-1 flex-wrap">
+                  {["all", ...teams.map(t => t.id)].map(id => (
+                    <button key={id} type="button" onClick={() => setTeamFilter(id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                        teamFilter === id
+                          ? "bg-coaches-blue text-white"
+                          : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+                      }`}>
+                      {id === "all" ? "All" : teams.find(t => t.id === id)?.name ?? id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Class year filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Class</span>
+              <div className="flex gap-1 flex-wrap">
+                {["all", ...CLASS_YEARS].map(cy => (
+                  <button key={cy} type="button" onClick={() => setClassFilter(cy)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                      classFilter === cy
+                        ? "bg-coaches-blue text-white"
+                        : "bg-gray-800 border border-gray-700 text-gray-400 hover:text-white"
+                    }`}>
+                    {cy === "all" ? "All" : cy}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="text-xs text-red-400 font-mono bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mb-4">
@@ -64,13 +113,15 @@ export default function StrengthDashboardPage() {
           <div className="flex justify-center py-20">
             <Loader2 size={28} className="animate-spin text-coaches-red" />
           </div>
-        ) : cards.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-500 font-mono text-sm">No players found. Add players to your roster to begin tracking.</p>
+            <p className="text-gray-500 font-mono text-sm">
+              {cards.length === 0 ? "No players found. Add players to your roster to begin tracking." : "No players match the selected filters."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {cards.map(card => (
+            {filtered.map(card => (
               <PlayerCard key={card.player_id} card={card} />
             ))}
           </div>
@@ -97,9 +148,14 @@ function PlayerCard({ card }: { card: PlayerStrengthCard }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-white font-semibold text-sm leading-tight">{card.player_name}</p>
-          {card.jersey_number != null && (
-            <p className="text-gray-500 text-[10px] font-mono">#{card.jersey_number}</p>
-          )}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {card.jersey_number != null && (
+              <span className="text-gray-500 text-[10px] font-mono">#{card.jersey_number}</span>
+            )}
+            {card.class_year && (
+              <span className="text-gray-600 text-[10px] font-mono">{card.class_year}</span>
+            )}
+          </div>
         </div>
         <TrafficLightBadge status={card.traffic_light} showLabel size="sm" />
       </div>
@@ -125,7 +181,6 @@ function PlayerCard({ card }: { card: PlayerStrengthCard }) {
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-1 border-t border-gray-700/40">
-        {/* Readiness */}
         <div className="flex items-center gap-1.5">
           <Zap size={11} className="text-gray-600" />
           {card.today_readiness ? (
@@ -137,7 +192,6 @@ function PlayerCard({ card }: { card: PlayerStrengthCard }) {
             <span className="text-[10px] font-mono text-gray-600">No check-in</span>
           )}
         </div>
-        {/* Staleness */}
         {card.weeks_since_update != null && card.weeks_since_update >= 3 && (
           <div className="flex items-center gap-1 text-[9px] font-mono text-amber-500">
             <Clock size={9} />

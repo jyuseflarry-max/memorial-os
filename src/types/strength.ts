@@ -133,6 +133,8 @@ export interface PlayerStrengthCard {
   player_id: string;
   player_name: string;
   jersey_number: number | null;
+  team_id: string | null;
+  class_year: string | null;
   traffic_light: TrafficLightStatus;
   today_readiness: ReadinessStatus | null;
   best_swr: number | null;

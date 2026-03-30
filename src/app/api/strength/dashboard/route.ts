@@ -11,7 +11,7 @@ export async function GET() {
     const db = await getDb();
 
     const [playersRes, liftsRes, readinessRes, biosRes] = await Promise.all([
-      db.from('players').select('id, name, jersey_number'),
+      db.from('players').select('id, name, jersey_number, team_id, class_year'),
       db.from('strength_lifts').select('player_id, exercise_id, weight_lbs, estimated_1rm, recorded_at, strength_exercises(name, is_primary_lift)'),
       db.from('strength_readiness').select('player_id, score_date, status').gte('score_date', (() => { const d = new Date(); d.setDate(d.getDate()-28); return d.toISOString().split('T')[0]; })()).order('score_date', { ascending: false }),
       db.from('strength_biometrics').select('player_id, bw_enc'),
@@ -32,7 +32,7 @@ export async function GET() {
     }
     const today = new Date().toISOString().split('T')[0];
 
-    const cards: PlayerStrengthCard[] = (players as { id: string; name: string; jersey_number: number | null }[]).map(p => {
+    const cards: PlayerStrengthCard[] = (players as { id: string; name: string; jersey_number: number | null; team_id: string | null; class_year: string | null }[]).map(p => {
       // Primary lifts only
       const primaryLifts = (allLifts as Record<string,unknown>[]).filter(
         l => l.player_id === p.id && (l.strength_exercises as { is_primary_lift?: boolean } | null)?.is_primary_lift
@@ -79,6 +79,8 @@ export async function GET() {
         player_id:        p.id,
         player_name:      p.name,
         jersey_number:    p.jersey_number,
+        team_id:          p.team_id,
+        class_year:       p.class_year,
         traffic_light:    trafficLight,
         today_readiness:  todayReadiness,
         best_swr:         bestSwr,
