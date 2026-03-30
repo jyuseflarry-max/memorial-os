@@ -150,7 +150,7 @@ export default function AdminHubPage() {
                         />
                       </div>
                       <p className="text-gray-500 text-xs leading-relaxed mt-0.5">{table.desc}</p>
-                      {table.external && (
+                      {"external" in table && table.external && (
                         <span className="inline-block mt-1.5 text-[9px] font-mono uppercase tracking-wider text-gray-600 bg-gray-700 border border-gray-600 px-1.5 py-0.5 rounded">
                           In Settings
                         </span>
