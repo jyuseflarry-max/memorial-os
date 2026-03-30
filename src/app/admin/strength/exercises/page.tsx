@@ -124,7 +124,7 @@ export default function ExercisesPage() {
                   <tr key={ex.id} className="border-b border-gray-700/40 last:border-0 hover:bg-gray-700/20">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        {ex.is_global && <Globe size={11} className="text-gray-600 shrink-0" title="Global exercise" />}
+                        {ex.is_global && <span title="Global exercise"><Globe size={11} className="text-gray-600 shrink-0" /></span>}
                         {editing === ex.id
                           ? <input value={editDraft.name ?? ex.name} onChange={e => setDraft(d => ({...d, name: e.target.value}))}
                               autoFocus className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white focus:outline-none w-48" />
