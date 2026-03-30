@@ -87,7 +87,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Dashboard",   href: "/strength",              icon: Flame,     staff: false, playerOk: false, coachHide: false },
       { label: "Leaderboard", href: "/strength/leaderboard",  icon: Trophy,    staff: false, playerOk: true,  coachHide: false },
-      { label: "Readiness",   href: "/vibe-check",             icon: Zap,       staff: false, playerOk: true,  coachHide: false },
+      { label: "Readiness",   href: "/strength/readiness",     icon: Zap,       staff: false, playerOk: false, coachHide: false },
       { label: "Programs",    href: "/strength/programs",     icon: Dumbbell,  staff: false, playerOk: false, coachHide: false },
     ],
   },
