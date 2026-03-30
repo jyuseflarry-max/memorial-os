@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   UserCog, Users, UsersRound, MapPin,
   Target, TrendingUp, Tag,
-  Trophy, Dumbbell,
+  Dumbbell, Lock, Package, BookOpen,
   Settings, ChevronRight, ShieldCheck,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -67,20 +67,26 @@ const SECTIONS = [
     ],
   },
   {
-    label: "Strength",
-    description: "Iron Lab data and program design.",
+    label: "Strength & Conditioning",
+    description: "Biometrics, exercise library, and facility setup.",
     tables: [
       {
-        href:  "/admin/strength/maxes",
-        icon:  Trophy,
-        title: "Iron Lab — Armory",
-        desc:  "View and update each player's Back Squat, Power Clean, and Bench Press maxes.",
+        href:  "/admin/strength/biometrics",
+        icon:  Lock,
+        title: "Player Biometrics",
+        desc:  "Coach-only. DOB, biological sex, and body weight (AES-256-GCM encrypted at rest).",
       },
       {
-        href:  "/admin/strength/designer",
-        icon:  Dumbbell,
-        title: "Iron Lab — Designer",
-        desc:  "Build lifting phases with percentage-based blocks. Preview calculated weights live.",
+        href:  "/admin/strength/exercises",
+        icon:  BookOpen,
+        title: "Exercise Library",
+        desc:  "90+ global exercises plus custom additions. Muscle groups, video demos, coaching cues.",
+      },
+      {
+        href:  "/admin/strength/inventory",
+        icon:  Package,
+        title: "Facility Inventory",
+        desc:  "Toggle available equipment — bars, plates, machines, and accessories.",
       },
     ],
   },

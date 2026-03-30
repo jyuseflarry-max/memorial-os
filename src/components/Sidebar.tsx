@@ -25,6 +25,9 @@ import {
   CalendarDays,
   MessageSquare,
   ShieldCheck,
+  Flame,
+  Trophy,
+  Zap,
 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 import { logout } from "@/actions/auth";
@@ -68,6 +71,16 @@ const NAV_GROUPS = [
       { label: "Game",        href: "/schedules/game",     icon: Gamepad2,    staff: false, playerOk: true,  coachHide: false },
       { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,    staff: false, playerOk: false, coachHide: false },
       { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, staff: false, playerOk: true,  coachHide: false },
+    ],
+  },
+  {
+    label: "Strength",
+    icon: Flame,
+    items: [
+      { label: "Dashboard",   href: "/strength",              icon: Flame,     staff: false, playerOk: false, coachHide: false },
+      { label: "Leaderboard", href: "/strength/leaderboard",  icon: Trophy,    staff: false, playerOk: true,  coachHide: false },
+      { label: "Readiness",   href: "/strength/readiness",    icon: Zap,       staff: false, playerOk: true,  coachHide: false },
+      { label: "Programs",    href: "/strength/programs",     icon: Dumbbell,  staff: false, playerOk: false, coachHide: false },
     ],
   },
 ];
@@ -224,6 +237,27 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
+      {/* Messages — above nav groups */}
+      <div className="mb-1 px-1">
+        <Link
+          href="/messages"
+          onClick={onClose}
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            pathname.startsWith("/messages")
+              ? "bg-coaches-blue/15 text-coaches-blue"
+              : "text-gray-400 hover:bg-gray-800 hover:text-white"
+          }`}
+        >
+          <MessageSquare size={14} className={pathname.startsWith("/messages") ? "text-coaches-blue" : "text-gray-500"} />
+          <span className="flex-1">Messages</span>
+          {unread > 0 && (
+            <span className="min-w-[18px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
+        </Link>
+      </div>
+
       {/* Collapsible nav groups */}
       <nav className="flex flex-col gap-3">
         {NAV_GROUPS
@@ -247,25 +281,8 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           })}
       </nav>
 
-      {/* Messages + Settings links */}
-      <div className="mt-auto px-1 pb-1 flex flex-col gap-1">
-        <Link
-          href="/messages"
-          onClick={onClose}
-          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-            pathname.startsWith("/messages")
-              ? "bg-coaches-blue/20 text-coaches-blue"
-              : "bg-gray-800/80 text-gray-300 hover:bg-gray-700 hover:text-white"
-          }`}
-        >
-          <MessageSquare size={16} className={pathname.startsWith("/messages") ? "text-coaches-blue" : "text-gray-400"} />
-          Messages
-          {unread > 0 && (
-            <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </Link>
+      {/* Settings link */}
+      <div className="mt-auto px-1 pb-1 flex flex-col gap-0.5">
         {userRole !== "Player" && (
           <Link
             href="/admin"
