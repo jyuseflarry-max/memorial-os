@@ -59,11 +59,10 @@ const SECTIONS = [
         desc:  "Game-stat categories that drills reinforce — e.g. Effective FG%, Rebounding %.",
       },
       {
-        href:  "/settings#categories",
+        href:  "/admin/drill-categories",
         icon:  Tag,
         title: "Drill Categories",
-        desc:  "Color-coded labels used across the Planner, Vault, and Analytics. Managed in Settings.",
-        external: true,
+        desc:  "Color-coded labels used across the Planner, Vault, and Analytics. Each gets a unique color and an optional REST flag.",
       },
     ],
   },

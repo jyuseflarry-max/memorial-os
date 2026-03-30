@@ -17,6 +17,7 @@ interface DrillCategoryCtx {
   addCategory: (name: string, isRest?: boolean) => Promise<DrillCategoryRow>;
   removeCategory: (id: string) => Promise<void>;
   updateColor: (id: string, color: string) => Promise<void>;
+  updateCategory: (id: string, updates: { name?: string; color?: string; is_rest?: boolean }) => Promise<DrillCategoryRow>;
 }
 
 const DrillCategoryContext = createContext<DrillCategoryCtx>({
@@ -27,6 +28,7 @@ const DrillCategoryContext = createContext<DrillCategoryCtx>({
   addCategory: async () => { throw new Error("not ready"); },
   removeCategory: async () => {},
   updateColor: async () => {},
+  updateCategory: async () => { throw new Error("not ready"); },
 });
 
 export function DrillCategoryProvider({ children }: { children: ReactNode }) {
@@ -83,23 +85,29 @@ export function DrillCategoryProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateColor(id: string, color: string): Promise<void> {
+    await updateCategory(id, { color });
+  }
+
+  async function updateCategory(id: string, updates: { name?: string; color?: string; is_rest?: boolean }): Promise<DrillCategoryRow> {
     const res = await fetch(`/api/drill-categories/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ color }),
+      body: JSON.stringify(updates),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error((body as { error?: string }).error ?? "Failed to update color");
+      throw new Error((body as { error?: string }).error ?? "Failed to update category");
     }
+    const row = await res.json() as DrillCategoryRow;
     setCategories((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, color } : c))
+      prev.map((c) => (c.id === id ? row : c))
     );
+    return row;
   }
 
   return (
     <DrillCategoryContext.Provider
-      value={{ categories, loading, getCatColor, isRestCat, addCategory, removeCategory, updateColor }}
+      value={{ categories, loading, getCatColor, isRestCat, addCategory, removeCategory, updateColor, updateCategory }}
     >
       {children}
     </DrillCategoryContext.Provider>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Tag,
   Layers,
   Users,
   UsersRound,
@@ -63,8 +64,9 @@ const NAV_GROUPS = [
       { label: "Build a Plan",    href: "/build-a-plan",            icon: Sparkles,   staff: false, playerOk: false, coachHide: false },
       { label: "View Plans",      href: "/view-plans",              icon: ListChecks, staff: false, playerOk: true,  coachHide: false },
       { label: "Drill Vault",     href: "/drill-vault",             icon: Layers,     staff: false, playerOk: false, coachHide: false },
-      { label: "Objectives",      href: "/admin/drill-objectives",  icon: Target,     staff: true,  playerOk: false, coachHide: false },
-      { label: "Stat Impacts",    href: "/admin/stat-impacts",      icon: TrendingUp, staff: true,  playerOk: false, coachHide: false },
+      { label: "Categories",      href: "/admin/drill-categories",  icon: Tag,        staff: true,  playerOk: false, coachHide: false },
+      { label: "Objectives",     href: "/admin/drill-objectives",  icon: Target,     staff: true,  playerOk: false, coachHide: false },
+      { label: "Stat Impacts",   href: "/admin/stat-impacts",      icon: TrendingUp, staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
