@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit2, Trash2, Loader2, MapPin, X, Save, Home } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, MapPin, X, Save, Home, AlertTriangle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useLocations } from "@/context/LocationsContext";
 import type { Location, LocationDraft } from "@/types/location";
@@ -85,7 +85,7 @@ function LocationModal({ mode, onSave, onClose }: { mode: ModalMode; onSave: (l:
 }
 
 export default function LocationsPage() {
-  const { locations, loading, addLocation, updateLocation, removeLocation } = useLocations();
+  const { locations, loading, error, addLocation, updateLocation, removeLocation } = useLocations();
   const [modal, setModal]               = useState<ModalMode | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Location | null>(null);
   const [deleting, setDeleting]           = useState(false);
@@ -111,6 +111,13 @@ export default function LocationsPage() {
           <Plus size={15} /> Add Location
         </button>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-4 text-xs text-red-400 font-mono bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+          <AlertTriangle size={13} className="shrink-0" />
+          <span className="flex-1">{error}</span>
+        </div>
+      )}
 
       {loading && <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-coaches-red" /></div>}
 
