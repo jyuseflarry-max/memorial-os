@@ -40,6 +40,14 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const NAV_GROUPS = [
   {
+    label: "Messages",
+    icon: MessageSquare,
+    alwaysShow: true,
+    items: [
+      { label: "Messages", href: "/messages", icon: MessageSquare, staff: false, playerOk: true, coachHide: false },
+    ],
+  },
+  {
     label: "Players",
     icon: Users,
     items: [
@@ -93,14 +101,16 @@ function NavGroup({
   items,
   pathname,
   onClose,
+  badge,
 }: {
   label: string;
   icon: React.ElementType;
   items: { label: string; href: string; icon: React.ElementType; staff: boolean; playerOk: boolean; coachHide: boolean }[];
   pathname: string;
   onClose: () => void;
+  badge?: number;
 }) {
-  const hasActive = items.some((i) => i.href === pathname);
+  const hasActive = items.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
   const [open, setOpen] = useState(true);
 
   return (
@@ -114,6 +124,11 @@ function NavGroup({
         <div className="flex items-center gap-2">
           <GroupIcon size={13} className={hasActive ? "text-coaches-blue" : "text-gray-600"} />
           <span className={hasActive ? "text-coaches-blue" : ""}>{label}</span>
+          {badge != null && badge > 0 && (
+            <span className="min-w-[18px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+              {badge > 9 ? "9+" : badge}
+            </span>
+          )}
         </div>
         <ChevronDown
           size={13}
@@ -237,31 +252,10 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      {/* Messages — above nav groups */}
-      <div className="mb-1 px-1">
-        <Link
-          href="/messages"
-          onClick={onClose}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            pathname.startsWith("/messages")
-              ? "bg-coaches-blue/15 text-coaches-blue"
-              : "text-gray-400 hover:bg-gray-800 hover:text-white"
-          }`}
-        >
-          <MessageSquare size={14} className={pathname.startsWith("/messages") ? "text-coaches-blue" : "text-gray-500"} />
-          <span className="flex-1">Messages</span>
-          {unread > 0 && (
-            <span className="min-w-[18px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </Link>
-      </div>
-
       {/* Collapsible nav groups */}
       <nav className="flex flex-col gap-3">
         {NAV_GROUPS
-          .filter((g) => (settings.enabled_modules ?? []).includes(g.label))
+          .filter((g) => ("alwaysShow" in g && g.alwaysShow) || (settings.enabled_modules ?? []).includes(g.label))
           .map((group) => {
             const isPlayer = userRole === "Player";
             const visibleItems = isPlayer
@@ -276,6 +270,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
                 items={visibleItems}
                 pathname={pathname}
                 onClose={onClose}
+                badge={group.label === "Messages" ? unread : undefined}
               />
             );
           })}
