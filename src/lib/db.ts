@@ -94,7 +94,7 @@ export async function getDb() {
      *   const { data } = await db.from("teams").select("*").eq("id", teamId).single();
      */
     from(table: string) {
-      return sb.from(table).eq("tenant_id", tenantId);
+      return sb.from(table).select().eq("tenant_id", tenantId);
     },
 
     /**

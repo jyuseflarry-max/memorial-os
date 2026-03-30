@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  RadioTower,
   Layers,
   Users,
   UsersRound,
@@ -30,6 +29,9 @@ import {
   CalendarDays,
   MapPin,
   MessageSquare,
+  Target,
+  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 import { logout } from "@/actions/auth";
@@ -58,9 +60,11 @@ const NAV_GROUPS = [
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,   staff: false, playerOk: false, coachHide: false },
-      { label: "View Plans",   href: "/view-plans",   icon: ListChecks, staff: false, playerOk: true,  coachHide: false },
-      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,     staff: false, playerOk: false, coachHide: false },
+      { label: "Build a Plan",    href: "/build-a-plan",            icon: Sparkles,   staff: false, playerOk: false, coachHide: false },
+      { label: "View Plans",      href: "/view-plans",              icon: ListChecks, staff: false, playerOk: true,  coachHide: false },
+      { label: "Drill Vault",     href: "/drill-vault",             icon: Layers,     staff: false, playerOk: false, coachHide: false },
+      { label: "Objectives",      href: "/admin/drill-objectives",  icon: Target,     staff: true,  playerOk: false, coachHide: false },
+      { label: "Stat Impacts",    href: "/admin/stat-impacts",      icon: TrendingUp, staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
@@ -77,7 +81,6 @@ const NAV_GROUPS = [
       { label: "Game",        href: "/schedules/game",     icon: Gamepad2,    staff: false, playerOk: true,  coachHide: false },
       { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,    staff: false, playerOk: false, coachHide: false },
       { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, staff: false, playerOk: true,  coachHide: false },
-      { label: "Calendar",    href: "/",                   icon: RadioTower,  staff: false, playerOk: true,  coachHide: false },
     ],
   },
   {
@@ -285,18 +288,39 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           )}
         </Link>
         {userRole !== "Player" && (
-          <Link
-            href="/settings"
-            onClick={onClose}
-            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              pathname === "/settings"
-                ? "bg-coaches-blue/15 text-coaches-blue"
-                : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-            }`}
-          >
-            <Settings size={14} className={pathname === "/settings" ? "text-coaches-blue" : "text-gray-600"} />
-            Settings
-          </Link>
+          <>
+            <Link
+              href="/admin"
+              onClick={onClose}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                pathname === "/admin" || (pathname.startsWith("/admin") && !pathname.startsWith("/admin/strength"))
+                  ? "bg-amber-500/10 text-amber-400"
+                  : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+              }`}
+            >
+              <ShieldCheck
+                size={14}
+                className={
+                  pathname === "/admin" || (pathname.startsWith("/admin") && !pathname.startsWith("/admin/strength"))
+                    ? "text-amber-400"
+                    : "text-gray-600"
+                }
+              />
+              Admin
+            </Link>
+            <Link
+              href="/settings"
+              onClick={onClose}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                pathname === "/settings"
+                  ? "bg-coaches-blue/15 text-coaches-blue"
+                  : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+              }`}
+            >
+              <Settings size={14} className={pathname === "/settings" ? "text-coaches-blue" : "text-gray-600"} />
+              Settings
+            </Link>
+          </>
         )}
       </div>
 

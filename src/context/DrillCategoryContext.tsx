@@ -74,29 +74,27 @@ export function DrillCategoryProvider({ children }: { children: ReactNode }) {
   }
 
   async function removeCategory(id: string): Promise<void> {
-    try {
-      const res = await fetch(`/api/drill-categories/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete category");
-      setCategories((prev) => prev.filter((c) => c.id !== id));
-    } catch {
-      // silently fail
+    const res = await fetch(`/api/drill-categories/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { error?: string }).error ?? "Failed to delete category");
     }
+    setCategories((prev) => prev.filter((c) => c.id !== id));
   }
 
   async function updateColor(id: string, color: string): Promise<void> {
-    try {
-      const res = await fetch(`/api/drill-categories/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ color }),
-      });
-      if (!res.ok) throw new Error("Failed to update color");
-      setCategories((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, color } : c))
-      );
-    } catch {
-      // silently fail
+    const res = await fetch(`/api/drill-categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ color }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { error?: string }).error ?? "Failed to update color");
     }
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, color } : c))
+    );
   }
 
   return (

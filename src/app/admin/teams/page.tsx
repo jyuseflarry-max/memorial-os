@@ -117,87 +117,100 @@ export default function ManageTeamsPage() {
           )}
         </div>
 
-        {/* Team list */}
+        {/* Team table */}
         <div className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden mb-6">
-          {teams.length > 0 && (
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-700/50">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                ref={(el) => { if (el) el.indeterminate = someSelected; }}
-                onChange={(e) => setSelectedIds(e.target.checked ? new Set(teams.map((t) => t.id)) : new Set())}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
-              />
-              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Select All</span>
-            </div>
-          )}
-          {teams.length === 0 && (
-            <p className="text-center text-gray-500 font-mono text-xs py-10">NO TEAMS YET</p>
-          )}
-          {teams.map((team, i) => (
-            <div
-              key={team.id}
-              className={`flex items-center gap-3 px-5 py-4 ${selectedIds.has(team.id) ? "bg-red-500/5" : ""} ${i < teams.length - 1 ? "border-b border-gray-700/50" : ""}`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(team.id)}
-                onChange={(e) => setSelectedIds((prev) => {
-                  const next = new Set(prev);
-                  if (e.target.checked) next.add(team.id); else next.delete(team.id);
-                  return next;
-                })}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600 shrink-0"
-              />
-              {/* Name / edit input */}
-              <div className="flex-1 min-w-0">
-                {editing?.id === team.id ? (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-700/50">
+                <th className="w-12 px-5 py-3 text-left">
                   <input
-                    autoFocus
-                    className={`${inputCls} w-full`}
-                    value={editing.name}
-                    onChange={(e) => setEditing({ id: team.id, name: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleRename(team);
-                      if (e.key === "Escape") setEditing(null);
-                    }}
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={(e) => setSelectedIds(e.target.checked ? new Set(teams.map((t) => t.id)) : new Set())}
+                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
                   />
-                ) : (
-                  <div>
-                    <p className="text-white font-semibold">{team.name}</p>
-                    <p className="text-gray-500 text-xs font-mono flex items-center gap-1 mt-0.5">
-                      <Users size={10} /> {playerCount(team.id)} PLAYERS
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              {editing?.id === team.id ? (
-                <div className="flex items-center gap-1.5">
-                  <button onClick={() => handleRename(team)}
-                    className="p-1.5 rounded-lg text-green-400 hover:bg-green-400/10 transition-colors">
-                    <Check size={15} />
-                  </button>
-                  <button onClick={() => setEditing(null)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-700 transition-colors">
-                    <X size={15} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <button onClick={() => setEditing({ id: team.id, name: team.name })}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
-                    <Pencil size={14} />
-                  </button>
-                  <button onClick={() => handleDelete(team)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                </th>
+                <th className="px-4 py-3 text-left text-[10px] font-mono text-gray-500 uppercase tracking-wider">Team Name</th>
+                <th className="px-4 py-3 text-left text-[10px] font-mono text-gray-500 uppercase tracking-wider w-28">Players</th>
+                <th className="w-24 px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {teams.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center text-gray-500 font-mono text-xs py-10">NO TEAMS YET</td>
+                </tr>
               )}
-            </div>
-          ))}
+              {teams.map((team) => (
+                <tr
+                  key={team.id}
+                  className={`border-b border-gray-700/50 last:border-0 transition-colors ${selectedIds.has(team.id) ? "bg-red-500/5" : "hover:bg-gray-700/20"}`}
+                >
+                  <td className="px-5 py-3 w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(team.id)}
+                      onChange={(e) => setSelectedIds((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(team.id); else next.delete(team.id);
+                        return next;
+                      })}
+                      className="w-4 h-4 rounded border-gray-600 bg-gray-700 cursor-pointer accent-red-600"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    {editing?.id === team.id ? (
+                      <input
+                        autoFocus
+                        className={`${inputCls} w-full`}
+                        value={editing.name}
+                        onChange={(e) => setEditing({ id: team.id, name: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRename(team);
+                          if (e.key === "Escape") setEditing(null);
+                        }}
+                      />
+                    ) : (
+                      <span className="text-white font-semibold">{team.name}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-gray-500 text-xs font-mono flex items-center gap-1">
+                      <Users size={10} /> {playerCount(team.id)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      {editing?.id === team.id ? (
+                        <>
+                          <button onClick={() => handleRename(team)}
+                            className="p-1.5 rounded-lg text-green-400 hover:bg-green-400/10 transition-colors">
+                            <Check size={15} />
+                          </button>
+                          <button onClick={() => setEditing(null)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-700 transition-colors">
+                            <X size={15} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => setEditing({ id: team.id, name: team.name })}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-colors">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => handleDelete(team)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {saveError && (

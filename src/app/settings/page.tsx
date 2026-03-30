@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const [newCatName, setNewCatName] = useState("");
   const [newCatIsRest, setNewCatIsRest] = useState(false);
   const [addingCat, setAddingCat] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
   const [form, setForm] = useState(settings);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -76,6 +77,19 @@ export default function SettingsPage() {
       patch("logo_url", url);
     };
     reader.readAsDataURL(file);
+  }
+
+  async function handleColorChange(id: string, color: string) {
+    setCatError(null);
+    try { await updateColor(id, color); }
+    catch (err) { setCatError(err instanceof Error ? err.message : "Failed to update color"); }
+  }
+
+  async function handleRemoveCategory(id: string, name: string) {
+    if (!confirm(`Delete category "${name}"? This cannot be undone.`)) return;
+    setCatError(null);
+    try { await removeCategory(id); }
+    catch (err) { setCatError(err instanceof Error ? err.message : "Failed to delete category"); }
   }
 
   function clearLogo() {
@@ -344,7 +358,7 @@ export default function SettingsPage() {
                     <input
                       type="color"
                       value={cat.color}
-                      onChange={(e) => updateColor(cat.id, e.target.value)}
+                      onChange={(e) => handleColorChange(cat.id, e.target.value)}
                       className="opacity-0 w-0 h-0"
                     />
                   </label>
@@ -362,10 +376,7 @@ export default function SettingsPage() {
                   {/* Delete */}
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!confirm(`Delete category "${cat.name}"? This cannot be undone.`)) return;
-                      removeCategory(cat.id);
-                    }}
+                    onClick={() => handleRemoveCategory(cat.id, cat.name)}
                     className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
                     title="Delete category"
                   >
@@ -379,6 +390,12 @@ export default function SettingsPage() {
               )}
             </div>
 
+            {catError && (
+              <p className="text-xs text-red-400 font-mono bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+                {catError}
+              </p>
+            )}
+
             {/* New category form */}
             <div className="flex items-center gap-2 pt-2 border-t border-gray-700 flex-wrap">
               <input
@@ -390,11 +407,14 @@ export default function SettingsPage() {
                   if (e.key === "Enter" && newCatName.trim()) {
                     e.preventDefault();
                     setAddingCat(true);
-                    addCategory(newCatName.trim(), newCatIsRest).catch(() => {}).finally(() => {
-                      setNewCatName("");
-                      setNewCatIsRest(false);
-                      setAddingCat(false);
-                    });
+                    setCatError(null);
+                    addCategory(newCatName.trim(), newCatIsRest)
+                      .catch((err) => setCatError(err instanceof Error ? err.message : "Failed to add category"))
+                      .finally(() => {
+                        setNewCatName("");
+                        setNewCatIsRest(false);
+                        setAddingCat(false);
+                      });
                   }
                 }}
                 className="flex-1 min-w-32 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-coaches-red transition-colors"
@@ -419,11 +439,14 @@ export default function SettingsPage() {
                 onClick={() => {
                   if (!newCatName.trim()) return;
                   setAddingCat(true);
-                  addCategory(newCatName.trim(), newCatIsRest).catch(() => {}).finally(() => {
-                    setNewCatName("");
-                    setNewCatIsRest(false);
-                    setAddingCat(false);
-                  });
+                  setCatError(null);
+                  addCategory(newCatName.trim(), newCatIsRest)
+                    .catch((err) => setCatError(err instanceof Error ? err.message : "Failed to add category"))
+                    .finally(() => {
+                      setNewCatName("");
+                      setNewCatIsRest(false);
+                      setAddingCat(false);
+                    });
                 }}
                 className="px-4 py-2 rounded-lg bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 text-white text-xs font-semibold transition-colors shrink-0"
               >

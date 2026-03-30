@@ -15,6 +15,7 @@ interface DrillObjectivesCtx {
   loading: boolean;
   getObjColor: (name: string) => string;
   addObjective: (name: string) => Promise<DrillObjectiveRow>;
+  updateObjective: (id: string, updates: { name?: string; color?: string }) => Promise<DrillObjectiveRow>;
   removeObjective: (id: string) => Promise<void>;
 }
 
@@ -45,6 +46,7 @@ const Ctx = createContext<DrillObjectivesCtx>({
   loading: false,
   getObjColor: (n) => PRESET_COLORS[n] ?? "#c084fc",
   addObjective: async () => { throw new Error("not ready"); },
+  updateObjective: async () => { throw new Error("not ready"); },
   removeObjective: async () => {},
 });
 
@@ -86,13 +88,31 @@ export function DrillObjectivesProvider({ children }: { children: ReactNode }) {
     return row;
   }
 
+  async function updateObjective(id: string, updates: { name?: string; color?: string }): Promise<DrillObjectiveRow> {
+    const res = await fetch(`/api/drill-objectives/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    let data: { error?: string } = {};
+    try { data = await res.json(); } catch {}
+    if (!res.ok) throw new Error((data as { error?: string }).error ?? `Server error (${res.status})`);
+    const row = data as unknown as DrillObjectiveRow;
+    setObjectives((prev) => prev.map((o) => (o.id === id ? row : o)));
+    return row;
+  }
+
   async function removeObjective(id: string): Promise<void> {
-    await fetch(`/api/drill-objectives/${id}`, { method: "DELETE" }).catch(() => {});
+    const res = await fetch(`/api/drill-objectives/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { error?: string }).error ?? "Failed to delete objective");
+    }
     setObjectives((prev) => prev.filter((o) => o.id !== id));
   }
 
   return (
-    <Ctx.Provider value={{ objectives, loading, getObjColor, addObjective, removeObjective }}>
+    <Ctx.Provider value={{ objectives, loading, getObjColor, addObjective, updateObjective, removeObjective }}>
       {children}
     </Ctx.Provider>
   );

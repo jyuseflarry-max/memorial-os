@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     if (!players || players.length === 0) return Response.json([]);
 
     // 2. Fetch latest max row per player (most recent recorded_on)
-    const playerIds = players.map((p) => p.id);
+    type PlayerRow = { id: string; name: string; jersey_number: number | null; team_id: string | null };
+    const playerIds = (players as PlayerRow[]).map((p) => p.id);
     const { data: maxRows, error: mErr } = await db
       .from("player_maxes")
       .select("player_id, back_squat, power_clean, bench_press, recorded_on")
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       if (!latestMap.has(row.player_id)) latestMap.set(row.player_id, row);
     }
 
-    const result = players.map((p) => {
+    const result = (players as PlayerRow[]).map((p) => {
       const mx = latestMap.get(p.id);
       return {
         player_id:     p.id,

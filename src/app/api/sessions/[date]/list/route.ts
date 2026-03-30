@@ -22,7 +22,8 @@ export async function GET(
     const { data, error } = await query;
     if (error) throw error;
 
-    const summaries = (data ?? []).map((row) => ({
+    type SessionRow = { id: string; label: string | null; start_time: string | null; drills: unknown[] | null };
+    const summaries = (data as SessionRow[] ?? []).map((row) => ({
       id:          row.id,
       label:       row.label,
       start_time:  row.start_time,
