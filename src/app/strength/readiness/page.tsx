@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, Moon, Zap, Brain, Smile } from "lucide-react";
+import { Loader2, Moon, Zap, Brain, Smile, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { TrafficLightBadge, READINESS_LABELS } from "@/components/strength/TrafficLightBadge";
 import { readinessLoadFactor } from "@/lib/strength-utils";
@@ -9,19 +9,75 @@ import { useTeam } from "@/context/TeamContext";
 const CLASS_YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
 
 interface ReadinessRow {
-  player_id:    string;
-  player_name:  string;
-  jersey_number: number | null;
-  team_id:      string | null;
-  class_year:   string | null;
-  status:       "green" | "yellow" | "red" | null;
-  sleep_hours:  number | null;
-  soreness:     number | null;
-  stress:       number | null;
-  mood_energy:  number | null;
-  vibe_score:   number | null;
-  submitted_at: string | null;
+  player_id:      string;
+  player_name:    string;
+  jersey_number:  number | null;
+  team_id:        string | null;
+  class_year:     string | null;
+  status:         "green" | "yellow" | "red" | null;
+  sleep_hours:    number | null;
+  soreness:       number | null;
+  stress:         number | null;
+  mood_energy:    number | null;
+  vibe_score:     number | null;
+  submitted_at:   string | null;
+  avg_sleep:      number | null;
+  avg_soreness:   number | null;
+  avg_stress:     number | null;
+  avg_mood_energy: number | null;
+  check_in_count: number;
 }
+
+// ── Metric cell: shows current value + 7-day avg with trend arrow ─────────
+
+function MetricCell({
+  current,
+  avg,
+  format,
+  goodHigh, // true = higher is better (sleep, energy), false = lower is better (soreness, stress)
+  goodThreshold,
+  badThreshold,
+}: {
+  current: number | null;
+  avg: number | null;
+  format: (n: number) => string;
+  goodHigh: boolean;
+  goodThreshold: number;
+  badThreshold: number;
+}) {
+  if (current === null) return <span className="text-gray-600 text-xs">—</span>;
+
+  const isGood = goodHigh ? current >= goodThreshold : current <= goodThreshold;
+  const isBad  = goodHigh ? current <= badThreshold  : current >= badThreshold;
+  const color  = isGood ? "text-green-400" : isBad ? "text-red-400" : "text-yellow-400";
+
+  // Trend vs 7-day avg
+  let TrendIcon = null;
+  let trendColor = "text-gray-600";
+  if (avg !== null) {
+    const diff = current - avg;
+    const threshold = 0.3;
+    const improved = goodHigh ? diff > threshold : diff < -threshold;
+    const worsened = goodHigh ? diff < -threshold : diff > threshold;
+    if (improved)  { TrendIcon = TrendingUp;   trendColor = "text-green-500"; }
+    if (worsened)  { TrendIcon = TrendingDown;  trendColor = "text-red-500"; }
+    if (!improved && !worsened) { TrendIcon = Minus; trendColor = "text-gray-600"; }
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={`text-sm font-mono font-semibold ${color}`}>{format(current)}</span>
+      {avg !== null && (
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] font-mono text-gray-600">avg {format(avg)}</span>
+          {TrendIcon && <TrendIcon size={9} className={trendColor} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────
 
 export default function ReadinessPage() {
   const [rows, setRows]       = useState<ReadinessRow[]>([]);
@@ -114,6 +170,13 @@ export default function ReadinessPage() {
           </div>
         )}
 
+        {/* Legend */}
+        {!loading && rows.length > 0 && (
+          <p className="text-[10px] font-mono text-gray-600 mb-3">
+            Current value shown large · <span className="text-gray-500">avg = 7-day average</span> · arrows show trend vs average
+          </p>
+        )}
+
         {error && (
           <div className="text-xs text-red-400 font-mono bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mb-4">{error}</div>
         )}
@@ -146,7 +209,7 @@ export default function ReadinessPage() {
                     <span className="flex items-center gap-1"><Smile size={10} /> Energy</span>
                   </th>
                   <th className="px-4 py-3 text-left text-[10px] font-mono text-gray-500 uppercase">Load</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-mono text-gray-500 uppercase">Checked In</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-mono text-gray-500 uppercase">Last Check-In</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,6 +227,9 @@ export default function ReadinessPage() {
                           {row.jersey_number != null && <span className="text-gray-500 text-[10px] font-mono">#{row.jersey_number}</span>}
                           {row.class_year && <span className="text-gray-600 text-[10px] font-mono">{row.class_year}</span>}
                         </div>
+                        {row.check_in_count > 0 && (
+                          <span className="text-[9px] font-mono text-gray-600">{row.check_in_count} check-ins this week</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {row.status ? (
@@ -176,32 +242,32 @@ export default function ReadinessPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {row.sleep_hours != null ? (
-                          <span className={`text-sm font-mono font-semibold ${row.sleep_hours >= 7 ? "text-green-400" : row.sleep_hours >= 5 ? "text-yellow-400" : "text-red-400"}`}>
-                            {row.sleep_hours.toFixed(1)}h
-                          </span>
-                        ) : <span className="text-gray-600 text-xs">—</span>}
+                        <MetricCell
+                          current={row.sleep_hours} avg={row.avg_sleep}
+                          format={n => `${n.toFixed(1)}h`}
+                          goodHigh={true} goodThreshold={7} badThreshold={5}
+                        />
                       </td>
                       <td className="px-4 py-3">
-                        {row.soreness != null ? (
-                          <span className={`text-sm font-mono font-semibold ${row.soreness <= 2 ? "text-green-400" : row.soreness <= 3 ? "text-yellow-400" : "text-red-400"}`}>
-                            {row.soreness}/5
-                          </span>
-                        ) : <span className="text-gray-600 text-xs">—</span>}
+                        <MetricCell
+                          current={row.soreness} avg={row.avg_soreness}
+                          format={n => `${n}/5`}
+                          goodHigh={false} goodThreshold={2} badThreshold={4}
+                        />
                       </td>
                       <td className="px-4 py-3">
-                        {row.stress != null ? (
-                          <span className={`text-sm font-mono font-semibold ${row.stress <= 2 ? "text-green-400" : row.stress <= 3 ? "text-yellow-400" : "text-red-400"}`}>
-                            {row.stress}/5
-                          </span>
-                        ) : <span className="text-gray-600 text-xs">—</span>}
+                        <MetricCell
+                          current={row.stress} avg={row.avg_stress}
+                          format={n => `${n}/5`}
+                          goodHigh={false} goodThreshold={2} badThreshold={4}
+                        />
                       </td>
                       <td className="px-4 py-3">
-                        {row.mood_energy != null ? (
-                          <span className={`text-sm font-mono font-semibold ${row.mood_energy >= 4 ? "text-green-400" : row.mood_energy >= 3 ? "text-yellow-400" : "text-red-400"}`}>
-                            {row.mood_energy}/5
-                          </span>
-                        ) : <span className="text-gray-600 text-xs">—</span>}
+                        <MetricCell
+                          current={row.mood_energy} avg={row.avg_mood_energy}
+                          format={n => `${n}/5`}
+                          goodHigh={true} goodThreshold={4} badThreshold={2}
+                        />
                       </td>
                       <td className="px-4 py-3">
                         {loadPct != null ? (
