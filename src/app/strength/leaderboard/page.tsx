@@ -102,7 +102,7 @@ export default function LeaderboardPage() {
                     </td>
                     <td className="px-3 py-3">
                       {entry.is_verified && (
-                        <ShieldCheck size={13} className="text-green-400" title="Verified 1RM" />
+                        <span title="Verified 1RM"><ShieldCheck size={13} className="text-green-400" /></span>
                       )}
                     </td>
                   </tr>
