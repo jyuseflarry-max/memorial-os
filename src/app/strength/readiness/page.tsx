@@ -234,11 +234,19 @@ export default function ReadinessPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(() => rows.filter(r => {
-    if (teamFilter !== "all" && r.team_id !== teamFilter) return false;
-    if (classFilter !== "all" && r.class_year !== classFilter) return false;
-    return true;
-  }), [rows, teamFilter, classFilter]);
+  const filtered = useMemo(() => {
+    const f = rows.filter(r => {
+      if (teamFilter !== "all" && r.team_id !== teamFilter) return false;
+      if (classFilter !== "all" && r.class_year !== classFilter) return false;
+      return true;
+    });
+    return f.sort((a, b) => {
+      const lastName  = (n: string) => n.trim().split(" ").slice(-1)[0].toLowerCase();
+      const firstName = (n: string) => n.trim().split(" ")[0].toLowerCase();
+      const lastCmp = lastName(a.player_name).localeCompare(lastName(b.player_name));
+      return lastCmp !== 0 ? lastCmp : firstName(a.player_name).localeCompare(firstName(b.player_name));
+    });
+  }, [rows, teamFilter, classFilter]);
 
   const counts = {
     green:  filtered.filter(r => r.status === "green").length,
