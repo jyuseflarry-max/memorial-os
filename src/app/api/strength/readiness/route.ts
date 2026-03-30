@@ -50,7 +50,7 @@ export async function GET() {
     const rows = (players as { id: string; name: string; jersey_number: number | null; team_id: string | null; class_year: string | null }[]).map(p => {
       const vibe  = latestVibe.get(p.id) ?? null;
       const week  = weekMap.get(p.id) ?? [];
-      const status = vibe ? vibeToReadinessStatus(vibe.sleep_hours, vibe.soreness, vibe.mood_energy) : null;
+      const status = vibe ? vibeToReadinessStatus(vibe.sleep_hours, vibe.soreness, vibe.mood_energy, vibe.stress) : null;
 
       return {
         player_id:     p.id,

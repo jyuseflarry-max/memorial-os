@@ -223,15 +223,16 @@ export function readinessLoadFactor(status: 'green' | 'yellow' | 'red'): number 
 
 /**
  * Maps Vibe Check inputs (1-5 scale) to a readiness status.
- * Vibe Check soreness/mood_energy use 1-5; sleep_hours is raw hours.
+ * Vibe Check soreness/stress/mood_energy use 1-5; sleep_hours is raw hours.
  */
 export function vibeToReadinessStatus(
   sleepHours: number,
   soreness: number,   // 1-5 (1=none, 5=extreme)
   moodEnergy: number, // 1-5 (1=low, 5=great)
+  stress: number,     // 1-5 (1=chill, 5=very stressed)
 ): 'green' | 'yellow' | 'red' {
-  if (sleepHours < 5 || soreness >= 4 || moodEnergy <= 2) return 'red';
-  if (sleepHours >= 7 && soreness <= 2 && moodEnergy >= 4) return 'green';
+  if (sleepHours < 5 || soreness >= 4 || moodEnergy <= 2 || stress >= 4) return 'red';
+  if (sleepHours >= 7 && soreness <= 2 && moodEnergy >= 4 && stress <= 2) return 'green';
   return 'yellow';
 }
 

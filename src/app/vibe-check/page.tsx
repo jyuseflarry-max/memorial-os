@@ -162,7 +162,7 @@ export default function VibeCheckPage() {
 
   // Readiness status derived from submitted inputs
   const readinessStatus = submittedScore !== null
-    ? vibeToReadinessStatus(form.sleepHours, form.soreness, form.moodEnergy)
+    ? vibeToReadinessStatus(form.sleepHours, form.soreness, form.moodEnergy, form.stress)
     : null;
   const loadPct = readinessStatus ? Math.round(readinessLoadFactor(readinessStatus) * 100) : null;
 
