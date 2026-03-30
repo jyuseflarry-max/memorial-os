@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Tag,
   Layers,
   Users,
   UsersRound,
-  UserCog,
   BarChart3,
   Wifi,
   WifiOff,
@@ -19,18 +17,13 @@ import {
   Lock,
   Swords,
   Gamepad2,
-  Flame,
-  Trophy,
   X,
   Sparkles,
   ListChecks,
   LogOut,
   CircleUser,
   CalendarDays,
-  MapPin,
   MessageSquare,
-  Target,
-  TrendingUp,
   ShieldCheck,
 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
@@ -50,10 +43,6 @@ const NAV_GROUPS = [
       { label: "Vibe Check", href: "/vibe-check",   icon: Users,      staff: false, playerOk: true,  coachHide: true  },
       { label: "Vibe Check", href: "/players",       icon: Users,      staff: false, playerOk: false, coachHide: false },
       { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false, coachHide: false },
-      { label: "Roster",     href: "/admin/roster",     icon: UserCog,    staff: true,  playerOk: false, coachHide: false },
-      { label: "Teams",      href: "/admin/teams",      icon: Users,      staff: true,  playerOk: false, coachHide: false },
-      { label: "Users",      href: "/admin/users",      icon: UsersRound, staff: true,  playerOk: false, coachHide: false },
-      { label: "Locations",  href: "/admin/locations",  icon: MapPin,     staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
@@ -63,9 +52,6 @@ const NAV_GROUPS = [
       { label: "Build a Plan",    href: "/build-a-plan",            icon: Sparkles,   staff: false, playerOk: false, coachHide: false },
       { label: "View Plans",      href: "/view-plans",              icon: ListChecks, staff: false, playerOk: true,  coachHide: false },
       { label: "Drill Vault",     href: "/drill-vault",             icon: Layers,     staff: false, playerOk: false, coachHide: false },
-      { label: "Categories",      href: "/admin/drill-categories",  icon: Tag,        staff: true,  playerOk: false, coachHide: false },
-      { label: "Objectives",     href: "/admin/drill-objectives",  icon: Target,     staff: true,  playerOk: false, coachHide: false },
-      { label: "Stat Impacts",   href: "/admin/stat-impacts",      icon: TrendingUp, staff: true,  playerOk: false, coachHide: false },
     ],
   },
   {
@@ -82,14 +68,6 @@ const NAV_GROUPS = [
       { label: "Game",        href: "/schedules/game",     icon: Gamepad2,    staff: false, playerOk: true,  coachHide: false },
       { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,    staff: false, playerOk: false, coachHide: false },
       { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, staff: false, playerOk: true,  coachHide: false },
-    ],
-  },
-  {
-    label: "Strength",
-    icon: Flame,
-    items: [
-      { label: "Armory",   href: "/admin/strength/maxes",    icon: Trophy,   staff: true, playerOk: false, coachHide: false },
-      { label: "Designer", href: "/admin/strength/designer", icon: Dumbbell, staff: true, playerOk: false, coachHide: false },
     ],
   },
 ];
