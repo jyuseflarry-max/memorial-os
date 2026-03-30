@@ -91,6 +91,36 @@ const SECTIONS = [
     ],
   },
   {
+    label: "Inventory",
+    description: "Equipment tracking, depreciation, and player accountability.",
+    tables: [
+      {
+        href:  "/admin/inventory/items",
+        icon:  Package,
+        title: "Item Catalog",
+        desc:  "Define item types (jerseys, helmets, shoes). Set purchase price and useful life for depreciation.",
+      },
+      {
+        href:  "/admin/inventory/categories",
+        icon:  Dumbbell,
+        title: "Categories",
+        desc:  "Organize items into categories with shared depreciation rules. Global seeds included.",
+      },
+      {
+        href:  "/admin/inventory/kit-templates",
+        icon:  BookOpen,
+        title: "Kit Templates",
+        desc:  "Pre-build equipment kits (game kit, practice kit) to assign to a player in one click.",
+      },
+      {
+        href:  "/admin/inventory/settings",
+        icon:  Settings,
+        title: "Inventory Settings",
+        desc:  "Configure recovery valuation method and alumni buyback policy.",
+      },
+    ],
+  },
+  {
     label: "Program",
     description: "Global configuration for your program.",
     tables: [

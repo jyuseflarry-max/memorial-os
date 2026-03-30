@@ -28,6 +28,7 @@ import {
   Flame,
   Trophy,
   Zap,
+  Package,
 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 import { logout } from "@/actions/auth";
@@ -89,6 +90,14 @@ const NAV_GROUPS = [
       { label: "Leaderboard", href: "/strength/leaderboard",  icon: Trophy,    staff: false, playerOk: true,  coachHide: false },
       { label: "Readiness",   href: "/strength/readiness",     icon: Zap,       staff: false, playerOk: false, coachHide: false },
       { label: "Programs",    href: "/strength/programs",     icon: Dumbbell,  staff: false, playerOk: false, coachHide: false },
+    ],
+  },
+  {
+    label: "Inventory",
+    icon: Package,
+    items: [
+      { label: "Equipment",  href: "/inventory",       icon: Package,    staff: false, playerOk: false, coachHide: false },
+      { label: "Full Audit", href: "/inventory/audit", icon: Package,    staff: false, playerOk: false, coachHide: false },
     ],
   },
   {

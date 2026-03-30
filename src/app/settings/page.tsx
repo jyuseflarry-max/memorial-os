@@ -299,7 +299,7 @@ export default function SettingsPage() {
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider font-mono">Module Visibility</h2>
               <p className="text-[10px] font-mono text-gray-500 mt-1">Control which sections appear in the sidebar. Hidden modules are preserved — just not shown.</p>
             </div>
-            {["Players", "Practice", "Reports", "Schedules", "Strength"].map((mod) => {
+            {["Players", "Practice", "Reports", "Schedules", "Strength", "Inventory"].map((mod) => {
               const enabled = (form.enabled_modules ?? []).includes(mod);
               return (
                 <div key={mod} className="flex items-center justify-between">
