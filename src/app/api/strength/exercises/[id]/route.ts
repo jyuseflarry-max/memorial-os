@@ -3,8 +3,9 @@ import { NextRequest } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { apiError } from '@/lib/api-error';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const sb = getSupabaseServer();
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // Only allow editing tenant-owned exercises
     const { data: ex } = await sb.from('strength_exercises')
-      .select('tenant_id').eq('id', params.id).single();
+      .select('tenant_id').eq('id', id).single();
     if (!ex) return Response.json({ error: 'Not found' }, { status: 404 });
     if (ex.tenant_id !== u.tenant_id) {
       return Response.json({ error: 'Cannot edit global exercises' }, { status: 403 });
@@ -27,7 +28,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
     const { data, error } = await sb.from('strength_exercises')
-      .update(updates).eq('id', params.id).select().single();
+      .update(updates).eq('id', id).select().single();
     if (error) return Response.json({ error: error.message }, { status: 500 });
     return Response.json({ ...data, is_global: false });
   } catch (err) {
@@ -35,8 +36,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const sb = getSupabaseServer();
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -47,13 +49,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     }
 
     const { data: ex } = await sb.from('strength_exercises')
-      .select('tenant_id').eq('id', params.id).single();
+      .select('tenant_id').eq('id', id).single();
     if (!ex) return Response.json({ error: 'Not found' }, { status: 404 });
     if (ex.tenant_id !== u.tenant_id) {
       return Response.json({ error: 'Cannot delete global exercises' }, { status: 403 });
     }
 
-    const { error } = await sb.from('strength_exercises').delete().eq('id', params.id);
+    const { error } = await sb.from('strength_exercises').delete().eq('id', id);
     if (error) return Response.json({ error: error.message }, { status: 500 });
     return Response.json({ success: true });
   } catch (err) {
