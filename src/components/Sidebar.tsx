@@ -104,9 +104,9 @@ const NAV_GROUPS = [
     label: "Settings",
     icon: ShieldCheck,
     alwaysShow: true,
-    items: [
-      { label: "Settings", href: "/admin", icon: ShieldCheck, pageKey: "settings" },
-    ],
+    directHref: "/admin",
+    pageKey: "settings",
+    items: [],
   },
 ];
 
@@ -281,7 +281,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
               const key = "pageKey" in group ? (group.pageKey as string) : "";
               if (!permsLoading && key && !canView(key)) return null;
               return (
-                <div key={group.label}>
+                <div key={group.label} className={group.label === "Settings" ? "mt-auto" : undefined}>
                   <NavGroup
                     label={group.label}
                     icon={group.icon}
