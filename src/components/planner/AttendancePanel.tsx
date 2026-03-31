@@ -108,10 +108,9 @@ export default function AttendancePanel({ date, teamId, players, onAbsentChange 
                   </span>
                 </div>
 
-                {/* Status badge — always unexcused until coach reviews in Attendance Report */}
                 {absent && (
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wide text-red-400 border border-red-500/30 bg-red-500/10 px-2 py-0.5 rounded-full shrink-0">
-                    Unexcused
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wide text-amber-400 border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 rounded-full shrink-0">
+                    In Review
                   </span>
                 )}
               </div>
