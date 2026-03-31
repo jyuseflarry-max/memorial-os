@@ -53,7 +53,6 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Roster",    href: "/players",            icon: Users,      pageKey: "roster" },
       { label: "Readiness", href: "/strength/readiness", icon: Zap,        pageKey: "readiness" },
       { label: "Groups",    href: "/player-groups",      icon: UsersRound, pageKey: "player_groups" },
     ],
