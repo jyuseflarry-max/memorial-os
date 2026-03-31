@@ -45,6 +45,34 @@ export interface FacilityInventoryItem {
 
 // ── Exercise Library ──────────────────────────────────────────────────────
 
+export interface MuscleGroup {
+  id: string;
+  tenant_id: string;
+  name: string;
+  body_region: 'upper' | 'lower' | 'core' | 'full_body' | null;
+  created_at: string;
+}
+
+export interface StrengthEquipment {
+  id: string;
+  tenant_id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface WorkoutLogEntry {
+  id: string;
+  player_id: string;
+  program_id: string;
+  week: number;
+  day: number;
+  exercise_id: string;
+  set_number: number;
+  reps_completed: number | null;
+  weight_lbs: number | null;
+  logged_at: string;
+}
+
 export interface StrengthExercise {
   id: string;
   tenant_id: string | null;
@@ -57,6 +85,9 @@ export interface StrengthExercise {
   coaching_cues: string | null;
   is_primary_lift: boolean;
   is_global: boolean; // true when tenant_id is null
+  primary_muscle_group_id: string | null;
+  secondary_muscle_group_ids: string[];
+  equipment_ids: string[];
 }
 
 // ── Lift Records ──────────────────────────────────────────────────────────
@@ -98,11 +129,12 @@ export interface ProgramBlock {
   exercise_id: string;
   exercise_name?: string;
   sets: number;
-  reps: string;          // '5' | '3-5' | 'AMRAP'
-  intensity_pct: number; // % of 1RM
-  tempo: string;         // '2-0-X-1'
+  reps: string;                  // '5' | '3-5' | 'AMRAP'
+  intensity_pct: number;         // % of 1RM
+  tempo: string;                 // '2-0-X-1'
   rest_seconds: number;
   notes: string;
+  demo_video_url?: string | null;
 }
 
 export interface StrengthProgram {

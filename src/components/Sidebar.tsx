@@ -28,6 +28,7 @@ import {
   Trophy,
   Zap,
   Package,
+  BookOpen,
 } from "lucide-react";
 import { logout } from "@/actions/auth";
 import { usePlayers } from "@/context/PlayerContext";
@@ -88,9 +89,10 @@ const NAV_GROUPS = [
     label: "Strength",
     icon: Flame,
     items: [
-      { label: "Dashboard",   href: "/strength",             icon: Flame,    pageKey: "strength" },
-      { label: "Leaderboard", href: "/strength/leaderboard", icon: Trophy,   pageKey: "leaderboard" },
-      { label: "Programs",    href: "/strength/programs",    icon: Dumbbell, pageKey: "strength_programs" },
+      { label: "Dashboard",   href: "/strength",             icon: Flame,     pageKey: "strength" },
+      { label: "Leaderboard", href: "/strength/leaderboard", icon: Trophy,    pageKey: "leaderboard" },
+      { label: "Programs",    href: "/strength/programs",    icon: Dumbbell,  pageKey: "strength_programs" },
+      { label: "Library",     href: "/strength/library",     icon: BookOpen,  pageKey: "strength_library" },
     ],
   },
   {

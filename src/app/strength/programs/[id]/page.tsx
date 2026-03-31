@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2, ChevronLeft, Save, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, Trash2, ChevronLeft, Save, CheckCircle2, Play } from "lucide-react";
+import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import type { StrengthProgram, ProgramBlock, StrengthExercise } from "@/types/strength";
 
@@ -230,6 +231,12 @@ export default function ProgramEditorPage() {
                     >
                       <Plus size={11} /> Add exercise
                     </button>
+                    <Link
+                      href={`/strength/workout/${id}/${week}/${day}`}
+                      className="mt-1 flex items-center gap-1.5 text-[11px] font-mono text-gray-600 hover:text-blue-400 transition-colors"
+                    >
+                      <Play size={10} /> Start session
+                    </Link>
                   </div>
                 );
               })}

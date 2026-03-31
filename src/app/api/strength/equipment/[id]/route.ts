@@ -9,9 +9,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!ROLE_COACH.includes(db.role)) return apiError("Forbidden", 403);
     const { id } = await params;
     const body = await req.json();
-    const { data, error } = await db.update("strength_exercises", body).eq("id", id).select().single();
+    const { data, error } = await db.update("strength_equipment", body).eq("id", id).select().single();
     if (error) throw error;
-    return Response.json({ ...data, is_global: data.tenant_id === null });
+    return Response.json(data);
   } catch (err) { return apiError(err); }
 }
 
@@ -20,10 +20,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
     const db = await getDb();
     if (!ROLE_COACH.includes(db.role)) return apiError("Forbidden", 403);
     const { id } = await params;
-    // Can only delete tenant-owned exercises
-    const { data: ex } = await db.from("strength_exercises").select("tenant_id").eq("id", id).single();
-    if (!ex || ex.tenant_id === null) return apiError("Cannot delete global exercises", 403);
-    const { error } = await db.delete("strength_exercises").eq("id", id);
+    const { error } = await db.delete("strength_equipment").eq("id", id);
     if (error) throw error;
     return new Response(null, { status: 204 });
   } catch (err) { return apiError(err); }
