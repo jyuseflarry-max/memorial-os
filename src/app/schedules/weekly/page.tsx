@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { Game } from "@/types/game";
 import { GAME_TYPE_LABELS } from "@/types/game";
 import type { PracticeSchedule } from "@/types/practice-schedule";
+import type { StrengthScheduleEntry } from "@/app/api/strength-schedule/route";
 
 interface SavedSession {
   id: string;
@@ -69,7 +70,8 @@ function fmtDate(iso: string) {
 type EventItem =
   | { kind: "game";     date: string; time: string | null; game: Game }
   | { kind: "session";  date: string; time: string;        session: SavedSession }
-  | { kind: "schedule"; date: string; time: string;        practice: PracticeSchedule };
+  | { kind: "schedule"; date: string; time: string;        practice: PracticeSchedule }
+  | { kind: "strength"; date: string; time: string;        strength: StrengthScheduleEntry };
 
 type ViewMode = "agenda" | "calendar";
 
@@ -85,6 +87,7 @@ export default function WeeklyEventsPage() {
   const [games,     setGames]     = useState<Game[]>([]);
   const [sessions,  setSessions]  = useState<SavedSession[]>([]);
   const [practices, setPractices] = useState<PracticeSchedule[]>([]);
+  const [strengths, setStrengths] = useState<StrengthScheduleEntry[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [filterTeam, setFilterTeam] = useState<string>("all");
 
@@ -159,10 +162,12 @@ export default function WeeklyEventsPage() {
       fetch("/api/games").then((r) => r.json()),
       fetch("/api/sessions").then((r) => r.json()),
       fetch(`/api/practice-schedule?${pp}`).then((r) => r.json()),
-    ]).then(([g, s, p]) => {
+      fetch(`/api/strength-schedule?${pp}`).then((r) => r.json()),
+    ]).then(([g, s, p, st]) => {
       setGames(Array.isArray(g) ? g : []);
       setSessions(Array.isArray(s) ? s : []);
       setPractices(Array.isArray(p) ? p : []);
+      setStrengths(Array.isArray(st) ? st : []);
     }).catch(() => {}).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekOf, activeTeam]);
@@ -173,8 +178,9 @@ export default function WeeklyEventsPage() {
     if (!absenceSheet || !authUser?.playerId) return;
     setSubmittingAbsence(true);
     const teamId =
-      absenceSheet.kind === "game"    ? absenceSheet.game.team_id :
-      absenceSheet.kind === "session" ? absenceSheet.session.team_id :
+      absenceSheet.kind === "game"     ? absenceSheet.game.team_id :
+      absenceSheet.kind === "session"  ? absenceSheet.session.team_id :
+      absenceSheet.kind === "strength" ? absenceSheet.strength.team_id :
       absenceSheet.practice.team_id;
     try {
       await fetch("/api/attendance", {
@@ -217,12 +223,16 @@ export default function WeeklyEventsPage() {
       .filter((p) => p.practice_date >= fromStr && p.practice_date <= toStr && !sessionDates.has(p.practice_date) && (filterTeam === "all" || p.team_id === filterTeam))
       .map((p) => ({ kind: "schedule", date: p.practice_date, time: p.start_time, practice: p }));
 
-    return [...gameEvents, ...sessionEvents, ...scheduleEvents].sort((a, b) => {
+    const strengthEvents: EventItem[] = strengths
+      .filter((s) => s.schedule_date >= fromStr && s.schedule_date <= toStr && (filterTeam === "all" || s.team_id === filterTeam))
+      .map((s) => ({ kind: "strength", date: s.schedule_date, time: s.start_time, strength: s }));
+
+    return [...gameEvents, ...sessionEvents, ...scheduleEvents, ...strengthEvents].sort((a, b) => {
       const dc = a.date.localeCompare(b.date);
       if (dc !== 0) return dc;
       return (a.time ?? "23:59").localeCompare(b.time ?? "23:59");
     });
-  }, [games, sessions, practices, filterTeam, start, end]);
+  }, [games, sessions, practices, strengths, filterTeam, start, end]);
 
   // ── Events (month-scoped, for calendar view) ──────────────────────────────
 
@@ -245,12 +255,16 @@ export default function WeeklyEventsPage() {
       .filter((p) => p.practice_date >= fromStr && p.practice_date <= toStr && !sessionDates.has(p.practice_date) && (filterTeam === "all" || p.team_id === filterTeam))
       .map((p) => ({ kind: "schedule", date: p.practice_date, time: p.start_time, practice: p }));
 
-    return [...gameEvents, ...sessionEvents, ...scheduleEvents].sort((a, b) => {
+    const strengthEvents: EventItem[] = strengths
+      .filter((s) => s.schedule_date >= fromStr && s.schedule_date <= toStr && (filterTeam === "all" || s.team_id === filterTeam))
+      .map((s) => ({ kind: "strength", date: s.schedule_date, time: s.start_time, strength: s }));
+
+    return [...gameEvents, ...sessionEvents, ...scheduleEvents, ...strengthEvents].sort((a, b) => {
       const dc = a.date.localeCompare(b.date);
       if (dc !== 0) return dc;
       return (a.time ?? "23:59").localeCompare(b.time ?? "23:59");
     });
-  }, [games, sessions, practices, filterTeam, weekOf]);
+  }, [games, sessions, practices, strengths, filterTeam, weekOf]);
 
   const calendarByDate = useMemo(() => {
     const map = new Map<string, EventItem[]>();
@@ -530,7 +544,7 @@ function renderEventItems(
   consequences: Record<string, string>,
 ) {
   return items.map((ev, i) => {
-    const key      = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
+    const key      = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.kind === "strength" ? ev.strength.id : ev.practice.id;
     const reported = reportedDates.has(ev.date);
     const border   = i < items.length - 1 ? "border-b border-gray-800" : "";
 
@@ -558,6 +572,14 @@ function renderEventItems(
           <div className="flex items-center gap-1 mt-2">
             {canPreview && <ActionBtn href="/schedules/practice" icon={<Eye size={10}/>} label="Preview" />}
             {canEdit    && <ActionBtn href="/schedules/practice" icon={<Pencil size={10}/>} label="Edit" />}
+          </div>
+        );
+      }
+      if (ev.kind === "strength") {
+        return (
+          <div className="flex items-center gap-1 mt-2">
+            {canPreview && <ActionBtn href="/schedules/strength" icon={<Eye size={10}/>} label="Preview" />}
+            {canEdit    && <ActionBtn href="/schedules/strength" icon={<Pencil size={10}/>} label="Edit" />}
           </div>
         );
       }
@@ -630,6 +652,27 @@ function renderEventItems(
             )}
             <StaffButtons />
             <PlayerButtons />
+          </div>
+        </div>
+      );
+    }
+
+    // ── Strength row ────────────────────────────────────────────────────────
+    if (ev.kind === "strength") {
+      const s = ev.strength;
+      const label    = s.program ? `Strength — ${s.program.name}` : "Strength Workout";
+      const timeStr  = `${fmt12h(s.start_time)} – ${fmt12h(s.end_time)}`;
+      const facility = s.facility?.name ?? null;
+      const phase    = s.program?.phase ?? null;
+      return (
+        <div key={key} className={`flex items-start gap-3 px-4 py-3 ${border}`}>
+          <div className="w-2 h-2 rounded-full shrink-0 bg-orange-400 mt-1.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-medium">{label}</p>
+            <p className="text-gray-500 text-[11px] font-mono mt-0.5">
+              {timeStr}{facility ? ` · ${facility}` : ""}{phase ? ` · ${phase}` : ""}
+            </p>
+            <StaffButtons />
           </div>
         </div>
       );
