@@ -70,7 +70,8 @@ const NAV_GROUPS = [
     label: "Reports",
     icon: BarChart3,
     items: [
-      { label: "Category Breakdown", href: "/reports", icon: BarChart3, staff: false, playerOk: false, coachHide: false },
+      { label: "Practice Time", href: "/reports",            icon: BarChart3, staff: false, playerOk: false, coachHide: false },
+      { label: "Attendance",    href: "/reports?tab=attendance", icon: Users,    staff: false, playerOk: false, coachHide: false },
     ],
   },
   {

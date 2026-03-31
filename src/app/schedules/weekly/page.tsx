@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X, List, Eye, Pencil, Printer, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X, List, Eye, Pencil, Printer, AlertCircle, Upload, CheckCircle2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
@@ -103,6 +103,11 @@ export default function WeeklyEventsPage() {
   const [absenceReason, setAbsenceReason]         = useState("");
   const [submittingAbsence, setSubmittingAbsence] = useState(false);
   const [reportedDates, setReportedDates]         = useState<Set<string>>(new Set());
+
+  // Makeup tracking: date → { id, makeup_required, makeup_completed_at, makeup_proof_name }
+  const [makeupByDate, setMakeupByDate]           = useState<Record<string, MakeupRecord>>({});
+  const [uploadingDate, setUploadingDate]         = useState<string | null>(null);
+  const [uploadError, setUploadError]             = useState<string | null>(null);
 
   // ── Labels ────────────────────────────────────────────────────────────────
 
@@ -267,12 +272,24 @@ export default function WeeklyEventsPage() {
       })
     ).then((results) => {
       const reported = new Set<string>();
-      results.forEach((records: { player_id: string }[], i) => {
-        if (Array.isArray(records) && records.some((r) => r.player_id === pid)) {
+      const makeup: Record<string, MakeupRecord> = {};
+      results.forEach((records: { player_id: string; id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null }[], i) => {
+        if (!Array.isArray(records)) return;
+        const myRecord = records.find((r) => r.player_id === pid);
+        if (myRecord) {
           reported.add(dates[i]);
+          if (myRecord.makeup_required) {
+            makeup[dates[i]] = {
+              id:                  myRecord.id,
+              makeup_required:     myRecord.makeup_required,
+              makeup_completed_at: myRecord.makeup_completed_at,
+              makeup_proof_name:   myRecord.makeup_proof_name,
+            };
+          }
         }
       });
       setReportedDates(reported);
+      setMakeupByDate(makeup);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, isPlayer, authUser?.playerId, authUser?.teamId, loading]);
@@ -365,7 +382,7 @@ export default function WeeklyEventsPage() {
                     <X size={14} />
                   </button>
                 </div>
-                {renderEventItems(selectedDayItems, isPlayer, canEdit, canPreview, reportedDates, locations, setAbsenceSheet)}
+                {renderEventItems(selectedDayItems, isPlayer, canEdit, canPreview, reportedDates, makeupByDate, uploadingDate, uploadError, locations, setAbsenceSheet, setMakeupByDate, setUploadingDate, setUploadError)}
               </div>
             );
           })()}
@@ -392,7 +409,7 @@ export default function WeeklyEventsPage() {
                   <p className={`text-xs font-mono ${isToday ? "text-coaches-red/80" : "text-gray-500"}`}>{short}</p>
                   {isToday && <span className="text-[9px] font-mono bg-coaches-red text-white px-1.5 py-0.5 rounded-full">TODAY</span>}
                 </div>
-                {renderEventItems(items, isPlayer, canEdit, canPreview, reportedDates, locations, setAbsenceSheet)}
+                {renderEventItems(items, isPlayer, canEdit, canPreview, reportedDates, makeupByDate, uploadingDate, uploadError, locations, setAbsenceSheet, setMakeupByDate, setUploadingDate, setUploadError)}
               </div>
             );
           })}
@@ -448,6 +465,9 @@ export default function WeeklyEventsPage() {
   );
 }
 
+// ── Types for makeup tracking ──────────────────────────────────────────────
+type MakeupRecord = { id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null };
+
 // ── Event row renderer (shared by agenda + calendar day panel) ─────────────
 
 function renderEventItems(
@@ -456,8 +476,14 @@ function renderEventItems(
   canEdit: boolean,
   canPreview: boolean,
   reportedDates: Set<string>,
+  makeupByDate: Record<string, MakeupRecord>,
+  uploadingDate: string | null,
+  uploadError: string | null,
   locations: ReturnType<typeof useLocations>["locations"],
   setAbsenceSheet: (ev: EventItem) => void,
+  setMakeupByDate: React.Dispatch<React.SetStateAction<Record<string, MakeupRecord>>>,
+  setUploadingDate: (d: string | null) => void,
+  setUploadError: (e: string | null) => void,
 ) {
   return items.map((ev, i) => {
     const key      = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
@@ -583,6 +609,8 @@ function renderEventItems(
       dotColor  = "bg-sky-400";
     }
 
+    const makeup = isPlayer ? makeupByDate[ev.date] ?? null : null;
+
     return (
       <div key={key} className={`flex items-start gap-3 px-4 py-3 ${border}`}>
         <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${dotColor}`} />
@@ -594,6 +622,68 @@ function renderEventItems(
           <p className="text-gray-500 text-[11px] font-mono mt-0.5">{timeStr}</p>
           <StaffButtons />
           <PlayerButtons />
+
+          {/* Makeup card — shown to players when coach assigned makeup work */}
+          {makeup && makeup.makeup_required && (
+            <div className={`mt-2 rounded-xl border px-3 py-2.5 ${makeup.makeup_completed_at ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+              {makeup.makeup_completed_at ? (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="text-emerald-400 text-xs font-semibold">Makeup complete</p>
+                    {makeup.makeup_proof_name && (
+                      <p className="text-gray-500 text-[10px] font-mono mt-0.5">{makeup.makeup_proof_name}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle size={13} className="text-amber-400 shrink-0" />
+                    <p className="text-amber-400 text-xs font-semibold">Makeup work assigned</p>
+                  </div>
+                  {uploadError && uploadingDate === ev.date && (
+                    <p className="text-red-400 text-[10px] mb-1">{uploadError}</p>
+                  )}
+                  <label className={`inline-flex items-center gap-1.5 cursor-pointer text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-colors ${uploadingDate === ev.date ? "opacity-50 cursor-wait border-gray-600 text-gray-500" : "border-amber-500/50 text-amber-400 hover:border-amber-400 hover:bg-amber-500/10"}`}>
+                    <Upload size={11} />
+                    {uploadingDate === ev.date ? "Uploading…" : "Upload proof"}
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      className="hidden"
+                      disabled={uploadingDate === ev.date}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !makeup) return;
+                        setUploadingDate(ev.date);
+                        setUploadError(null);
+                        const fd = new FormData();
+                        fd.append("attendance_id", makeup.id);
+                        fd.append("file", file);
+                        const res = await fetch("/api/attendance/proof", { method: "POST", body: fd });
+                        if (!res.ok) {
+                          const j = await res.json().catch(() => ({}));
+                          setUploadError(j.error ?? "Upload failed");
+                        } else {
+                          const updated = await res.json();
+                          setMakeupByDate((prev) => ({
+                            ...prev,
+                            [ev.date]: {
+                              ...prev[ev.date]!,
+                              makeup_completed_at: updated.makeup_completed_at,
+                              makeup_proof_name:   updated.makeup_proof_name,
+                            },
+                          }));
+                        }
+                        setUploadingDate(null);
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
