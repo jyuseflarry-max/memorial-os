@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Plus, Loader2, CalendarDays, ChevronRight } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import type { StrengthProgram } from "@/types/strength";
@@ -62,7 +63,8 @@ export default function ProgramsPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {programs.map(p => (
-              <div key={p.id} className="bg-gray-800 border border-gray-700 hover:border-gray-500 rounded-2xl p-5 transition-all flex items-start gap-4">
+              <Link key={p.id} href={`/strength/programs/${p.id}`}
+                className="bg-gray-800 border border-gray-700 hover:border-gray-500 rounded-2xl p-5 transition-all flex items-start gap-4 cursor-pointer">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-white font-semibold text-sm">{p.name}</p>
@@ -76,7 +78,7 @@ export default function ProgramsPage() {
                   {p.description && <p className="text-gray-400 text-xs mt-1">{p.description}</p>}
                 </div>
                 <ChevronRight size={14} className="text-gray-600 shrink-0 mt-1" />
-              </div>
+              </Link>
             ))}
 
             {programs.length === 0 && (
