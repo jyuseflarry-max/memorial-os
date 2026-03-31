@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     const service = getSupabaseServer();
     const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
     if (!myRecord) return apiError("User record not found", 403);
-    if (!["admin", "coach", "manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
+    if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
 
     const tenantId = myRecord.tenant_id;
 

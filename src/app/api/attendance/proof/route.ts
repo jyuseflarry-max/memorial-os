@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (recErr || !record) return apiError("Attendance record not found", 404);
 
-    const isStaff = ["admin", "coach", "manager"].includes(myRecord.role);
+    const isStaff = ["Admin", "Coach", "Manager"].includes(myRecord.role);
     if (!isStaff) {
       // Look up player record linked to this user
       const { data: playerRecord } = await service
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     if (recErr || !record) return apiError("Not found", 404);
     if (!record.makeup_proof_url) return Response.json({ signed_url: null });
 
-    const isStaff = ["admin", "coach", "manager"].includes(myRecord.role);
+    const isStaff = ["Admin", "Coach", "Manager"].includes(myRecord.role);
     if (!isStaff) {
       const { data: playerRecord } = await service
         .from("players")
