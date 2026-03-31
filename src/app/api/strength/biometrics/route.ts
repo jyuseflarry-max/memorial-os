@@ -9,11 +9,12 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { encryptField, decryptField } from '@/lib/strength-crypto';
 import { calcAthleticAge } from '@/lib/strength-utils';
 import { apiError }        from '@/lib/api-error';
+import { ROLE_COACH }      from '@/lib/roles';
 
 export async function GET(request: NextRequest) {
   try {
-    const db     = await getDb();
-    const isCoach = db.role === 'Admin' || db.role === 'Coach';
+    const db      = await getDb();
+    const isCoach = ROLE_COACH.includes(db.role);
 
     if (!isCoach) {
       // Players: return only their own non-PII view
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const db = await getDb();
-    if (db.role !== 'Admin' && db.role !== 'Coach') return apiError('Forbidden', 403);
+    if (!ROLE_COACH.includes(db.role)) return apiError('Forbidden', 403);
 
     const body = await request.json() as {
       player_id:        string;

@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { getDb }           from '@/lib/db';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { apiError }        from '@/lib/api-error';
+import { ROLE_COACH }      from '@/lib/roles';
 
 export async function GET() {
   try {
@@ -34,7 +35,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const db = await getDb();
-    if (db.role !== 'Admin' && db.role !== 'Coach') return apiError('Forbidden', 403);
+    if (!ROLE_COACH.includes(db.role)) return apiError('Forbidden', 403);
 
     const body = await request.json() as {
       name: string; category: string;

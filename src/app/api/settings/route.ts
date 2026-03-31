@@ -1,16 +1,15 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
+import { getDb }            from "@/lib/db";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { DEFAULT_SETTINGS } from "@/types/settings";
-import { apiError } from "@/lib/api-error";
+import { apiError }         from "@/lib/api-error";
 
-async function getTenantId(): Promise<string | null> {
+/** Resolves the tenant ID from the calling user's session. Returns null if
+ *  unauthenticated — settings GET falls back to defaults in that case. */
+async function resolveTenantId(): Promise<string | null> {
   try {
-    const userClient = await getSupabaseUser();
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return null;
-    const supabase = getSupabaseServer();
-    const { data } = await supabase.from("users").select("tenant_id").eq("id", user.id).single();
-    return data?.tenant_id ?? null;
+    const db = await getDb();
+    return db.tenantId;
   } catch {
     return null;
   }
@@ -19,7 +18,7 @@ async function getTenantId(): Promise<string | null> {
 /** GET /api/settings — fetch the tenant's program_settings row */
 export async function GET() {
   try {
-    const tenantId = await getTenantId();
+    const tenantId = await resolveTenantId();
     const supabase = getSupabaseServer();
 
     if (tenantId) {
@@ -48,8 +47,8 @@ export async function GET() {
 /** PUT /api/settings — upsert the tenant's program_settings row */
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const tenantId = await getTenantId();
+    const body     = await request.json();
+    const tenantId = await resolveTenantId();
     const supabase = getSupabaseServer();
 
     if (tenantId) {
