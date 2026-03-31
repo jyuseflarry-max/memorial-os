@@ -5,6 +5,7 @@
  * Silently no-ops if the player has no linked user account (no push possible).
  */
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { findOrCreate1on1 }  from "@/lib/conversations";
 
 interface NotifyParams {
   tenantId:    string;
@@ -32,42 +33,9 @@ export async function notifyAttendanceStatus(p: NotifyParams): Promise<void> {
 
   const toUserId = player.user_id as string;
 
-  // Find or create a 1:1 conversation between coach and player
-  const { data: myConvs } = await sb
-    .from("conversation_participants")
-    .select("conversation_id")
-    .eq("user_id", p.fromUserId)
-    .eq("tenant_id", p.tenantId);
-
-  const myConvIds = (myConvs ?? []).map((c) => c.conversation_id);
-
-  let convId: string | null = null;
-
-  if (myConvIds.length > 0) {
-    const { data: theirConvs } = await sb
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", toUserId)
-      .in("conversation_id", myConvIds);
-
-    convId = theirConvs?.[0]?.conversation_id ?? null;
-  }
-
-  if (!convId) {
-    const { data: newConv, error } = await sb
-      .from("conversations")
-      .insert({ tenant_id: p.tenantId, created_by: p.fromUserId })
-      .select("id")
-      .single();
-
-    if (error || !newConv) return;
-    convId = newConv.id;
-
-    await sb.from("conversation_participants").insert([
-      { conversation_id: convId, user_id: p.fromUserId, tenant_id: p.tenantId },
-      { conversation_id: convId, user_id: toUserId,     tenant_id: p.tenantId },
-    ]);
-  }
+  // Find or create 1:1 conversation between coach and player
+  const convId = await findOrCreate1on1(p.fromUserId, toUserId, p.tenantId);
+  if (!convId) return;
 
   // Build the message body
   const dateLabel = new Date(p.practiceDate + "T12:00:00").toLocaleDateString("en-US", {

@@ -1,9 +1,9 @@
 /** GET/PUT /api/strength/inventory */
 import { NextRequest } from 'next/server';
-import { getDb }          from '@/lib/db';
+import { getDb }           from '@/lib/db';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { EQUIPMENT_CATALOG } from '@/lib/strength-utils';
-import { apiError }       from '@/lib/api-error';
+import { apiError }        from '@/lib/api-error';
 
 export async function GET() {
   try {
@@ -22,9 +22,9 @@ export async function GET() {
       equipment_key:   item.key,
       equipment_label: item.label,
       category:        item.category,
-      available:       (dbMap.get(item.key) as { available?: boolean } | undefined)?.available  ?? false,
-      quantity:        (dbMap.get(item.key) as { quantity?: number }   | undefined)?.quantity   ?? 1,
-      notes:           (dbMap.get(item.key) as { notes?: string | null } | undefined)?.notes ?? null,
+      available:       (dbMap.get(item.key) as { available?: boolean } | undefined)?.available ?? false,
+      quantity:        (dbMap.get(item.key) as { quantity?: number }   | undefined)?.quantity  ?? 1,
+      notes:           (dbMap.get(item.key) as { notes?: string | null } | undefined)?.notes   ?? null,
     }));
 
     return Response.json(result);
@@ -35,29 +35,25 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const db   = await getDb();
-    const sb   = getSupabaseServer();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    // Get tenant_id
-    const { data: u } = await sb.from('users').select('tenant_id').eq('id', user.id).single();
-    if (!u) return Response.json({ error: 'User not found' }, { status: 404 });
+    const db = await getDb();
 
     const items = await request.json() as { equipment_key: string; available: boolean; quantity?: number; notes?: string }[];
 
     const rows = items.map(item => ({
-      tenant_id:      u.tenant_id,
-      equipment_key:  item.equipment_key,
-      available:      item.available,
-      quantity:       item.quantity ?? 1,
-      notes:          item.notes ?? null,
+      tenant_id:     db.tenantId,
+      equipment_key: item.equipment_key,
+      available:     item.available,
+      quantity:      item.quantity ?? 1,
+      notes:         item.notes ?? null,
     }));
 
+    // Uses service client directly to support the onConflict option, which
+    // db.upsert() does not expose. tenant_id is injected from db context above.
+    const sb = getSupabaseServer();
     const { error } = await sb.from('strength_inventory')
       .upsert(rows, { onConflict: 'tenant_id,equipment_key' });
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     return Response.json({ success: true });
   } catch (err) {
     return apiError(err);

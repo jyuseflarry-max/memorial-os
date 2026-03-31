@@ -40,7 +40,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
   const initialDate = mode === "edit" ? (searchParams.get("date") ?? TODAY) : TODAY;
   const activeLabel = mode === "edit" ? (searchParams.get("label") ?? "") : "";
 
-  const { drills: vaultDrills, addToCache } = useDrills();
+  const { drills: vaultDrills, addDrill: addDrillToVault } = useDrills();
   const { activeTeam, teams, setActiveTeam } = useTeam();
   const { players }  = useTeamPlayers();
   const { settings } = useSettings();
@@ -485,7 +485,7 @@ export default function PlanEditor({ mode }: PlanEditorProps) {
 
       {showNewDrillForm && (
         <DrillForm
-          onSave={(drill) => { addToCache(drill); setShowNewDrillForm(false); }}
+          onSave={(drill) => { addDrillToVault(drill); setShowNewDrillForm(false); }}
           onClose={() => setShowNewDrillForm(false)}
         />
       )}

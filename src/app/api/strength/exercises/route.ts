@@ -1,28 +1,24 @@
 /** GET /api/strength/exercises   — global + tenant exercises
  *  POST /api/strength/exercises  — create tenant-specific exercise */
 import { NextRequest } from 'next/server';
-import { getDb }          from '@/lib/db';
+import { getDb }           from '@/lib/db';
 import { getSupabaseServer } from '@/lib/supabase/server';
-import { apiError }       from '@/lib/api-error';
+import { apiError }        from '@/lib/api-error';
 
 export async function GET() {
   try {
     const db = await getDb();
+    // Exercises intentionally include global rows (tenant_id IS NULL) alongside
+    // tenant-specific ones — this query cannot go through db.from() which scopes
+    // to a single tenant, so we use the service client with db.tenantId.
     const sb = getSupabaseServer();
-
-    // Get tenant_id from DB object
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    const { data: u } = await sb.from('users').select('tenant_id').eq('id', user.id).single();
-
-    // Fetch global exercises (tenant_id IS NULL) + tenant custom
     const { data, error } = await sb.from('strength_exercises')
       .select('*')
-      .or(`tenant_id.is.null,tenant_id.eq.${u?.tenant_id}`)
+      .or(`tenant_id.is.null,tenant_id.eq.${db.tenantId}`)
       .order('category')
       .order('name');
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
 
     const result = (data ?? []).map((e: Record<string, unknown>) => ({
       ...e,
@@ -37,14 +33,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const sb = getSupabaseServer();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: u } = await sb.from('users').select('tenant_id, role').eq('id', user.id).single();
-    if (!u || (u.role !== 'Admin' && u.role !== 'Coach')) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const db = await getDb();
+    if (db.role !== 'Admin' && db.role !== 'Coach') return apiError('Forbidden', 403);
 
     const body = await request.json() as {
       name: string; category: string;
@@ -53,24 +43,23 @@ export async function POST(request: NextRequest) {
       coaching_cues?: string; is_primary_lift?: boolean;
     };
 
-    if (!body.name?.trim()) return Response.json({ error: 'Name is required' }, { status: 400 });
+    if (!body.name?.trim()) return apiError('Name is required', 400);
 
-    const { data, error } = await sb.from('strength_exercises')
-      .insert({
-        tenant_id:        u.tenant_id,
-        name:             body.name.trim(),
-        category:         body.category ?? 'compound',
-        primary_muscles:  body.primary_muscles ?? [],
+    const { data, error } = await db
+      .insert('strength_exercises', {
+        name:              body.name.trim(),
+        category:          body.category ?? 'compound',
+        primary_muscles:   body.primary_muscles ?? [],
         secondary_muscles: body.secondary_muscles ?? [],
-        equipment_keys:   body.equipment_keys ?? [],
-        demo_video_url:   body.demo_video_url ?? null,
-        coaching_cues:    body.coaching_cues ?? null,
-        is_primary_lift:  body.is_primary_lift ?? false,
+        equipment_keys:    body.equipment_keys ?? [],
+        demo_video_url:    body.demo_video_url ?? null,
+        coaching_cues:     body.coaching_cues ?? null,
+        is_primary_lift:   body.is_primary_lift ?? false,
       })
       .select()
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     return Response.json({ ...data, is_global: false }, { status: 201 });
   } catch (err) {
     return apiError(err);

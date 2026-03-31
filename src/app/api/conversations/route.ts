@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
-import { getSupabaseUser, getSupabaseServer } from "@/lib/supabase/server";
+import { getDb }              from "@/lib/db";
+import { getSupabaseServer }  from "@/lib/supabase/server";
+import { findOrCreate1on1 }   from "@/lib/conversations";
 
 // GET /api/conversations — list all conversations for the current user
 export async function GET() {
-  const supabase = await getSupabaseUser();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Get user's tenant
+  const db = await getDb();
   const sb = getSupabaseServer();
-  const { data: profile } = await sb.from("users").select("tenant_id").eq("id", user.id).single();
-  if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   // Get all conversation IDs the user participates in
   const { data: participations } = await sb
     .from("conversation_participants")
     .select("conversation_id, last_read_at")
-    .eq("user_id", user.id)
-    .eq("tenant_id", profile.tenant_id);
+    .eq("user_id", db.userId)
+    .eq("tenant_id", db.tenantId);
 
   if (!participations || participations.length === 0) {
     return NextResponse.json([]);
@@ -63,11 +59,11 @@ export async function GET() {
   const lastReadMap = Object.fromEntries(participations.map((p) => [p.conversation_id, p.last_read_at]));
 
   const conversations = convIds.map((id) => {
-    const otherUserIds = (participantMap[id] ?? []).filter((uid) => uid !== user.id);
+    const otherUserIds = (participantMap[id] ?? []).filter((uid) => uid !== db.userId);
     const otherUsers = otherUserIds.map((uid) => profileMap[uid]).filter(Boolean);
     const lastMsg = lastMsgMap[id] ?? null;
     const lastReadAt = lastReadMap[id];
-    const hasUnread = lastMsg && (!lastReadAt || lastMsg.created_at > lastReadAt) && lastMsg.sender_id !== user.id;
+    const hasUnread = lastMsg && (!lastReadAt || lastMsg.created_at > lastReadAt) && lastMsg.sender_id !== db.userId;
 
     return {
       id,
@@ -77,7 +73,7 @@ export async function GET() {
     };
   });
 
-  // Sort by last message date desc (numeric timestamp comparison, not localeCompare)
+  // Sort by last message date desc
   conversations.sort((a, b) => {
     const aTime = a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0;
     const bTime = b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0;
@@ -91,16 +87,9 @@ export async function GET() {
 // 1:1:   { recipientId: string }
 // Group: { recipientIds: string[], title: string }
 export async function POST(req: Request) {
-  const supabase = await getSupabaseUser();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  const db   = await getDb();
+  const sb   = getSupabaseServer();
   const body = await req.json();
-  const sb = getSupabaseServer();
-  const { data: profile } = await sb.from("users").select("tenant_id").eq("id", user.id).single();
-  if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-  const tenantId = profile.tenant_id;
 
   // ── Group conversation ──────────────────────────────────────────────────
   if (body.recipientIds) {
@@ -109,15 +98,15 @@ export async function POST(req: Request) {
 
     const { data: conv, error: convErr } = await sb
       .from("conversations")
-      .insert({ tenant_id: tenantId, created_by: user.id, title })
+      .insert({ tenant_id: db.tenantId, created_by: db.userId, title })
       .select("id")
       .single();
 
     if (convErr || !conv) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
 
-    const allIds = [user.id, ...recipientIds.filter((id) => id !== user.id)];
+    const allIds = [db.userId, ...recipientIds.filter((id) => id !== db.userId)];
     await sb.from("conversation_participants").insert(
-      allIds.map((uid) => ({ conversation_id: conv.id, user_id: uid, tenant_id: tenantId }))
+      allIds.map((uid) => ({ conversation_id: conv.id, user_id: uid, tenant_id: db.tenantId }))
     );
 
     return NextResponse.json({ id: conv.id, existing: false });
@@ -127,38 +116,16 @@ export async function POST(req: Request) {
   const { recipientId } = body;
   if (!recipientId) return NextResponse.json({ error: "recipientId or recipientIds required" }, { status: 400 });
 
-  const { data: myConvs } = await sb
+  const convId = await findOrCreate1on1(db.userId, recipientId, db.tenantId);
+  if (!convId) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+
+  // Determine if the conversation already existed
+  const { data: participants } = await sb
     .from("conversation_participants")
     .select("conversation_id")
-    .eq("user_id", user.id)
-    .eq("tenant_id", tenantId);
+    .eq("conversation_id", convId)
+    .eq("user_id", db.userId);
 
-  const myConvIds = (myConvs ?? []).map((c) => c.conversation_id);
-
-  if (myConvIds.length > 0) {
-    const { data: theirConvs } = await sb
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", recipientId)
-      .in("conversation_id", myConvIds);
-
-    if (theirConvs && theirConvs.length > 0) {
-      return NextResponse.json({ id: theirConvs[0].conversation_id, existing: true });
-    }
-  }
-
-  const { data: conv, error: convErr } = await sb
-    .from("conversations")
-    .insert({ tenant_id: tenantId, created_by: user.id })
-    .select("id")
-    .single();
-
-  if (convErr || !conv) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
-
-  await sb.from("conversation_participants").insert([
-    { conversation_id: conv.id, user_id: user.id, tenant_id: tenantId },
-    { conversation_id: conv.id, user_id: recipientId, tenant_id: tenantId },
-  ]);
-
-  return NextResponse.json({ id: conv.id, existing: false });
+  const existing = (participants?.length ?? 0) > 1;
+  return NextResponse.json({ id: convId, existing });
 }

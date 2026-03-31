@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 import { notifyAttendanceStatus } from "@/lib/attendance-notify";
 
@@ -7,23 +7,16 @@ import { notifyAttendanceStatus } from "@/lib/attendance-notify";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const date    = searchParams.get("date");
-    const teamId  = searchParams.get("team_id");
+    const date   = searchParams.get("date");
+    const teamId = searchParams.get("team_id");
 
     if (!date) return apiError("date is required", 400);
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
-    let query = service
+    let query = db
       .from("practice_attendance")
       .select("id, player_id, status, event_type, notes, makeup_required, makeup_proof_url, makeup_proof_name, makeup_completed_at")
-      .eq("tenant_id", myRecord.tenant_id)
       .eq("practice_date", date);
 
     if (teamId) query = query.eq("team_id", teamId);
@@ -44,35 +37,25 @@ export async function POST(request: NextRequest) {
     const { practice_date, player_id, team_id, notes, event_type, is_school_event } = await request.json();
 
     if (!practice_date || !player_id) return apiError("practice_date and player_id required", 400);
-    const resolvedEventType  = event_type === "game" ? "game" : "practice";
-    const resolvedStatus     = is_school_event ? "school_event" : "unexcused";
-    const resolvedMakeup     = is_school_event ? false : true;
+    const resolvedEventType = event_type === "game" ? "game" : "practice";
+    const resolvedStatus    = is_school_event ? "school_event" : "unexcused";
+    const resolvedMakeup    = is_school_event ? false : true;
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
+    const db = await getDb();
 
     // Delete any existing record first, then insert fresh
     // (avoids upsert issues with functional unique indexes on nullable team_id)
-    let delQuery = service
-      .from("practice_attendance")
-      .delete()
-      .eq("tenant_id", myRecord.tenant_id)
+    let delQuery = db
+      .delete("practice_attendance")
       .eq("practice_date", practice_date)
       .eq("player_id", player_id);
     if (team_id) delQuery = delQuery.eq("team_id", team_id);
     else         delQuery = delQuery.is("team_id", null);
     await delQuery;
 
-    const { data, error } = await service
-      .from("practice_attendance")
-      .insert({
-        tenant_id:      myRecord.tenant_id,
-        team_id:        team_id ?? null,
+    const { data, error } = await db
+      .insert("practice_attendance", {
+        team_id:         team_id ?? null,
         practice_date,
         player_id,
         status:          resolvedStatus,
@@ -97,29 +80,21 @@ export async function PATCH(request: NextRequest) {
     if (!id) return apiError("id is required", 400);
     if (status && !["excused", "unexcused", "school_event"].includes(status)) return apiError("invalid status", 400);
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-    if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
+    const db = await getDb();
+    if (!["Admin", "Coach", "Manager"].includes(db.role)) return apiError("Forbidden", 403);
 
     const isSchoolEvent = status === "school_event";
     const updates: Record<string, unknown> = {
-      reviewed_by:     me.id,
+      reviewed_by:     db.userId,
       reviewed_at:     new Date().toISOString(),
       makeup_required: isSchoolEvent ? false : true,
     };
     if (status !== undefined) updates.status = status;
     if (notes  !== undefined) updates.notes  = notes;
 
-    const { data, error } = await service
-      .from("practice_attendance")
-      .update(updates)
+    const { data, error } = await db
+      .update("practice_attendance", updates)
       .eq("id", id)
-      .eq("tenant_id", myRecord.tenant_id)
       .select("id, player_id, practice_date, event_type, status, notes, makeup_required, reviewed_by, reviewed_at")
       .single();
 
@@ -133,24 +108,23 @@ export async function PATCH(request: NextRequest) {
     // Look up the makeup work description for this event_type + status combination
     const resolvedStatus    = (data.status ?? "unexcused") as "excused" | "unexcused";
     const resolvedEventType = (data.event_type ?? "practice") as "practice" | "game";
-    const { data: consequence } = await service
+    const { data: consequence } = await db
       .from("attendance_consequences")
       .select("makeup_work")
-      .eq("tenant_id", myRecord.tenant_id)
       .eq("event_type", resolvedEventType)
       .eq("status", resolvedStatus)
       .single();
 
     // Fire-and-forget notification to the player
     void notifyAttendanceStatus({
-      tenantId:    myRecord.tenant_id,
-      fromUserId:  me.id,
-      playerId:    data.player_id,
+      tenantId:     db.tenantId,
+      fromUserId:   db.userId,
+      playerId:     data.player_id,
       practiceDate: data.practice_date,
-      eventType:   resolvedEventType,
-      status:      resolvedStatus,
-      notes:       data.notes ?? null,
-      makeupWork:  consequence?.makeup_work ?? "",
+      eventType:    resolvedEventType,
+      status:       resolvedStatus,
+      notes:        data.notes ?? null,
+      makeupWork:   consequence?.makeup_work ?? "",
     });
 
     return Response.json(data);
@@ -169,18 +143,10 @@ export async function DELETE(request: NextRequest) {
 
     if (!date || !playerId) return apiError("date and player_id required", 400);
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
-    let query = service
-      .from("practice_attendance")
-      .delete()
-      .eq("tenant_id", myRecord.tenant_id)
+    let query = db
+      .delete("practice_attendance")
       .eq("practice_date", date)
       .eq("player_id", playerId);
 

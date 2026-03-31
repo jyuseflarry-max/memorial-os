@@ -22,9 +22,9 @@ function sortedInsert(arr: Drill[], drill: Drill): Drill[] {
 interface DrillContextValue {
   drills: Drill[];
   loading: boolean;
-  addToCache: (drill: Drill) => void;
-  updateInCache: (drill: Drill) => void;
-  removeFromCache: (id: string) => void;
+  addDrill: (drill: Drill) => void;
+  updateDrill: (drill: Drill) => void;
+  removeDrill: (id: string) => void;
 }
 
 const DrillContext = createContext<DrillContextValue | null>(null);
@@ -41,11 +41,11 @@ export function DrillProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  function addToCache(drill: Drill) {
+  function addDrill(drill: Drill) {
     setDrills((prev) => sortedInsert(prev, drill));
   }
 
-  function updateInCache(drill: Drill) {
+  function updateDrill(drill: Drill) {
     setDrills((prev) => {
       const old = prev.find((d) => d.id === drill.id);
       // If the name didn't change, replace in-place — no re-sort needed
@@ -55,12 +55,12 @@ export function DrillProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  function removeFromCache(id: string) {
+  function removeDrill(id: string) {
     setDrills((prev) => prev.filter((d) => d.id !== id));
   }
 
   return (
-    <DrillContext.Provider value={{ drills, loading, addToCache, updateInCache, removeFromCache }}>
+    <DrillContext.Provider value={{ drills, loading, addDrill, updateDrill, removeDrill }}>
       {children}
     </DrillContext.Provider>
   );

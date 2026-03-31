@@ -69,7 +69,7 @@ function FilterChip({
 }
 
 export default function DrillVaultPage() {
-  const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
+  const { drills, loading, addDrill, updateDrill, removeDrill } = useDrills();
   const { activeTeam } = useTeam();
   const { settings } = useSettings();
   const { getCatColor } = useDrillCategories();
@@ -183,7 +183,7 @@ export default function DrillVaultPage() {
         body: JSON.stringify({ ...rest, name: `${drill.name} (Copy)` }),
       });
       const data = await res.json();
-      if (data.drill) addToCache(data.drill);
+      if (data.drill) addDrill(data.drill);
     } finally {
       setDuplicating(null);
     }
@@ -194,7 +194,7 @@ export default function DrillVaultPage() {
     await Promise.all([...selectedIds].map((id) =>
       fetch(`/api/drills/${id}`, { method: "DELETE" }).catch(() => {})
     ));
-    [...selectedIds].forEach((id) => removeFromCache(id));
+    [...selectedIds].forEach((id) => removeDrill(id));
     setSelectedIds(new Set());
     setShowBulkDelete(false);
     setBulkDeleting(false);
@@ -429,7 +429,7 @@ export default function DrillVaultPage() {
                       <button
                         onClick={() => {
                           if (!confirm(`Delete "${drill.name}"? This cannot be undone.`)) return;
-                          removeFromCache(drill.id);
+                          removeDrill(drill.id);
                           fetch(`/api/drills/${drill.id}`, { method: "DELETE" }).catch(() => {});
                         }}
                         className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 border border-gray-700 hover:border-red-400/30 transition-colors" title="Delete">
@@ -470,11 +470,11 @@ export default function DrillVaultPage() {
       )}
 
       {showNewForm && (
-        <DrillForm onSave={(drill) => { addToCache(drill); setShowNewForm(false); }} onClose={() => setShowNewForm(false)} />
+        <DrillForm onSave={(drill) => { addDrill(drill); setShowNewForm(false); }} onClose={() => setShowNewForm(false)} />
       )}
       {editing && (
-        <DrillForm initialDrill={editing} onSave={(drill) => { updateInCache(drill); setEditing(null); }}
-          onDelete={(id) => { removeFromCache(id); setEditing(null); }} onClose={() => setEditing(null)} />
+        <DrillForm initialDrill={editing} onSave={(drill) => { updateDrill(drill); setEditing(null); }}
+          onDelete={(id) => { removeDrill(id); setEditing(null); }} onClose={() => setEditing(null)} />
       )}
     </DashboardLayout>
   );
