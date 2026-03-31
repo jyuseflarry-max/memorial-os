@@ -38,8 +38,8 @@ export function useAttendance(date: string, teamId: string | null | undefined) {
     return absences.find((a) => a.player_id === playerId) ?? null;
   }
 
-  /** Mark a player absent (or update their excuse status) */
-  async function markAbsent(playerId: string, status: "excused" | "unexcused") {
+  /** Mark a player absent — always starts as unexcused */
+  async function markAbsent(playerId: string, eventType: "practice" | "game" = "practice") {
     const params = new URLSearchParams({ date });
     if (teamId) params.set("team_id", teamId);
 
@@ -50,7 +50,7 @@ export function useAttendance(date: string, teamId: string | null | undefined) {
         practice_date: date,
         player_id:     playerId,
         team_id:       teamId ?? null,
-        status,
+        event_type:    eventType,
       }),
     });
     if (!res.ok) throw new Error((await res.json()).error ?? "Failed");

@@ -19,6 +19,7 @@ import { apiError }                       from "@/lib/api-error";
 export interface AttendanceRecord {
   id:                  string;
   status:              "excused" | "unexcused";
+  event_type:          "practice" | "game";
   notes:               string | null;
   makeup_required:     boolean;
   makeup_proof_url:    string | null;
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
     // 1. Load all absence records in range
     let q = service
       .from("practice_attendance")
-      .select("id, player_id, practice_date, status, notes, makeup_required, makeup_proof_url, makeup_proof_name, makeup_completed_at, reviewed_by, reviewed_at")
+      .select("id, player_id, practice_date, status, event_type, notes, makeup_required, makeup_proof_url, makeup_proof_name, makeup_completed_at, reviewed_by, reviewed_at")
       .eq("tenant_id", tenantId)
       .order("practice_date", { ascending: true });
 
@@ -81,9 +82,9 @@ export async function GET(request: NextRequest) {
     // 2. Load players (for the team if specified, otherwise all)
     let pq = service
       .from("players")
-      .select("id, full_name, jersey_number")
+      .select("id, name, jersey_number")
       .eq("tenant_id", tenantId)
-      .order("full_name");
+      .order("name");
 
     if (teamId) pq = pq.eq("team_id", teamId);
 
@@ -111,8 +112,9 @@ export async function GET(request: NextRequest) {
         records[r.practice_date] = {
           id:                  r.id,
           status:              r.status as "excused" | "unexcused",
+          event_type:          (r.event_type ?? "practice") as "practice" | "game",
           notes:               r.notes,
-          makeup_required:     r.makeup_required ?? false,
+          makeup_required:     r.makeup_required ?? true,
           makeup_proof_url:    r.makeup_proof_url,
           makeup_proof_name:   r.makeup_proof_name,
           makeup_completed_at: r.makeup_completed_at,
@@ -129,7 +131,7 @@ export async function GET(request: NextRequest) {
 
       return {
         player_id:     p.id,
-        full_name:     p.full_name,
+        full_name:     p.name,
         jersey_number: p.jersey_number ?? null,
         records,
         totals: { excused, unexcused, makeup_required, makeup_done },

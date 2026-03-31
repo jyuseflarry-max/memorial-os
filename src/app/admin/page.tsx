@@ -5,7 +5,7 @@ import {
   UserCog, Users, UsersRound, MapPin,
   Target, TrendingUp, Tag,
   Dumbbell, Lock, Package, BookOpen,
-  Settings, ChevronRight, ShieldCheck,
+  Settings, ChevronRight, ShieldCheck, ClipboardList,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
@@ -129,6 +129,13 @@ const SECTIONS = [
         icon:  Settings,
         title: "Program Settings",
         desc:  "Name, logo, season, brand colors, module visibility, and integrations.",
+        external: true,
+      },
+      {
+        href:  "/settings/attendance",
+        icon:  ClipboardList,
+        title: "Attendance Consequences",
+        desc:  "Configure makeup work for each absence type: practice vs. game, excused vs. unexcused.",
         external: true,
       },
     ],

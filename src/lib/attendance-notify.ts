@@ -7,13 +7,14 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 interface NotifyParams {
-  tenantId:       string;
-  fromUserId:     string;   // coach / staff user id
-  playerId:       string;   // players.id
-  practiceDate:   string;   // YYYY-MM-DD
-  status:         "excused" | "unexcused";
-  makeupRequired: boolean;
-  notes:          string | null;
+  tenantId:    string;
+  fromUserId:  string;   // coach / staff user id
+  playerId:    string;   // players.id
+  practiceDate: string;  // YYYY-MM-DD
+  eventType:   "practice" | "game";
+  status:      "excused" | "unexcused";
+  notes:       string | null;
+  makeupWork:  string;   // from attendance_consequences
 }
 
 export async function notifyAttendanceStatus(p: NotifyParams): Promise<void> {
@@ -73,15 +74,16 @@ export async function notifyAttendanceStatus(p: NotifyParams): Promise<void> {
     weekday: "long", month: "long", day: "numeric",
   });
 
+  const eventLabel  = p.eventType === "game" ? "game" : "practice";
   const statusLabel = p.status === "excused" ? "✅ Excused" : "⚠️ Unexcused";
-  let body =
-    `Your absence from practice on ${dateLabel} has been marked: ${statusLabel}.`;
+  let body = `Your absence from the ${eventLabel} on ${dateLabel} has been marked: ${statusLabel}.`;
 
   if (p.notes) body += `\n\nCoach note: "${p.notes}"`;
 
-  if (p.makeupRequired) {
-    body +=
-      `\n\nMakeup work has been assigned. Please upload your proof of completion in the app under Reports → Attendance, or tap the makeup card on your weekly schedule.`;
+  if (p.makeupWork) {
+    body += `\n\nMakeup work assigned: ${p.makeupWork}\n\nPlease upload your proof of completion under Reports → Attendance.`;
+  } else {
+    body += `\n\nPlease upload your proof of completion under Reports → Attendance.`;
   }
 
   await sb.from("messages").insert({

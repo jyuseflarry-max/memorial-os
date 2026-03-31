@@ -38,13 +38,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/** POST /api/attendance — upsert an absence record */
+/** POST /api/attendance — upsert an absence record (always starts as unexcused) */
 export async function POST(request: NextRequest) {
   try {
-    const { practice_date, player_id, team_id, status, notes } = await request.json();
+    const { practice_date, player_id, team_id, notes, event_type } = await request.json();
 
     if (!practice_date || !player_id) return apiError("practice_date and player_id required", 400);
-    if (!["excused", "unexcused"].includes(status)) return apiError("status must be excused or unexcused", 400);
+    const resolvedEventType = event_type === "game" ? "game" : "practice";
 
     const userClient = await getSupabaseUser();
     const { data: { user: me } } = await userClient.auth.getUser();
@@ -69,12 +69,14 @@ export async function POST(request: NextRequest) {
     const { data, error } = await service
       .from("practice_attendance")
       .insert({
-        tenant_id:     myRecord.tenant_id,
-        team_id:       team_id ?? null,
+        tenant_id:      myRecord.tenant_id,
+        team_id:        team_id ?? null,
         practice_date,
         player_id,
-        status,
-        notes:         notes ?? null,
+        status:         "unexcused",
+        notes:          notes ?? null,
+        event_type:     resolvedEventType,
+        makeup_required: true,
       })
       .select("id, player_id, status, notes")
       .single();
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
 /** PATCH /api/attendance — coach reviews an absence: set status, makeup_required, notes */
 export async function PATCH(request: NextRequest) {
   try {
-    const { id, status, notes, makeup_required } = await request.json();
+    const { id, status, notes } = await request.json();
     if (!id) return apiError("id is required", 400);
     if (status && !["excused", "unexcused"].includes(status)) return apiError("invalid status", 400);
 
@@ -103,32 +105,44 @@ export async function PATCH(request: NextRequest) {
     if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
 
     const updates: Record<string, unknown> = {
-      reviewed_by: me.id,
-      reviewed_at: new Date().toISOString(),
+      reviewed_by:     me.id,
+      reviewed_at:     new Date().toISOString(),
+      makeup_required: true,
     };
     if (status !== undefined) updates.status = status;
     if (notes  !== undefined) updates.notes  = notes;
-    if (makeup_required !== undefined) updates.makeup_required = makeup_required;
 
     const { data, error } = await service
       .from("practice_attendance")
       .update(updates)
       .eq("id", id)
       .eq("tenant_id", myRecord.tenant_id)
-      .select("id, player_id, practice_date, status, notes, makeup_required, reviewed_by, reviewed_at")
+      .select("id, player_id, practice_date, event_type, status, notes, makeup_required, reviewed_by, reviewed_at")
       .single();
 
     if (error) throw error;
 
+    // Look up the makeup work description for this event_type + status combination
+    const resolvedStatus    = (data.status ?? "unexcused") as "excused" | "unexcused";
+    const resolvedEventType = (data.event_type ?? "practice") as "practice" | "game";
+    const { data: consequence } = await service
+      .from("attendance_consequences")
+      .select("makeup_work")
+      .eq("tenant_id", myRecord.tenant_id)
+      .eq("event_type", resolvedEventType)
+      .eq("status", resolvedStatus)
+      .single();
+
     // Fire-and-forget notification to the player
     void notifyAttendanceStatus({
-      tenantId:       myRecord.tenant_id,
-      fromUserId:     me.id,
-      playerId:       data.player_id,
-      practiceDate:   data.practice_date,
-      status:         data.status as "excused" | "unexcused",
-      makeupRequired: data.makeup_required ?? false,
-      notes:          data.notes ?? null,
+      tenantId:    myRecord.tenant_id,
+      fromUserId:  me.id,
+      playerId:    data.player_id,
+      practiceDate: data.practice_date,
+      eventType:   resolvedEventType,
+      status:      resolvedStatus,
+      notes:       data.notes ?? null,
+      makeupWork:  consequence?.makeup_work ?? "",
     });
 
     return Response.json(data);

@@ -60,8 +60,9 @@ export async function GET(request: NextRequest) {
     const drillMap = new Map<string, DrillInfo>();
 
     for (const d of drillsData ?? []) {
-      const assignments = ((d as unknown as { drill_category_assignments: RawAssignment[] })
-        .drill_category_assignments ?? []);
+      const raw = (d as unknown as { drill_category_assignments: RawAssignment | RawAssignment[] | null })
+        .drill_category_assignments;
+      const assignments: RawAssignment[] = raw == null ? [] : Array.isArray(raw) ? raw : [raw];
 
       const categories = assignments
         .flatMap((a) => {

@@ -171,7 +171,7 @@ export default function WeeklyEventsPage() {
           practice_date: absenceSheet.date,
           player_id:     authUser.playerId,
           team_id:       teamId ?? null,
-          status:        "excused",
+          event_type:    absenceSheet.kind === "game" ? "game" : "practice",
           notes:         absenceReason.trim() || null,
         }),
       });

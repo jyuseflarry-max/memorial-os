@@ -13,6 +13,9 @@ import type {
   AttendanceRecord,
   PlayerAttendanceRow,
 } from "@/app/api/attendance/report/route";
+import type { AttendanceConsequence } from "@/app/api/attendance/consequences/route";
+
+type ConsequenceMap = Record<string, string>; // key: "practice:excused" etc.
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -66,26 +69,29 @@ function StatusChip({ rec }: { rec: AttendanceRecord | null }) {
 function ReviewCell({
   date,
   rec,
+  consequences,
   onUpdated,
 }: {
-  date:      string;
-  rec:       AttendanceRecord | null;
-  onUpdated: (date: string, rec: AttendanceRecord) => void;
+  date:         string;
+  rec:          AttendanceRecord | null;
+  consequences: ConsequenceMap;
+  onUpdated:    (date: string, rec: AttendanceRecord) => void;
 }) {
-  const [open,      setOpen]      = useState(false);
-  const [status,    setStatus]    = useState<"excused" | "unexcused">(rec?.status ?? "unexcused");
-  const [notes,     setNotes]     = useState(rec?.notes ?? "");
-  const [makeupReq, setMakeupReq] = useState(rec?.makeup_required ?? false);
-  const [saving,    setSaving]    = useState(false);
+  const [open,   setOpen]   = useState(false);
+  const [status, setStatus] = useState<"excused" | "unexcused">(rec?.status ?? "unexcused");
+  const [notes,  setNotes]  = useState(rec?.notes ?? "");
+  const [saving, setSaving] = useState(false);
 
   if (!rec) return <StatusChip rec={null} />;
+
+  const makeupWork = consequences[`${rec.event_type}:${status}`] ?? "";
 
   async function save() {
     setSaving(true);
     const res = await fetch("/api/attendance", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: rec!.id, status, notes, makeup_required: makeupReq }),
+      body: JSON.stringify({ id: rec!.id, status, notes }),
     });
     if (res.ok) {
       const updated = await res.json();
@@ -102,9 +108,9 @@ function ReviewCell({
       </button>
 
       {open && (
-        <div className="absolute z-50 left-0 top-7 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-3 text-left">
+        <div className="absolute z-50 left-0 top-7 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-3 text-left">
           <p className="text-gray-400 text-[10px] font-mono uppercase tracking-wider mb-2">
-            Review · {fmtDate(date)}
+            Review · {fmtDate(date)} · <span className="text-gray-600">{rec.event_type}</span>
           </p>
           <div className="flex gap-1 mb-2">
             {(["excused", "unexcused"] as const).map((s) => (
@@ -124,6 +130,12 @@ function ReviewCell({
               </button>
             ))}
           </div>
+          {makeupWork && (
+            <div className="mb-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
+              <p className="text-[9px] font-mono text-amber-500 uppercase tracking-wider mb-0.5">Makeup Work</p>
+              <p className="text-amber-300 text-xs">{makeupWork}</p>
+            </div>
+          )}
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -131,10 +143,6 @@ function ReviewCell({
             rows={2}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg text-white text-xs px-2 py-1.5 resize-none focus:outline-none focus:border-gray-500 mb-2"
           />
-          <label className="flex items-center gap-2 cursor-pointer mb-3">
-            <input type="checkbox" checked={makeupReq} onChange={(e) => setMakeupReq(e.target.checked)} className="accent-coaches-red" />
-            <span className="text-gray-300 text-xs">Require makeup work</span>
-          </label>
           <div className="flex gap-2">
             <button type="button" onClick={() => setOpen(false)}
               className="flex-1 py-1 rounded border border-gray-700 text-gray-400 text-xs hover:border-gray-500">
@@ -155,12 +163,14 @@ function ReviewCell({
 
 function PlayerDrawer({
   row,
+  consequences,
   onClose,
   onUpdated,
 }: {
-  row:       PlayerAttendanceRow;
-  onClose:   () => void;
-  onUpdated: (playerId: string, date: string, rec: AttendanceRecord) => void;
+  row:          PlayerAttendanceRow;
+  consequences: ConsequenceMap;
+  onClose:      () => void;
+  onUpdated:    (playerId: string, date: string, rec: AttendanceRecord) => void;
 }) {
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [uploadErr,    setUploadErr]    = useState<string | null>(null);
@@ -208,25 +218,33 @@ function PlayerDrawer({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-white text-sm font-medium">{fmtDate(date)}</p>
+                    <p className="text-gray-600 text-[10px] font-mono uppercase mt-0.5">{rec.event_type}</p>
                     {rec.notes && <p className="text-gray-500 text-xs mt-0.5">{rec.notes}</p>}
-                    {rec.makeup_required && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                          <AlertCircle size={9} />
-                          {rec.makeup_completed_at ? "Makeup done" : "Makeup required"}
-                        </span>
-                        {rec.makeup_proof_url && (
-                          <a
-                            href={`/api/attendance/proof?attendance_id=${rec.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] text-sky-400 hover:underline"
-                          >
-                            <Eye size={10} /> View proof
-                          </a>
-                        )}
-                      </div>
-                    )}
+                    {(() => {
+                      const work = consequences[`${rec.event_type}:${rec.status}`];
+                      return work ? (
+                        <div className="mt-1 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1">
+                          <p className="text-[9px] font-mono text-amber-500 uppercase tracking-wider">Makeup Work</p>
+                          <p className="text-amber-300 text-xs">{work}</p>
+                        </div>
+                      ) : null;
+                    })()}
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                        <AlertCircle size={9} />
+                        {rec.makeup_completed_at ? "Makeup done" : "Makeup required"}
+                      </span>
+                      {rec.makeup_proof_url && (
+                        <a
+                          href={`/api/attendance/proof?attendance_id=${rec.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] text-sky-400 hover:underline"
+                        >
+                          <Eye size={10} /> View proof
+                        </a>
+                      )}
+                    </div>
                   </div>
                   <div className="shrink-0 flex flex-col items-end gap-1.5">
                     <StatusChip rec={rec} />
@@ -290,10 +308,12 @@ function PlayerDrawer({
 
 function AttendanceGradebook({
   report,
+  consequences,
   onUpdated,
 }: {
-  report:    AttendanceReport;
-  onUpdated: (playerId: string, date: string, rec: AttendanceRecord) => void;
+  report:       AttendanceReport;
+  consequences: ConsequenceMap;
+  onUpdated:    (playerId: string, date: string, rec: AttendanceRecord) => void;
 }) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerAttendanceRow | null>(null);
   const { dates, players } = report;
@@ -313,6 +333,7 @@ function AttendanceGradebook({
       {selectedPlayer && (
         <PlayerDrawer
           row={selectedPlayer}
+          consequences={consequences}
           onClose={() => setSelectedPlayer(null)}
           onUpdated={(pid, date, rec) => {
             onUpdated(pid, date, rec);
@@ -355,6 +376,7 @@ function AttendanceGradebook({
                     <ReviewCell
                       date={d}
                       rec={row.records[d] ?? null}
+                      consequences={consequences}
                       onUpdated={(date, rec) => onUpdated(row.player_id, date, rec)}
                     />
                   </td>
@@ -381,12 +403,24 @@ export default function AttendanceReportPage() {
   const today          = isoToday();
   const seasonStart    = settings.season_start ?? undefined;
 
-  const [preset,     setPreset]     = useState<Preset>("season");
-  const [customFrom, setCustomFrom] = useState(seasonStart ?? daysAgo(30));
-  const [customTo,   setCustomTo]   = useState(today);
-  const [report,     setReport]     = useState<AttendanceReport | null>(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [preset,       setPreset]       = useState<Preset>("season");
+  const [customFrom,   setCustomFrom]   = useState(seasonStart ?? daysAgo(30));
+  const [customTo,     setCustomTo]     = useState(today);
+  const [report,       setReport]       = useState<AttendanceReport | null>(null);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
+  const [consequences, setConsequences] = useState<ConsequenceMap>({});
+
+  useEffect(() => {
+    fetch("/api/attendance/consequences")
+      .then((r) => r.ok ? r.json() : [])
+      .then((rows: AttendanceConsequence[]) => {
+        const map: ConsequenceMap = {};
+        for (const r of rows) map[`${r.event_type}:${r.status}`] = r.makeup_work;
+        setConsequences(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const { from, to } = useMemo(() => {
     switch (preset) {
@@ -511,7 +545,7 @@ export default function AttendanceReportPage() {
         {loading  && <div className="py-16 text-center text-gray-500 font-mono text-xs">LOADING…</div>}
         {!loading && error  && <div className="py-16 text-center text-red-400 font-mono text-xs">{error}</div>}
         {!loading && !error && report && (
-          <AttendanceGradebook report={report} onUpdated={handleUpdated} />
+          <AttendanceGradebook report={report} consequences={consequences} onUpdated={handleUpdated} />
         )}
       </div>
 
