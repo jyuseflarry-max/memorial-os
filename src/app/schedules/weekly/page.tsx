@@ -112,6 +112,7 @@ export default function WeeklyEventsPage() {
   // Absence sheet state
   const [absenceSheet, setAbsenceSheet]           = useState<EventItem | null>(null);
   const [absenceReason, setAbsenceReason]         = useState("");
+  const [absenceType, setAbsenceType]             = useState<"absence" | "school_event">("absence");
   const [submittingAbsence, setSubmittingAbsence] = useState(false);
   const [reportedDates, setReportedDates]         = useState<Set<string>>(new Set());
 
@@ -180,16 +181,18 @@ export default function WeeklyEventsPage() {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
-          practice_date: absenceSheet.date,
-          player_id:     authUser.playerId,
-          team_id:       teamId ?? null,
-          event_type:    absenceSheet.kind === "game" ? "game" : "practice",
-          notes:         absenceReason.trim() || null,
+          practice_date:   absenceSheet.date,
+          player_id:       authUser.playerId,
+          team_id:         teamId ?? null,
+          event_type:      absenceSheet.kind === "game" ? "game" : "practice",
+          is_school_event: absenceType === "school_event",
+          notes:           absenceReason.trim() || null,
         }),
       });
       setReportedDates((prev) => new Set([...prev, absenceSheet.date]));
       setAbsenceSheet(null);
       setAbsenceReason("");
+      setAbsenceType("absence");
     } finally {
       setSubmittingAbsence(false);
     }
@@ -439,7 +442,7 @@ export default function WeeklyEventsPage() {
         const { weekday, short } = fmtDate(absenceSheet.date);
         return (
           <div className="fixed inset-0 z-50 flex flex-col justify-end">
-            <div className="absolute inset-0 bg-black/60" onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); }} />
+            <div className="absolute inset-0 bg-black/60" onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); setAbsenceType("absence"); }} />
             <div className="relative bg-gray-900 border-t border-gray-700 rounded-t-2xl p-5 flex flex-col gap-4">
               <div className="w-10 h-1 rounded-full bg-gray-700 mx-auto -mt-1 mb-1" />
               <div className="flex items-start justify-between">
@@ -451,20 +454,46 @@ export default function WeeklyEventsPage() {
                   <X size={16} />
                 </button>
               </div>
+              {/* Type toggle */}
+              <div className="flex gap-2">
+                {([["absence", "Absence"], ["school_event", "School Event"]] as const).map(([val, lbl]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setAbsenceType(val)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+                      absenceType === val
+                        ? val === "school_event"
+                          ? "bg-sky-500/20 border-sky-500 text-sky-300"
+                          : "bg-coaches-red/20 border-coaches-red text-white"
+                        : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+              {absenceType === "school_event" && (
+                <p className="text-sky-400/70 text-xs -mt-1">
+                  School events are noted for planning but have no consequence or makeup work.
+                </p>
+              )}
               <div>
-                <label className="block text-xs font-mono text-gray-400 mb-2 uppercase tracking-wider">Reason (optional)</label>
+                <label className="block text-xs font-mono text-gray-400 mb-2 uppercase tracking-wider">
+                  {absenceType === "school_event" ? "School event / reason (required)" : "Reason (optional)"}
+                </label>
                 <textarea
                   rows={3}
-                  placeholder="e.g. family trip, doctor appointment…"
+                  placeholder={absenceType === "school_event" ? "e.g. track meet, band concert, field trip…" : "e.g. family trip, doctor appointment…"}
                   value={absenceReason}
                   onChange={(e) => setAbsenceReason(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-coaches-red transition-colors"
                 />
               </div>
               <div className="flex gap-3">
-                <button onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); }} className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 text-sm transition-colors">Cancel</button>
+                <button onClick={() => { setAbsenceSheet(null); setAbsenceReason(""); setAbsenceType("absence"); }} className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 text-sm transition-colors">Cancel</button>
                 <button
-                  disabled={submittingAbsence}
+                  disabled={submittingAbsence || (absenceType === "school_event" && !absenceReason.trim())}
                   onClick={handleAbsenceSubmit}
                   className="flex-1 py-3 rounded-xl bg-coaches-red text-white font-semibold text-sm disabled:opacity-50 transition-colors"
                 >
@@ -480,7 +509,7 @@ export default function WeeklyEventsPage() {
 }
 
 // ── Types for makeup tracking ──────────────────────────────────────────────
-type MakeupRecord = { id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null; event_type: "practice" | "game"; status: "excused" | "unexcused" };
+type MakeupRecord = { id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null; event_type: "practice" | "game"; status: "excused" | "unexcused" | "school_event" };
 
 // ── Event row renderer (shared by agenda + calendar day panel) ─────────────
 

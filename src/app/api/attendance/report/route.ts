@@ -18,7 +18,7 @@ import { apiError }                       from "@/lib/api-error";
 
 export interface AttendanceRecord {
   id:                  string;
-  status:              "excused" | "unexcused";
+  status:              "excused" | "unexcused" | "school_event";
   event_type:          "practice" | "game";
   notes:               string | null;
   makeup_required:     boolean;
@@ -37,6 +37,7 @@ export interface PlayerAttendanceRow {
   totals: {
     excused:         number;
     unexcused:       number;
+    school_events:   number;
     makeup_required: number;
     makeup_done:     number;
   };
@@ -106,12 +107,12 @@ export async function GET(request: NextRequest) {
     const playerRows: PlayerAttendanceRow[] = (players ?? []).map((p) => {
       const recs = absByPlayer[p.id] ?? [];
       const records: Record<string, AttendanceRecord> = {};
-      let excused = 0, unexcused = 0, makeup_required = 0, makeup_done = 0;
+      let excused = 0, unexcused = 0, school_events = 0, makeup_required = 0, makeup_done = 0;
 
       for (const r of recs) {
         records[r.practice_date] = {
           id:                  r.id,
-          status:              r.status as "excused" | "unexcused",
+          status:              r.status as "excused" | "unexcused" | "school_event",
           event_type:          (r.event_type ?? "practice") as "practice" | "game",
           notes:               r.notes,
           makeup_required:     r.makeup_required ?? true,
@@ -122,6 +123,7 @@ export async function GET(request: NextRequest) {
           reviewed_at:         r.reviewed_at,
         };
         if (r.status === "excused") excused++;
+        else if (r.status === "school_event") school_events++;
         else unexcused++;
         if (r.makeup_required) {
           makeup_required++;
@@ -134,7 +136,7 @@ export async function GET(request: NextRequest) {
         full_name:     p.name,
         jersey_number: p.jersey_number ?? null,
         records,
-        totals: { excused, unexcused, makeup_required, makeup_done },
+        totals: { excused, unexcused, school_events, makeup_required, makeup_done },
       };
     })
     // Only include players with at least one absence (or all if no filter)

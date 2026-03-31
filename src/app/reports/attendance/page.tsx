@@ -51,6 +51,13 @@ const PRESETS: { id: Preset; label: string }[] = [
 // ── Status badge ───────────────────────────────────────────────────────────
 
 function StatusBadge({ rec }: { rec: AttendanceRecord }) {
+  if (rec.status === "school_event") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase">
+        School Event
+      </span>
+    );
+  }
   if (!rec.reviewed_at) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold uppercase">
@@ -218,14 +225,16 @@ function AbsenceCard({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setReviewing((v) => !v)}
-          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-700 hover:border-gray-500 text-gray-400 hover:text-white text-xs font-semibold transition-colors"
-        >
-          {reviewing ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          {reviewing ? "Close" : "Review"}
-        </button>
+        {localRec.status !== "school_event" && (
+          <button
+            type="button"
+            onClick={() => setReviewing((v) => !v)}
+            className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-700 hover:border-gray-500 text-gray-400 hover:text-white text-xs font-semibold transition-colors"
+          >
+            {reviewing ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {reviewing ? "Close" : "Review"}
+          </button>
+        )}
       </div>
 
       {/* Makeup work (after review) */}
@@ -420,7 +429,7 @@ function AthleteCard({
   onUpdated:    (playerId: string, date: string, rec: AttendanceRecord) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const total = row.totals.excused + row.totals.unexcused;
+  const total = row.totals.excused + row.totals.unexcused + row.totals.school_events;
   const pending = Object.values(row.records).filter((r) => !r.reviewed_at).length;
 
   return (
@@ -441,6 +450,11 @@ function AthleteCard({
             <p className="text-white font-semibold text-sm">{row.full_name}</p>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="text-gray-500 text-[10px] font-mono">{total} absence{total !== 1 ? "s" : ""}</span>
+              {row.totals.school_events > 0 && (
+                <span className="text-sky-400 text-[10px] font-mono bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded-full">
+                  {row.totals.school_events} school event{row.totals.school_events !== 1 ? "s" : ""}
+                </span>
+              )}
               {pending > 0 && (
                 <span className="text-amber-400 text-[10px] font-mono bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
                   {pending} in review
@@ -569,12 +583,14 @@ export default function AttendanceReportPage() {
   }, [selectedTeamId, from, to]);
 
   function recomputeTotals(records: Record<string, AttendanceRecord>) {
-    let excused = 0, unexcused = 0, makeup_required = 0, makeup_done = 0;
+    let excused = 0, unexcused = 0, school_events = 0, makeup_required = 0, makeup_done = 0;
     for (const r of Object.values(records)) {
-      if (r.status === "excused") excused++; else unexcused++;
+      if (r.status === "excused") excused++;
+      else if (r.status === "school_event") school_events++;
+      else unexcused++;
       if (r.makeup_required) { makeup_required++; if (r.makeup_completed_at) makeup_done++; }
     }
-    return { excused, unexcused, makeup_required, makeup_done };
+    return { excused, unexcused, school_events, makeup_required, makeup_done };
   }
 
   function handleUpdated(playerId: string, date: string, rec: AttendanceRecord) {
@@ -699,10 +715,10 @@ export default function AttendanceReportPage() {
       {report && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {[
-            { label: "Excused",      val: report.players.reduce((s, p) => s + p.totals.excused, 0),         color: "text-emerald-400" },
-            { label: "Unexcused",    val: report.players.reduce((s, p) => s + p.totals.unexcused, 0),       color: "text-red-400" },
-            { label: "Makeup Req",   val: report.players.reduce((s, p) => s + p.totals.makeup_required, 0), color: "text-amber-400" },
-            { label: "Makeup Done",  val: report.players.reduce((s, p) => s + p.totals.makeup_done, 0),     color: "text-sky-400" },
+            { label: "Excused",       val: report.players.reduce((s, p) => s + p.totals.excused, 0),         color: "text-emerald-400" },
+            { label: "Unexcused",   val: report.players.reduce((s, p) => s + p.totals.unexcused, 0),       color: "text-red-400" },
+            { label: "School Event", val: report.players.reduce((s, p) => s + p.totals.school_events, 0),  color: "text-sky-400" },
+            { label: "Makeup Req",  val: report.players.reduce((s, p) => s + p.totals.makeup_required, 0), color: "text-amber-400" },
           ].map(({ label, val, color }) => (
             <div key={label} className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-center">
               <p className={`font-bold font-mono text-xl ${color}`}>{val}</p>

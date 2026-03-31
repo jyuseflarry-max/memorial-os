@@ -41,10 +41,12 @@ export async function GET(request: NextRequest) {
 /** POST /api/attendance — upsert an absence record (always starts as unexcused) */
 export async function POST(request: NextRequest) {
   try {
-    const { practice_date, player_id, team_id, notes, event_type } = await request.json();
+    const { practice_date, player_id, team_id, notes, event_type, is_school_event } = await request.json();
 
     if (!practice_date || !player_id) return apiError("practice_date and player_id required", 400);
-    const resolvedEventType = event_type === "game" ? "game" : "practice";
+    const resolvedEventType  = event_type === "game" ? "game" : "practice";
+    const resolvedStatus     = is_school_event ? "school_event" : "unexcused";
+    const resolvedMakeup     = is_school_event ? false : true;
 
     const userClient = await getSupabaseUser();
     const { data: { user: me } } = await userClient.auth.getUser();
@@ -73,10 +75,10 @@ export async function POST(request: NextRequest) {
         team_id:        team_id ?? null,
         practice_date,
         player_id,
-        status:         "unexcused",
-        notes:          notes ?? null,
-        event_type:     resolvedEventType,
-        makeup_required: true,
+        status:          resolvedStatus,
+        notes:           notes ?? null,
+        event_type:      resolvedEventType,
+        makeup_required: resolvedMakeup,
       })
       .select("id, player_id, status, notes")
       .single();
@@ -93,7 +95,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const { id, status, notes } = await request.json();
     if (!id) return apiError("id is required", 400);
-    if (status && !["excused", "unexcused"].includes(status)) return apiError("invalid status", 400);
+    if (status && !["excused", "unexcused", "school_event"].includes(status)) return apiError("invalid status", 400);
 
     const userClient = await getSupabaseUser();
     const { data: { user: me } } = await userClient.auth.getUser();
@@ -104,10 +106,11 @@ export async function PATCH(request: NextRequest) {
     if (!myRecord) return apiError("User record not found", 403);
     if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
 
+    const isSchoolEvent = status === "school_event";
     const updates: Record<string, unknown> = {
       reviewed_by:     me.id,
       reviewed_at:     new Date().toISOString(),
-      makeup_required: true,
+      makeup_required: isSchoolEvent ? false : true,
     };
     if (status !== undefined) updates.status = status;
     if (notes  !== undefined) updates.notes  = notes;
@@ -121,6 +124,11 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // School events have no consequence and no player notification
+    if (data.status === "school_event") {
+      return Response.json(data);
+    }
 
     // Look up the makeup work description for this event_type + status combination
     const resolvedStatus    = (data.status ?? "unexcused") as "excused" | "unexcused";
