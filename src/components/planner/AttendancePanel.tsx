@@ -33,19 +33,10 @@ export default function AttendancePanel({ date, teamId, players, onAbsentChange 
         const next = new Set(absences.filter((a) => a.player_id !== player.id).map((a) => a.player_id));
         onAbsentChange?.(next);
       } else {
-        await markAbsent(player.id, "unexcused");
+        await markAbsent(player.id, "practice");
         const next = new Set([...absences.map((a) => a.player_id), player.id]);
         onAbsentChange?.(next);
       }
-    } catch {}
-    setSaving(null);
-  }
-
-  async function setExcuse(player: Player, status: "excused" | "unexcused") {
-    if (saving) return;
-    setSaving(player.id);
-    try {
-      await markAbsent(player.id, status);
     } catch {}
     setSaving(null);
   }
@@ -117,34 +108,11 @@ export default function AttendancePanel({ date, teamId, players, onAbsentChange 
                   </span>
                 </div>
 
-                {/* Excused / Unexcused toggle — only when absent */}
+                {/* Status badge — always unexcused until coach reviews in Attendance Report */}
                 {absent && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      disabled={!!saving}
-                      onClick={() => setExcuse(player, "excused")}
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wide border transition-colors ${
-                        absence?.status === "excused"
-                          ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                          : "bg-transparent text-gray-600 border-gray-700 hover:border-gray-500 hover:text-gray-400"
-                      }`}
-                    >
-                      Excused
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!!saving}
-                      onClick={() => setExcuse(player, "unexcused")}
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wide border transition-colors ${
-                        absence?.status === "unexcused"
-                          ? "bg-red-500/20 text-red-400 border-red-500/40"
-                          : "bg-transparent text-gray-600 border-gray-700 hover:border-gray-500 hover:text-gray-400"
-                      }`}
-                    >
-                      Unexcused
-                    </button>
-                  </div>
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wide text-red-400 border border-red-500/30 bg-red-500/10 px-2 py-0.5 rounded-full shrink-0">
+                    Unexcused
+                  </span>
                 )}
               </div>
             );
