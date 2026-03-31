@@ -29,7 +29,9 @@ function getWeekBounds(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
-function toISO(d: Date): string { return d.toISOString().split("T")[0]; }
+function toISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function fmt12h(time: string): string {
   const [hStr, mStr] = time.split(":");
