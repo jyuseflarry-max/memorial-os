@@ -59,16 +59,6 @@ DECLARE
   eq_trx          UUID; eq_jump_rope   UUID; eq_landmine     UUID;
   eq_ghd          UUID; eq_bodyweight  UUID;
 
-  PROCEDURE upsert_muscle(p_name TEXT, p_region TEXT, OUT p_id UUID) AS
-  $$
-  BEGIN
-    SELECT id INTO p_id FROM strength_muscle_groups WHERE tenant_id IS NULL AND name = p_name;
-    IF p_id IS NULL THEN
-      INSERT INTO strength_muscle_groups (tenant_id, name, body_region) VALUES (NULL, p_name, p_region) RETURNING id INTO p_id;
-    END IF;
-  END;
-  $$ LANGUAGE plpgsql;
-
 BEGIN
   -- ── Muscle Groups ──────────────────────────────────────────────────────
   SELECT id INTO mg_chest       FROM strength_muscle_groups WHERE tenant_id IS NULL AND name = 'Chest';
