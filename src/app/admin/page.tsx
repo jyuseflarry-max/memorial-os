@@ -5,7 +5,7 @@ import {
   UserCog, Users, UsersRound, MapPin,
   Target, TrendingUp, Tag,
   Dumbbell, Lock, Package, BookOpen,
-  Settings, ChevronRight, ShieldCheck, KeyRound,
+  Settings, ChevronRight, ShieldCheck,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
@@ -130,12 +130,6 @@ const SECTIONS = [
         title: "Program Settings",
         desc:  "Name, logo, season, brand colors, module visibility, and integrations.",
         external: true,
-      },
-      {
-        href:  "/admin/permissions",
-        icon:  KeyRound,
-        title: "Page Permissions",
-        desc:  "Control which roles can access each page — None, View, Edit, or Full — for coaches, players, and family.",
       },
     ],
   },
