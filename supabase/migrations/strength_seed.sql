@@ -419,17 +419,17 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Skullcrusher') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Skullcrusher','isolation',ARRAY['Triceps'],ARRAY[],ARRAY['EZ Curl Bar','Flat Bench'],false,'Lower bar to forehead, elbows stay pointing at ceiling, extend to lockout',mg_triceps,ARRAY[]::uuid[],ARRAY[eq_ez_bar,eq_flat_bench]);
+    VALUES (NULL,'Skullcrusher','isolation',ARRAY['Triceps'],ARRAY[]::text[],ARRAY['EZ Curl Bar','Flat Bench'],false,'Lower bar to forehead, elbows stay pointing at ceiling, extend to lockout',mg_triceps,ARRAY[]::uuid[],ARRAY[eq_ez_bar,eq_flat_bench]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Tricep Pushdown') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Tricep Pushdown','isolation',ARRAY['Triceps'],ARRAY[],ARRAY['Cable Machine'],false,'High pulley, elbows tucked, push straight down to full extension',mg_triceps,ARRAY[]::uuid[],ARRAY[eq_cable]);
+    VALUES (NULL,'Tricep Pushdown','isolation',ARRAY['Triceps'],ARRAY[]::text[],ARRAY['Cable Machine'],false,'High pulley, elbows tucked, push straight down to full extension',mg_triceps,ARRAY[]::uuid[],ARRAY[eq_cable]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Overhead Tricep Extension') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Overhead Tricep Extension','isolation',ARRAY['Triceps'],ARRAY[],ARRAY['EZ Curl Bar','Dumbbells'],false,'Arms overhead, elbows pointing up, lower behind head',mg_triceps,ARRAY[]::uuid[],ARRAY[eq_ez_bar,eq_dumbbells]);
+    VALUES (NULL,'Overhead Tricep Extension','isolation',ARRAY['Triceps'],ARRAY[]::text[],ARRAY['EZ Curl Bar','Dumbbells'],false,'Arms overhead, elbows pointing up, lower behind head',mg_triceps,ARRAY[]::uuid[],ARRAY[eq_ez_bar,eq_dumbbells]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Close-Grip Bench Press') THEN
@@ -439,7 +439,7 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Lateral Raise') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Lateral Raise','isolation',ARRAY['Shoulders'],ARRAY[],ARRAY['Dumbbells'],false,'Slight forward lean, lead with elbows to shoulder height, controlled descent',mg_shoulders,ARRAY[]::uuid[],ARRAY[eq_dumbbells]);
+    VALUES (NULL,'Lateral Raise','isolation',ARRAY['Shoulders'],ARRAY[]::text[],ARRAY['Dumbbells'],false,'Slight forward lean, lead with elbows to shoulder height, controlled descent',mg_shoulders,ARRAY[]::uuid[],ARRAY[eq_dumbbells]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Face Pull') THEN
@@ -454,32 +454,32 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Cable Fly') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Cable Fly','isolation',ARRAY['Chest'],ARRAY[],ARRAY['Cable Machine'],false,'Cross-body motion, slight bend in elbows throughout, feel the stretch at full extension',mg_chest,ARRAY[]::uuid[],ARRAY[eq_cable]);
+    VALUES (NULL,'Cable Fly','isolation',ARRAY['Chest'],ARRAY[]::text[],ARRAY['Cable Machine'],false,'Cross-body motion, slight bend in elbows throughout, feel the stretch at full extension',mg_chest,ARRAY[]::uuid[],ARRAY[eq_cable]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Leg Extension') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Leg Extension','isolation',ARRAY['Quadriceps'],ARRAY[],ARRAY['Leg Extension Machine'],false,'Full extension, slow controlled descent',mg_quads,ARRAY[]::uuid[],ARRAY[eq_leg_ext]);
+    VALUES (NULL,'Leg Extension','isolation',ARRAY['Quadriceps'],ARRAY[]::text[],ARRAY['Leg Extension Machine'],false,'Full extension, slow controlled descent',mg_quads,ARRAY[]::uuid[],ARRAY[eq_leg_ext]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Lying Leg Curl') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Lying Leg Curl','isolation',ARRAY['Hamstrings'],ARRAY[],ARRAY['Leg Curl Machine'],false,'Hips stay down, full range of motion, squeeze at top',mg_hamstrings,ARRAY[]::uuid[],ARRAY[eq_leg_curl]);
+    VALUES (NULL,'Lying Leg Curl','isolation',ARRAY['Hamstrings'],ARRAY[]::text[],ARRAY['Leg Curl Machine'],false,'Hips stay down, full range of motion, squeeze at top',mg_hamstrings,ARRAY[]::uuid[],ARRAY[eq_leg_curl]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Nordic Hamstring Curl') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Nordic Hamstring Curl','isolation',ARRAY['Hamstrings'],ARRAY[],ARRAY['GHD Machine'],false,'Anchor ankles, lower body with hamstrings resisting, use hands to push up',mg_hamstrings,ARRAY[]::uuid[],ARRAY[eq_ghd]);
+    VALUES (NULL,'Nordic Hamstring Curl','isolation',ARRAY['Hamstrings'],ARRAY[]::text[],ARRAY['GHD Machine'],false,'Anchor ankles, lower body with hamstrings resisting, use hands to push up',mg_hamstrings,ARRAY[]::uuid[],ARRAY[eq_ghd]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Standing Calf Raise') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Standing Calf Raise','isolation',ARRAY['Calves'],ARRAY[],ARRAY['Barbell','Power Rack'],false,'Full range of motion — deep stretch at bottom, rise onto toes at top, pause each rep',mg_calves,ARRAY[]::uuid[],ARRAY[eq_barbell,eq_power_rack]);
+    VALUES (NULL,'Standing Calf Raise','isolation',ARRAY['Calves'],ARRAY[]::text[],ARRAY['Barbell','Power Rack'],false,'Full range of motion — deep stretch at bottom, rise onto toes at top, pause each rep',mg_calves,ARRAY[]::uuid[],ARRAY[eq_barbell,eq_power_rack]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Seated Calf Raise') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Seated Calf Raise','isolation',ARRAY['Calves'],ARRAY[],ARRAY['Dumbbells'],false,'Knee at 90 degrees, weight on lower thigh, full range',mg_calves,ARRAY[]::uuid[],ARRAY[eq_dumbbells]);
+    VALUES (NULL,'Seated Calf Raise','isolation',ARRAY['Calves'],ARRAY[]::text[],ARRAY['Dumbbells'],false,'Knee at 90 degrees, weight on lower thigh, full range',mg_calves,ARRAY[]::uuid[],ARRAY[eq_dumbbells]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Barbell Shrug') THEN
@@ -520,7 +520,7 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Cable Crunch') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Cable Crunch','core',ARRAY['Abs'],ARRAY[],ARRAY['Cable Machine'],false,'Kneel at cable, pull elbows to knees, crunch from hips — do not pull with arms',mg_abs,ARRAY[]::uuid[],ARRAY[eq_cable]);
+    VALUES (NULL,'Cable Crunch','core',ARRAY['Abs'],ARRAY[]::text[],ARRAY['Cable Machine'],false,'Kneel at cable, pull elbows to knees, crunch from hips — do not pull with arms',mg_abs,ARRAY[]::uuid[],ARRAY[eq_cable]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Russian Twist') THEN
@@ -612,12 +612,12 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Thoracic Extension') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Thoracic Extension','mobility',ARRAY['Upper Back'],ARRAY[],ARRAY['Foam Roller'],false,'Foam roller across mid back, support head, slowly extend over roller',mg_upper_back,ARRAY[]::uuid[],ARRAY[eq_foam_roller]);
+    VALUES (NULL,'Thoracic Extension','mobility',ARRAY['Upper Back'],ARRAY[]::text[],ARRAY['Foam Roller'],false,'Foam roller across mid back, support head, slowly extend over roller',mg_upper_back,ARRAY[]::uuid[],ARRAY[eq_foam_roller]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Foam Rolling') THEN
     INSERT INTO strength_exercises (tenant_id,name,category,primary_muscles,secondary_muscles,equipment_keys,is_primary_lift,coaching_cues,primary_muscle_group_id,secondary_muscle_group_ids,equipment_ids)
-    VALUES (NULL,'Foam Rolling','mobility',ARRAY['Full Body'],ARRAY[],ARRAY['Foam Roller'],false,'Slow passes, pause on tight spots 30–60 seconds, avoid rolling joints',mg_full_body,ARRAY[]::uuid[],ARRAY[eq_foam_roller]);
+    VALUES (NULL,'Foam Rolling','mobility',ARRAY['Full Body'],ARRAY[]::text[],ARRAY['Foam Roller'],false,'Slow passes, pause on tight spots 30–60 seconds, avoid rolling joints',mg_full_body,ARRAY[]::uuid[],ARRAY[eq_foam_roller]);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM strength_exercises WHERE tenant_id IS NULL AND name='Ankle Mobility Drill') THEN
