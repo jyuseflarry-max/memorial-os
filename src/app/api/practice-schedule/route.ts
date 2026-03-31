@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb }    from "@/lib/db";
+import { apiError } from "@/lib/api-error";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,10 +16,10 @@ export async function GET(req: NextRequest) {
     if (to) q = q.lte("practice_date", to);
 
     const { data, error } = await q;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     return NextResponse.json(data ?? []);
-  } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown" }, { status: 500 });
+  } catch (err) {
+    return apiError(err);
   }
 }
 
@@ -27,9 +28,9 @@ export async function POST(req: NextRequest) {
     const db = await getDb();
     const body = await req.json();
     const { data, error } = await db.insert("practice_schedule", body).select("*, location:locations(*), facility:facilities(*)").single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
-  } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown" }, { status: 500 });
+    if (error) throw error;
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    return apiError(err);
   }
 }

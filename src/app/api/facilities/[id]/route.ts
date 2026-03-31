@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
-import { apiError } from "@/lib/api-error";
+import { getDb }       from "@/lib/db";
+import { apiError }    from "@/lib/api-error";
+import { ROLE_STAFF }  from "@/lib/roles";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,24 +9,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { name, sort_order } = await request.json();
     if (!name?.trim()) return apiError("name is required", 400);
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-    if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
+    const db = await getDb();
+    if (!ROLE_STAFF.includes(db.role)) return apiError("Forbidden", 403);
 
     const updates: Record<string, unknown> = { name: name.trim() };
     if (sort_order !== undefined) updates.sort_order = sort_order;
 
-    const { data, error } = await service
-      .from("facilities")
-      .update(updates)
+    const { data, error } = await db
+      .update("facilities", updates)
       .eq("id", id)
-      .eq("tenant_id", myRecord.tenant_id)
-      .select("*")
+      .select("id, tenant_id, name, sort_order, created_at")
       .single();
 
     if (error) throw error;
@@ -39,20 +32,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   try {
     const { id } = await params;
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
+    if (!ROLE_STAFF.includes(db.role)) return apiError("Forbidden", 403);
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-    if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
-
-    const { error } = await service
-      .from("facilities")
-      .delete()
-      .eq("id", id)
-      .eq("tenant_id", myRecord.tenant_id);
+    const { error } = await db.delete("facilities").eq("id", id);
 
     if (error) throw error;
     return Response.json({ ok: true });

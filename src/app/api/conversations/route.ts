@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb }              from "@/lib/db";
+import { apiError }           from "@/lib/api-error";
 import { getSupabaseServer }  from "@/lib/supabase/server";
 import { findOrCreate1on1 }   from "@/lib/conversations";
 
@@ -102,7 +103,7 @@ export async function POST(req: Request) {
       .select("id")
       .single();
 
-    if (convErr || !conv) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+    if (convErr || !conv) return apiError("Failed to create conversation", 500);
 
     const allIds = [db.userId, ...recipientIds.filter((id) => id !== db.userId)];
     await sb.from("conversation_participants").insert(
@@ -114,10 +115,10 @@ export async function POST(req: Request) {
 
   // ── 1:1 conversation — find existing or create ──────────────────────────
   const { recipientId } = body;
-  if (!recipientId) return NextResponse.json({ error: "recipientId or recipientIds required" }, { status: 400 });
+  if (!recipientId) return apiError("recipientId or recipientIds required", 400);
 
   const convId = await findOrCreate1on1(db.userId, recipientId, db.tenantId);
-  if (!convId) return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+  if (!convId) return apiError("Failed to create conversation", 500);
 
   // Determine if the conversation already existed
   const { data: participants } = await sb

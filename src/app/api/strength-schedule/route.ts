@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb }    from "@/lib/db";
 import { apiError } from "@/lib/api-error";
 
 export interface StrengthScheduleEntry {
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     if (to)     q = q.lte("schedule_date", to);
 
     const { data, error } = await q;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     return NextResponse.json(data ?? []);
   } catch (err) {
     return apiError(err);
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       .insert("strength_schedule", body)
       .select("*, program:strength_programs(id,name,phase), facility:facilities(id,name)")
       .single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     return NextResponse.json(data, { status: 201 });
   } catch (err) {
     return apiError(err);

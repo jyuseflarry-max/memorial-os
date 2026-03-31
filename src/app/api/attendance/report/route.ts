@@ -12,9 +12,10 @@
  *   totals: { excused, unexcused, makeup_required, makeup_done }
  * }
  */
-import { NextRequest }                    from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
-import { apiError }                       from "@/lib/api-error";
+import { NextRequest } from "next/server";
+import { getDb }       from "@/lib/db";
+import { apiError }    from "@/lib/api-error";
+import { ROLE_STAFF }  from "@/lib/roles";
 
 export interface AttendanceRecord {
   id:                  string;
@@ -55,22 +56,13 @@ export async function GET(request: NextRequest) {
     const from   = searchParams.get("from");
     const to     = searchParams.get("to");
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
-
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-    if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
-
-    const tenantId = myRecord.tenant_id;
+    const db = await getDb();
+    if (!ROLE_STAFF.includes(db.role)) return apiError("Forbidden", 403);
 
     // 1. Load all absence records in range
-    let q = service
+    let q = db
       .from("practice_attendance")
       .select("id, player_id, practice_date, status, event_type, notes, makeup_required, makeup_proof_url, makeup_proof_name, makeup_completed_at, reviewed_by, reviewed_at")
-      .eq("tenant_id", tenantId)
       .order("practice_date", { ascending: true });
 
     if (teamId) q = q.eq("team_id", teamId);
@@ -81,10 +73,9 @@ export async function GET(request: NextRequest) {
     if (absErr) throw absErr;
 
     // 2. Load players (for the team if specified, otherwise all)
-    let pq = service
+    let pq = db
       .from("players")
       .select("id, name, jersey_number")
-      .eq("tenant_id", tenantId)
       .order("name");
 
     if (teamId) pq = pq.eq("team_id", teamId);

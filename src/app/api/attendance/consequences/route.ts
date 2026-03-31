@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
-import { apiError } from "@/lib/api-error";
+import { getDb }      from "@/lib/db";
+import { apiError }   from "@/lib/api-error";
+import { ROLE_COACH } from "@/lib/roles";
 
 export interface AttendanceConsequence {
   id:         string;
@@ -16,18 +17,11 @@ export interface AttendanceConsequence {
  */
 export async function GET() {
   try {
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
-    const { data, error } = await service
+    const { data, error } = await db
       .from("attendance_consequences")
       .select("id, event_type, status, makeup_work, updated_at")
-      .eq("tenant_id", myRecord.tenant_id)
       .order("event_type")
       .order("status");
 
@@ -44,14 +38,14 @@ export async function GET() {
 
     const missing = all.filter((r) => !existing.has(`${r.event_type}:${r.status}`));
     if (missing.length > 0) {
-      await service.from("attendance_consequences").insert(
-        missing.map((r) => ({ ...r, tenant_id: myRecord.tenant_id, makeup_work: "" }))
+      await db.insert(
+        "attendance_consequences",
+        missing.map((r) => ({ ...r, makeup_work: "" }))
       );
       // Re-fetch with the newly inserted rows
-      const { data: full, error: e2 } = await service
+      const { data: full, error: e2 } = await db
         .from("attendance_consequences")
         .select("id, event_type, status, makeup_work, updated_at")
-        .eq("tenant_id", myRecord.tenant_id)
         .order("event_type")
         .order("status");
       if (e2) throw e2;
@@ -72,23 +66,15 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     const { id, makeup_work } = await request.json() as { id: string; makeup_work: string };
-    if (!id)            return apiError("id is required", 400);
+    if (!id)                       return apiError("id is required", 400);
     if (makeup_work === undefined) return apiError("makeup_work is required", 400);
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
+    if (!ROLE_COACH.includes(db.role)) return apiError("Forbidden", 403);
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-    if (!["Admin", "Coach"].includes(myRecord.role)) return apiError("Forbidden", 403);
-
-    const { data, error } = await service
-      .from("attendance_consequences")
-      .update({ makeup_work, updated_at: new Date().toISOString(), updated_by: me.id })
+    const { data, error } = await db
+      .update("attendance_consequences", { makeup_work, updated_at: new Date().toISOString(), updated_by: db.userId })
       .eq("id", id)
-      .eq("tenant_id", myRecord.tenant_id)
       .select("id, event_type, status, makeup_work, updated_at")
       .single();
 

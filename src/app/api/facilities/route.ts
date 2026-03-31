@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { getSupabaseServer, getSupabaseUser } from "@/lib/supabase/server";
-import { apiError } from "@/lib/api-error";
+import { getDb }       from "@/lib/db";
+import { apiError }    from "@/lib/api-error";
+import { ROLE_STAFF }  from "@/lib/roles";
 
 export interface Facility {
   id:         string;
@@ -21,20 +22,11 @@ const DEFAULTS = [
 
 export async function GET() {
   try {
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-
-    const tenantId = myRecord.tenant_id;
-
-    let { data, error } = await service
+    let { data, error } = await db
       .from("facilities")
-      .select("*")
-      .eq("tenant_id", tenantId)
+      .select("id, tenant_id, name, sort_order, created_at")
       .order("sort_order")
       .order("name");
 
@@ -42,11 +34,10 @@ export async function GET() {
 
     // Auto-seed defaults if tenant has no facilities yet
     if (!data || data.length === 0) {
-      const seeds = DEFAULTS.map((name, i) => ({ tenant_id: tenantId, name, sort_order: i }));
-      const { data: seeded, error: seedErr } = await service
-        .from("facilities")
-        .insert(seeds)
-        .select("*")
+      const seeds = DEFAULTS.map((name, i) => ({ name, sort_order: i }));
+      const { data: seeded, error: seedErr } = await db
+        .insert("facilities", seeds)
+        .select("id, tenant_id, name, sort_order, created_at")
         .order("sort_order");
       if (seedErr) throw seedErr;
       data = seeded;
@@ -63,19 +54,12 @@ export async function POST(request: NextRequest) {
     const { name, sort_order } = await request.json();
     if (!name?.trim()) return apiError("name is required", 400);
 
-    const userClient = await getSupabaseUser();
-    const { data: { user: me } } = await userClient.auth.getUser();
-    if (!me) return apiError("Not authenticated", 401);
+    const db = await getDb();
+    if (!ROLE_STAFF.includes(db.role)) return apiError("Forbidden", 403);
 
-    const service = getSupabaseServer();
-    const { data: myRecord } = await service.from("users").select("tenant_id, role").eq("id", me.id).single();
-    if (!myRecord) return apiError("User record not found", 403);
-    if (!["Admin", "Coach", "Manager"].includes(myRecord.role)) return apiError("Forbidden", 403);
-
-    const { data, error } = await service
-      .from("facilities")
-      .insert({ tenant_id: myRecord.tenant_id, name: name.trim(), sort_order: sort_order ?? 0 })
-      .select("*")
+    const { data, error } = await db
+      .insert("facilities", { name: name.trim(), sort_order: sort_order ?? 0 })
+      .select("id, tenant_id, name, sort_order, created_at")
       .single();
 
     if (error) throw error;
