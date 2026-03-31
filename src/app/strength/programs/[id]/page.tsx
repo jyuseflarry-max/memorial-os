@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2, ChevronLeft, Save, CheckCircle2, Play } from "lucide-react";
+import { Loader2, Plus, Trash2, ChevronLeft, Save, CheckCircle2, Play, X, Check } from "lucide-react";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
-import type { StrengthProgram, ProgramBlock, StrengthExercise } from "@/types/strength";
+import type { StrengthProgram, ProgramBlock, StrengthExercise, MuscleGroup, StrengthEquipment } from "@/types/strength";
 
 const PHASE_COLORS: Record<string, string> = {
   accumulation:    "text-blue-400   bg-blue-400/10   border-blue-400/20",
@@ -14,9 +14,11 @@ const PHASE_COLORS: Record<string, string> = {
   deload:          "text-green-400  bg-green-400/10  border-green-400/20",
 };
 
+const CATEGORIES = ["compound","olympic","isolation","core","conditioning","mobility"] as const;
+
 // ── Session key helpers ────────────────────────────────────────────────────
 
-type SessionKey = string; // "week-day" e.g. "1-1"
+type SessionKey = string;
 function makeKey(week: number, day: number): SessionKey { return `${week}-${day}`; }
 
 type SessionMap = Map<SessionKey, ProgramBlock[]>;
@@ -37,10 +39,99 @@ function sessionsToBlocks(sessions: SessionMap): ProgramBlock[] {
   return out;
 }
 
-// ── Empty exercise row ─────────────────────────────────────────────────────
-
 function emptyBlock(week: number, day: number): ProgramBlock {
   return { week, day, exercise_id: "", exercise_name: "", sets: 3, reps: "5", intensity_pct: 70, tempo: "", rest_seconds: 180, notes: "" };
+}
+
+// ── Quick-add exercise panel ───────────────────────────────────────────────
+
+function QuickAddPanel({
+  muscles,
+  equipment,
+  onClose,
+  onAdded,
+}: {
+  muscles:   MuscleGroup[];
+  equipment: StrengthEquipment[];
+  onClose:   () => void;
+  onAdded:   (ex: StrengthExercise) => void;
+}) {
+  const [name,      setName]      = useState("");
+  const [category,  setCategory]  = useState<string>("compound");
+  const [primaryId, setPrimaryId] = useState("");
+  const [saving,    setSaving]    = useState(false);
+
+  const inputCls = "bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-coaches-red transition-colors w-full";
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      const primaryMuscle = muscles.find(m => m.id === primaryId);
+      const res = await fetch("/api/strength/exercises", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:                    name.trim(),
+          category,
+          primary_muscle_group_id: primaryId || null,
+          primary_muscles:         primaryMuscle ? [primaryMuscle.name] : [],
+          secondary_muscles:       [],
+          secondary_muscle_group_ids: [],
+          equipment_keys:          [],
+          equipment_ids:           [],
+        }),
+      });
+      if (res.ok) {
+        const ex = await res.json() as StrengthExercise;
+        onAdded(ex);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-sm bg-gray-900 border-l border-gray-700 h-full flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
+          <h2 className="text-white font-bold text-sm">Quick-Add Exercise</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white"><X size={16} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 flex-1">
+          <p className="text-gray-500 text-xs">Adds to the library instantly. You can fill in full details later in <strong className="text-gray-400">Strength → Library</strong>.</p>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-mono text-gray-500 uppercase">Name *</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Pause Squat" className={inputCls} autoFocus required />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-mono text-gray-500 uppercase">Category</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} className={inputCls}>
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+          {muscles.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-mono text-gray-500 uppercase">Primary Muscle Group</label>
+              <select value={primaryId} onChange={e => setPrimaryId(e.target.value)} className={inputCls}>
+                <option value="">— None —</option>
+                {muscles.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          )}
+          <button type="submit" disabled={saving || !name.trim()}
+            className="mt-auto flex items-center justify-center gap-2 bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-40 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+            {saving ? "Adding…" : "Add to Library"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -49,28 +140,37 @@ export default function ProgramEditorPage() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
 
-  const [program,   setProgram]   = useState<StrengthProgram | null>(null);
-  const [exercises, setExercises] = useState<StrengthExercise[]>([]);
-  const [sessions,  setSessions]  = useState<SessionMap>(new Map());
-  const [loading,   setLoading]   = useState(true);
-  const [saving,    setSaving]    = useState(false);
-  const [saved,     setSaved]     = useState(false);
+  const [program,     setProgram]     = useState<StrengthProgram | null>(null);
+  const [exercises,   setExercises]   = useState<StrengthExercise[]>([]);
+  const [muscles,     setMuscles]     = useState<MuscleGroup[]>([]);
+  const [equipment,   setEquipment]   = useState<StrengthEquipment[]>([]);
+  const [sessions,    setSessions]    = useState<SessionMap>(new Map());
+  const [loading,     setLoading]     = useState(true);
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [quickAdd,    setQuickAdd]    = useState(false);
 
-  // Sessions per week: default 2, derived from existing blocks
   const daysPerWeek = program
     ? Math.max(2, ...[...sessions.keys()].map((k) => parseInt(k.split("-")[1])))
     : 2;
+
+  // Sort alphabetically for the dropdown
+  const sortedExercises = [...exercises].sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/strength/programs/${id}`).then((r) => r.json()),
       fetch("/api/strength/exercises").then((r) => r.json()),
-    ]).then(([p, ex]) => {
+      fetch("/api/strength/muscle-groups").then((r) => r.json()),
+      fetch("/api/strength/equipment").then((r) => r.json()),
+    ]).then(([p, ex, mg, eq]) => {
       if (!p.error) {
         setProgram(p);
         setSessions(blocksToSessions(p.blocks ?? []));
       }
       if (Array.isArray(ex)) setExercises(ex);
+      if (Array.isArray(mg)) setMuscles(mg);
+      if (Array.isArray(eq)) setEquipment(eq);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
 
@@ -92,8 +192,6 @@ export default function ProgramEditorPage() {
         const k       = makeKey(week, day);
         const blocks  = [...(next.get(k) ?? [])];
         blocks[idx]   = { ...blocks[idx], [field]: value };
-
-        // If exercise changed, sync the name too
         if (field === "exercise_id") {
           const ex = exercises.find((e) => e.id === value);
           blocks[idx].exercise_name = ex?.name ?? "";
@@ -179,14 +277,22 @@ export default function ProgramEditorPage() {
           </div>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
-        >
-          {saved ? <CheckCircle2 size={14} /> : saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {saved ? "Saved!" : saving ? "Saving…" : "Save Changes"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setQuickAdd(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 hover:border-gray-500 text-gray-300 text-sm font-medium transition-colors"
+          >
+            <Plus size={13} /> New Exercise
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-coaches-red hover:bg-coaches-red-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+          >
+            {saved ? <CheckCircle2 size={14} /> : saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saved ? "Saved!" : saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
       </div>
 
       {/* ── Session grid ────────────────────────────────────────────────── */}
@@ -208,13 +314,12 @@ export default function ProgramEditorPage() {
                       Session {day === 1 ? "A" : day === 2 ? "B" : day}
                     </p>
 
-                    {/* Exercise rows */}
                     <div className="flex flex-col gap-2">
                       {blocks.map((block, idx) => (
                         <ExerciseRow
                           key={idx}
                           block={block}
-                          exercises={exercises}
+                          exercises={sortedExercises}
                           onUpdate={(field, value) => updateExercise(week, day, idx, field, value)}
                           onRemove={() => removeExercise(week, day, idx)}
                         />
@@ -244,6 +349,19 @@ export default function ProgramEditorPage() {
           </div>
         ))}
       </div>
+
+      {/* ── Quick-add panel ─────────────────────────────────────────────── */}
+      {quickAdd && (
+        <QuickAddPanel
+          muscles={muscles}
+          equipment={equipment}
+          onClose={() => setQuickAdd(false)}
+          onAdded={(ex) => {
+            setExercises(prev => [...prev, ex]);
+            setQuickAdd(false);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }
