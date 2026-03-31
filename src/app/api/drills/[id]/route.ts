@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     // Replace category assignments if provided
     if (categories !== undefined) {
-      const catIds = await categoryIdsByName(categories, db.tenantId);
+      const catIds = await categoryIdsByName(categories.slice(0, 1), db.tenantId);
       await sb.from("drill_category_assignments").delete().eq("drill_id", id);
       if (catIds.length) {
         await sb.from("drill_category_assignments").insert(

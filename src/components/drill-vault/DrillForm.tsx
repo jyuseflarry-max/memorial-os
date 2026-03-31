@@ -192,10 +192,10 @@ export default function DrillForm({ initialDrill, onSave, onDelete, onClose }: P
               value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
 
-          {/* Categories */}
+          {/* Category — single select */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className={`${labelCls} mb-0`}>Categories <span className="text-gray-600 normal-case tracking-normal">(optional)</span></label>
+              <label className={`${labelCls} mb-0`}>Category <span className="text-gray-600 normal-case tracking-normal">(optional)</span></label>
               <button type="button" onClick={() => setShowAddCat((v) => !v)}
                 className="flex items-center gap-1 text-[10px] font-mono text-gray-500 hover:text-coaches-blue transition-colors">
                 <Plus size={10} /> New
@@ -203,11 +203,11 @@ export default function DrillForm({ initialDrill, onSave, onDelete, onClose }: P
             </div>
             <div className="flex flex-wrap gap-2">
               {categories.map((c) => {
-                const active = form.categories.includes(c.name);
+                const active = form.categories[0] === c.name;
                 const color  = getCatColor(c.name);
                 return (
                   <button key={c.id} type="button"
-                    onClick={() => set("categories", active ? form.categories.filter((x) => x !== c.name) : [...form.categories, c.name])}
+                    onClick={() => set("categories", active ? [] : [c.name])}
                     className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
                     style={active
                       ? { color, backgroundColor: hexToRgba(color, 0.2), borderColor: hexToRgba(color, 0.5) }

@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
       // 2. Resolve names → IDs and write junction rows
       const [catIds, objIds] = await Promise.all([
-        categoryIdsByName(categories ?? [], db.tenantId),
+        categoryIdsByName((categories ?? []).slice(0, 1), db.tenantId),
         objectiveIdsByName(objectives ?? [], db.tenantId),
       ]);
       await Promise.all([
