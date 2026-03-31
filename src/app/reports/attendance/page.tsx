@@ -94,7 +94,7 @@ function ReviewPanel({
   onUpdated:    (date: string, rec: AttendanceRecord) => void;
   onClose:      () => void;
 }) {
-  const [status, setStatus] = useState<"excused" | "unexcused">(rec.status);
+  const [status, setStatus] = useState<"excused" | "unexcused">(rec.status === "school_event" ? "unexcused" : rec.status);
   const [notes,  setNotes]  = useState(rec.notes ?? "");
   const [saving, setSaving] = useState(false);
 
