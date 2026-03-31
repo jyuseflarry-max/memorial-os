@@ -28,15 +28,18 @@ export async function GET() {
     // Start with hardcoded defaults for this role
     const result: Record<string, string> = { ...(ROLE_DEFAULTS[role] ?? {}) };
 
-    // Apply any DB overrides for this tenant
-    const { data: rows } = await db
-      .from("page_permissions")
-      .select("page_key, access_level")
-      .eq("tenant_id", tenantId)
-      .eq("role", role);
-
-    for (const row of rows ?? []) {
-      result[row.page_key as string] = row.access_level as string;
+    // Apply any DB overrides — silently skip if table doesn't exist yet
+    try {
+      const { data: rows } = await db
+        .from("page_permissions")
+        .select("page_key, access_level")
+        .eq("tenant_id", tenantId)
+        .eq("role", role);
+      for (const row of rows ?? []) {
+        result[row.page_key as string] = row.access_level as string;
+      }
+    } catch {
+      // table not yet migrated — hardcoded defaults are sufficient
     }
 
     return NextResponse.json(result);

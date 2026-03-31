@@ -189,7 +189,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { teams, activeTeam, setActiveTeam } = useTeam();
   const { settings } = useSettings();
   const { authUser } = useAuth();
-  const { canView } = usePermissions();
+  const { canView, loading: permsLoading } = usePermissions();
   const unread = useUnreadMessages();
 
   function handleTeamSelect(team: typeof teams[number]) {
@@ -261,7 +261,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
             return (settings.enabled_modules ?? []).includes(g.label);
           })
           .map((group) => {
-            const visibleItems = group.items.filter((i) => canView(i.pageKey));
+            const visibleItems = group.items.filter((i) => permsLoading || canView(i.pageKey));
             if (visibleItems.length === 0) return null;
             return (
               <div key={group.label} className={group.label === "Settings" ? "mt-auto" : undefined}>

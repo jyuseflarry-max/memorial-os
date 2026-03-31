@@ -46,6 +46,8 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
         const data = await res.json();
         setPermissions(data as Record<string, AccessLevel>);
       }
+    } catch {
+      // network error — leave permissions empty, sidebar stays hidden until resolved
     } finally {
       setLoading(false);
     }
