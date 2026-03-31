@@ -72,12 +72,8 @@ export default function DrillVaultPage() {
   const { drills, loading, addToCache, updateInCache, removeFromCache } = useDrills();
   const { activeTeam } = useTeam();
   const { settings } = useSettings();
-  const { categories: catRows, getCatColor } = useDrillCategories();
+  const { getCatColor } = useDrillCategories();
   const { objectives, getObjColor } = useDrillObjectives();
-
-  // Sets for fast O(1) orphan checks
-  const activeCatNames = useMemo(() => new Set(catRows.map((c) => c.name)), [catRows]);
-  const activeObjNames = useMemo(() => new Set(objectives.map((o) => o.name)), [objectives]);
 
   const [query,          setQuery]          = useState("");
   const [filterCats,     setFilterCats]     = useState<Set<string>>(new Set());
@@ -106,34 +102,33 @@ export default function DrillVaultPage() {
       .catch(() => {});
   }, [activeTeam, settings.season_start]);
 
-  // Only show categories that are still in the DB table AND appear in at least one drill
-  const allCategories = useMemo(() => {
-    const inDrills = new Set(drills.flatMap((d) => d.categories ?? []));
-    return catRows.map((c) => c.name).filter((n) => inDrills.has(n));
-  }, [catRows, drills]);
+  // Unique categories from drills (now always in sync with DB via junction tables)
+  const allCategories = useMemo(
+    () => Array.from(new Set(drills.flatMap((d) => d.categories ?? []))).sort(),
+    [drills]
+  );
 
-  // Cascading: which objectives to show in filters (only active ones)
+  // Cascading: which objectives to show in filters
   const availableObjectives = useMemo(() => {
     const allObjNames = objectives.map((o) => o.name);
     if (filterCats.size === 0) return allObjNames;
     const relevant = new Set<string>();
     drills.forEach((d) => {
       if ([...filterCats].some((c) => (d.categories ?? []).includes(c))) {
-        (d.objectives ?? []).filter((o) => activeObjNames.has(o)).forEach((o) => relevant.add(o));
+        (d.objectives ?? []).forEach((o) => relevant.add(o));
       }
     });
     return allObjNames.filter((o) => relevant.has(o));
-  }, [filterCats, drills, objectives, activeObjNames]);
+  }, [filterCats, drills, objectives]);
 
   const displayed = useMemo(() => {
     const q = query.toLowerCase();
     return drills
       .filter((d) => {
-        const activeCats = (d.categories ?? []).filter((c) => activeCatNames.has(c));
         const matchesSearch = !q || d.name.toLowerCase().includes(q) ||
-          activeCats.some((c) => c.toLowerCase().includes(q));
+          (d.categories ?? []).some((c) => c.toLowerCase().includes(q));
         const matchesCat = filterCats.size === 0 ||
-          [...filterCats].some((c) => activeCats.includes(c));
+          [...filterCats].some((c) => (d.categories ?? []).includes(c));
         const matchesIntensity = filterIntensity.size === 0 || filterIntensity.has(d.intensity);
         const matchesObjective = filterObjectives.size === 0 ||
           [...filterObjectives].some((o) => (d.objectives ?? []).includes(o));
@@ -389,12 +384,12 @@ export default function DrillVaultPage() {
                       </div>
                     </div>
 
-                    {/* Row 2: Category chips + Objective chips (orphaned labels hidden) */}
+                    {/* Row 2: Category chips + Objective chips */}
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {(drill.categories ?? []).filter((c) => activeCatNames.has(c)).map((c) => (
+                      {(drill.categories ?? []).map((c) => (
                         <Chip key={c} label={c} color={getCatColor(c)} />
                       ))}
-                      {(drill.objectives ?? []).filter((o) => activeObjNames.has(o)).map((o) => (
+                      {(drill.objectives ?? []).map((o) => (
                         <Chip key={o} label={o} color={getObjColor(o)} />
                       ))}
                       {drill.level && (
