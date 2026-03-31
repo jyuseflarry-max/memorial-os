@@ -23,7 +23,7 @@ export async function notifyAttendanceStatus(p: NotifyParams): Promise<void> {
   // Resolve the player's linked user account
   const { data: player } = await sb
     .from("players")
-    .select("user_id, full_name")
+    .select("user_id, name")
     .eq("id", p.playerId)
     .eq("tenant_id", p.tenantId)
     .single();

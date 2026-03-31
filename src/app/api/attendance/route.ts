@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     let query = service
       .from("practice_attendance")
-      .select("id, player_id, status, notes, makeup_required, makeup_proof_url, makeup_proof_name, makeup_completed_at")
+      .select("id, player_id, status, event_type, notes, makeup_required, makeup_proof_url, makeup_proof_name, makeup_completed_at")
       .eq("tenant_id", myRecord.tenant_id)
       .eq("practice_date", date);
 

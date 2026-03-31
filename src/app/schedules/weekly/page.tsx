@@ -98,16 +98,28 @@ export default function WeeklyEventsPage() {
     if (isPlayer && authUser?.teamId) setFilterTeam(authUser.teamId);
   }, [isPlayer, authUser?.teamId]);
 
+  useEffect(() => {
+    fetch("/api/attendance/consequences")
+      .then((r) => r.ok ? r.json() : [])
+      .then((rows: { event_type: string; status: string; makeup_work: string }[]) => {
+        const map: Record<string, string> = {};
+        for (const r of rows) map[`${r.event_type}:${r.status}`] = r.makeup_work;
+        setConsequences(map);
+      })
+      .catch(() => {});
+  }, []);
+
   // Absence sheet state
   const [absenceSheet, setAbsenceSheet]           = useState<EventItem | null>(null);
   const [absenceReason, setAbsenceReason]         = useState("");
   const [submittingAbsence, setSubmittingAbsence] = useState(false);
   const [reportedDates, setReportedDates]         = useState<Set<string>>(new Set());
 
-  // Makeup tracking: date → { id, makeup_required, makeup_completed_at, makeup_proof_name }
+  // Makeup tracking: date → { id, makeup_required, makeup_completed_at, makeup_proof_name, event_type, status }
   const [makeupByDate, setMakeupByDate]           = useState<Record<string, MakeupRecord>>({});
   const [uploadingDate, setUploadingDate]         = useState<string | null>(null);
   const [uploadError, setUploadError]             = useState<string | null>(null);
+  const [consequences, setConsequences]           = useState<Record<string, string>>({});
 
   // ── Labels ────────────────────────────────────────────────────────────────
 
@@ -273,7 +285,7 @@ export default function WeeklyEventsPage() {
     ).then((results) => {
       const reported = new Set<string>();
       const makeup: Record<string, MakeupRecord> = {};
-      results.forEach((records: { player_id: string; id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null }[], i) => {
+      results.forEach((records: { player_id: string; id: string; status: string; event_type: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null }[], i) => {
         if (!Array.isArray(records)) return;
         const myRecord = records.find((r) => r.player_id === pid);
         if (myRecord) {
@@ -284,6 +296,8 @@ export default function WeeklyEventsPage() {
               makeup_required:     myRecord.makeup_required,
               makeup_completed_at: myRecord.makeup_completed_at,
               makeup_proof_name:   myRecord.makeup_proof_name,
+              event_type:          (myRecord.event_type ?? "practice") as "practice" | "game",
+              status:              (myRecord.status ?? "unexcused") as "excused" | "unexcused",
             };
           }
         }
@@ -382,7 +396,7 @@ export default function WeeklyEventsPage() {
                     <X size={14} />
                   </button>
                 </div>
-                {renderEventItems(selectedDayItems, isPlayer, canEdit, canPreview, reportedDates, makeupByDate, uploadingDate, uploadError, locations, setAbsenceSheet, setMakeupByDate, setUploadingDate, setUploadError)}
+                {renderEventItems(selectedDayItems, isPlayer, canEdit, canPreview, reportedDates, makeupByDate, uploadingDate, uploadError, locations, setAbsenceSheet, setMakeupByDate, setUploadingDate, setUploadError, consequences)}
               </div>
             );
           })()}
@@ -466,7 +480,7 @@ export default function WeeklyEventsPage() {
 }
 
 // ── Types for makeup tracking ──────────────────────────────────────────────
-type MakeupRecord = { id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null };
+type MakeupRecord = { id: string; makeup_required: boolean; makeup_completed_at: string | null; makeup_proof_name: string | null; event_type: "practice" | "game"; status: "excused" | "unexcused" };
 
 // ── Event row renderer (shared by agenda + calendar day panel) ─────────────
 
@@ -484,6 +498,7 @@ function renderEventItems(
   setMakeupByDate: React.Dispatch<React.SetStateAction<Record<string, MakeupRecord>>>,
   setUploadingDate: (d: string | null) => void,
   setUploadError: (e: string | null) => void,
+  consequences: Record<string, string>,
 ) {
   return items.map((ev, i) => {
     const key      = ev.kind === "game" ? ev.game.id : ev.kind === "session" ? ev.session.id : ev.practice.id;
@@ -638,10 +653,14 @@ function renderEventItems(
                 </div>
               ) : (
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <AlertCircle size={13} className="text-amber-400 shrink-0" />
                     <p className="text-amber-400 text-xs font-semibold">Makeup work assigned</p>
                   </div>
+                  {(() => {
+                    const work = consequences[`${makeup.event_type}:${makeup.status}`];
+                    return work ? <p className="text-amber-300 text-xs mb-2">{work}</p> : null;
+                  })()}
                   {uploadError && uploadingDate === ev.date && (
                     <p className="text-red-400 text-[10px] mb-1">{uploadError}</p>
                   )}
