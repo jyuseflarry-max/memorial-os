@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Layers,
@@ -14,7 +14,6 @@ import {
   Loader2,
   ChevronDown,
   Dumbbell,
-  Lock,
   Swords,
   Gamepad2,
   X,
@@ -30,11 +29,12 @@ import {
   Zap,
   Package,
 } from "lucide-react";
-import { getSupabaseBrowser } from "@/lib/supabase/browser-client";
 import { logout } from "@/actions/auth";
 import { usePlayers } from "@/context/PlayerContext";
 import { useTeam } from "@/context/TeamContext";
 import { useSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionsContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 // ── Nav structure ─────────────────────────────────────────────────────────
@@ -45,68 +45,67 @@ const NAV_GROUPS = [
     icon: MessageSquare,
     alwaysShow: true,
     items: [
-      { label: "Messages", href: "/messages", icon: MessageSquare, staff: false, playerOk: true, coachHide: false },
+      { label: "Messages", href: "/messages", icon: MessageSquare, pageKey: "messages" },
     ],
   },
   {
     label: "Players",
     icon: Users,
     items: [
-      { label: "Roster",    href: "/players",           icon: Users,      playerOk: true,  coachHide: false },
-      { label: "Readiness", href: "/strength/readiness", icon: Zap,        playerOk: false, coachHide: false },
-      { label: "Groups",    href: "/player-groups",     icon: UsersRound, playerOk: false, coachHide: false },
+      { label: "Roster",    href: "/players",            icon: Users,      pageKey: "roster" },
+      { label: "Readiness", href: "/strength/readiness", icon: Zap,        pageKey: "readiness" },
+      { label: "Groups",    href: "/player-groups",      icon: UsersRound, pageKey: "player_groups" },
     ],
   },
   {
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,    playerOk: false, coachHide: false },
-      { label: "View Plans",   href: "/view-plans",   icon: ListChecks,  playerOk: true,  coachHide: false },
-      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,      playerOk: false, coachHide: false },
+      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,   pageKey: "build_plan" },
+      { label: "View Plans",   href: "/view-plans",   icon: ListChecks, pageKey: "view_plans" },
+      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,     pageKey: "drill_vault" },
     ],
   },
   {
     label: "Reports",
     icon: BarChart3,
     items: [
-      { label: "Practice Time", href: "/reports",            icon: BarChart3, playerOk: false, coachHide: false },
-      { label: "Attendance",    href: "/reports/attendance", icon: Users,     playerOk: false, coachHide: false },
+      { label: "Practice Time", href: "/reports",            icon: BarChart3, pageKey: "reports" },
+      { label: "Attendance",    href: "/reports/attendance", icon: Users,     pageKey: "attendance_report" },
     ],
   },
   {
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game",        href: "/schedules/game",    icon: Gamepad2,    playerOk: true,  coachHide: false },
-      { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,   playerOk: false, coachHide: false },
-      { label: "Weekly View", href: "/schedules/weekly",  icon: CalendarDays, playerOk: true,  coachHide: false },
+      { label: "Game",        href: "/schedules/game",     icon: Gamepad2,     pageKey: "game_schedule" },
+      { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,     pageKey: "practice_schedule" },
+      { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, pageKey: "weekly_schedule" },
     ],
   },
   {
     label: "Strength",
     icon: Flame,
     items: [
-      { label: "Dashboard",   href: "/strength",             icon: Flame,    playerOk: false, coachHide: false },
-      { label: "Leaderboard", href: "/strength/leaderboard", icon: Trophy,   playerOk: true,  coachHide: false },
-      { label: "Programs",    href: "/strength/programs",    icon: Dumbbell, playerOk: false, coachHide: false },
+      { label: "Dashboard",   href: "/strength",             icon: Flame,    pageKey: "strength" },
+      { label: "Leaderboard", href: "/strength/leaderboard", icon: Trophy,   pageKey: "leaderboard" },
+      { label: "Programs",    href: "/strength/programs",    icon: Dumbbell, pageKey: "strength_programs" },
     ],
   },
   {
     label: "Inventory",
     icon: Package,
     items: [
-      { label: "Equipment",  href: "/inventory",       icon: Package, playerOk: false, coachHide: false },
-      { label: "Full Audit", href: "/inventory/audit", icon: Package, playerOk: false, coachHide: false },
+      { label: "Equipment",  href: "/inventory",       icon: Package, pageKey: "inventory" },
+      { label: "Full Audit", href: "/inventory/audit", icon: Package, pageKey: "inventory_audit" },
     ],
   },
   {
     label: "Settings",
     icon: ShieldCheck,
     alwaysShow: true,
-    coachOnly: true,
     items: [
-      { label: "Settings", href: "/admin", icon: ShieldCheck, playerOk: false, coachHide: false },
+      { label: "Settings", href: "/admin", icon: ShieldCheck, pageKey: "settings" },
     ],
   },
 ];
@@ -123,7 +122,7 @@ function NavGroup({
 }: {
   label: string;
   icon: React.ElementType;
-  items: { label: string; href: string; icon: React.ElementType; staff: boolean; playerOk: boolean; coachHide: boolean }[];
+  items: { label: string; href: string; icon: React.ElementType; pageKey: string }[];
   pathname: string;
   onClose: () => void;
   badge?: number;
@@ -157,7 +156,7 @@ function NavGroup({
       {/* Items */}
       {open && (
         <div className="mt-0.5 ml-2 pl-3 border-l border-gray-800 flex flex-col gap-0.5">
-          {items.map(({ label, href, icon: Icon, staff }) => {
+          {items.map(({ label, href, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
@@ -172,12 +171,6 @@ function NavGroup({
               >
                 <Icon size={14} className={active ? "text-coaches-blue" : "text-gray-500"} />
                 <span className="flex-1">{label}</span>
-                {staff && (
-                  <span className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-full">
-                    <Lock size={8} />
-                    Staff
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -195,19 +188,9 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { dbConnected, dbError, loading } = usePlayers();
   const { teams, activeTeam, setActiveTeam } = useTeam();
   const { settings } = useSettings();
+  const { authUser } = useAuth();
+  const { canView } = usePermissions();
   const unread = useUnreadMessages();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userRole,  setUserRole]  = useState<string | null>(null);
-
-  useEffect(() => {
-    const sb = getSupabaseBrowser();
-    sb.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      setUserEmail(user.email ?? null);
-      const { data } = await sb.from("users").select("role").eq("id", user.id).single();
-      if (data) setUserRole(data.role);
-    });
-  }, []);
 
   function handleTeamSelect(team: typeof teams[number]) {
     setActiveTeam(team);
@@ -248,7 +231,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Team switcher — hidden for players (they are auto-locked to their team) */}
-      {teams.length > 0 && userRole !== "Player" && (
+      {teams.length > 0 && authUser?.role !== "Player" && (
         <div className="mb-6 px-1">
           <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1.5 px-1">Active Team</p>
           <div className="flex flex-col gap-1">
@@ -274,15 +257,11 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       <nav className="flex flex-col gap-3 flex-1">
         {NAV_GROUPS
           .filter((g) => {
-            if ("coachOnly" in g && g.coachOnly && userRole === "Player") return false;
             if ("alwaysShow" in g && g.alwaysShow) return true;
             return (settings.enabled_modules ?? []).includes(g.label);
           })
           .map((group) => {
-            const isPlayer = userRole === "Player";
-            const visibleItems = isPlayer
-              ? group.items.filter((i) => i.playerOk)
-              : group.items.filter((i) => !i.coachHide);
+            const visibleItems = group.items.filter((i) => canView(i.pageKey));
             if (visibleItems.length === 0) return null;
             return (
               <div key={group.label} className={group.label === "Settings" ? "mt-auto" : undefined}>
@@ -300,7 +279,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       </nav>
 
       {/* User account section */}
-      {userEmail && (
+      {authUser?.email && (
         <div className="px-1 pb-3 flex flex-col gap-0.5">
           <Link
             href="/account"
@@ -312,7 +291,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
             }`}
           >
             <CircleUser size={14} className={pathname === "/account" ? "text-coaches-blue" : "text-gray-600"} />
-            <span className="flex-1 truncate">{userEmail}</span>
+            <span className="flex-1 truncate">{authUser.email}</span>
           </Link>
           <form action={logout}>
             <button

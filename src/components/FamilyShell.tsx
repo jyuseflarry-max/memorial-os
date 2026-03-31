@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { CalendarDays, Swords, UserCircle, MessageSquare } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionsContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const TABS = [
@@ -15,11 +16,22 @@ const TABS = [
   { label: "Me",         href: "/family/account",    icon: UserCircle    },
 ] as const;
 
+// Map tab hrefs to page keys — empty string means always show
+const TAB_PAGE_KEYS: Record<string, string> = {
+  "/family/schedule": "family_schedule",
+  "/family/games":    "family_games",
+  "/family/messages": "family_messages",
+  "/family/account":  "", // always show account tab
+};
+
 export default function FamilyShell({ children }: { children: React.ReactNode }) {
   const pathname     = usePathname();
   const { settings } = useSettings();
   const { authUser } = useAuth();
+  const { canView }  = usePermissions();
   const unread       = useUnreadMessages();
+
+  const visibleTabs = TABS.filter(t => !TAB_PAGE_KEYS[t.href] || canView(TAB_PAGE_KEYS[t.href]));
 
   const firstName = authUser?.fullName?.split(" ")[0] ?? "Family";
 
@@ -64,7 +76,7 @@ export default function FamilyShell({ children }: { children: React.ReactNode })
       {/* Bottom navigation */}
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-gray-950 border-t border-gray-800">
         <div className="flex">
-          {TABS.map(({ label, href, icon: Icon }) => {
+          {visibleTabs.map(({ label, href, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             const showBadge = href === "/family/messages" && unread > 0;
             return (

@@ -8,6 +8,7 @@ import { DrillCategoryProvider } from "@/context/DrillCategoryContext";
 import { DrillObjectivesProvider } from "@/context/DrillObjectivesContext";
 import { DrillProvider } from "@/context/DrillContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { PermissionsProvider } from "@/context/PermissionsContext";
 import { LocationsProvider } from "@/context/LocationsContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { StatImpactsProvider } from "@/context/StatImpactsContext";
@@ -61,22 +62,24 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <ThemeProvider>
         <AuthProvider>
-          <SettingsProvider>
-            <DrillCategoryProvider>
-              <DrillObjectivesProvider>
-                <PrintOrientationStyle />
-                <LocationsProvider>
-                  <StatImpactsProvider>
-                    <TeamProvider>
-                      <PlayerProvider>
-                        <DrillProvider>{children}</DrillProvider>
-                      </PlayerProvider>
-                    </TeamProvider>
-                  </StatImpactsProvider>
-                </LocationsProvider>
-              </DrillObjectivesProvider>
-            </DrillCategoryProvider>
-          </SettingsProvider>
+          <PermissionsProvider>
+            <SettingsProvider>
+              <DrillCategoryProvider>
+                <DrillObjectivesProvider>
+                  <PrintOrientationStyle />
+                  <LocationsProvider>
+                    <StatImpactsProvider>
+                      <TeamProvider>
+                        <PlayerProvider>
+                          <DrillProvider>{children}</DrillProvider>
+                        </PlayerProvider>
+                      </TeamProvider>
+                    </StatImpactsProvider>
+                  </LocationsProvider>
+                </DrillObjectivesProvider>
+              </DrillCategoryProvider>
+            </SettingsProvider>
+          </PermissionsProvider>
         </AuthProvider>
         </ThemeProvider>
       </body>
