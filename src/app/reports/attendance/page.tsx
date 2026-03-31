@@ -364,7 +364,7 @@ function ByDateView({
     <div>
       {/* Date selector */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
-        {[...dates].reverse().map((d) => {
+        {[...dates].reverse().filter((d) => byDate.has(d)).map((d) => {
           const count = byDate.get(d)?.length ?? 0;
           return (
             <button
@@ -504,11 +504,12 @@ function ByAthleteView({
   consequences: ConsequenceMap;
   onUpdated:    (playerId: string, date: string, rec: AttendanceRecord) => void;
 }) {
-  if (report.players.length === 0) return <EmptyState />;
+  const playersWithAbsences = report.players.filter((p) => Object.keys(p.records).length > 0);
+  if (playersWithAbsences.length === 0) return <EmptyState />;
 
   return (
     <div className="flex flex-col gap-3">
-      {report.players.map((row) => (
+      {playersWithAbsences.map((row) => (
         <AthleteCard
           key={row.player_id}
           row={row}

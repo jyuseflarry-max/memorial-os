@@ -80,6 +80,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Game",        href: "/schedules/game",     icon: Gamepad2,     pageKey: "game_schedule" },
       { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,     pageKey: "practice_schedule" },
+      { label: "Strength",    href: "/schedules/strength", icon: Flame,        pageKey: "strength_schedule" },
       { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, pageKey: "weekly_schedule" },
     ],
   },

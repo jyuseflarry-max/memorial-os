@@ -10,6 +10,7 @@ import { DrillProvider } from "@/context/DrillContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { PermissionsProvider } from "@/context/PermissionsContext";
 import { LocationsProvider } from "@/context/LocationsContext";
+import { FacilitiesProvider } from "@/context/FacilitiesContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { StatImpactsProvider } from "@/context/StatImpactsContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
@@ -68,6 +69,7 @@ export default function RootLayout({
                 <DrillObjectivesProvider>
                   <PrintOrientationStyle />
                   <LocationsProvider>
+                    <FacilitiesProvider>
                     <StatImpactsProvider>
                       <TeamProvider>
                         <PlayerProvider>
@@ -75,6 +77,7 @@ export default function RootLayout({
                         </PlayerProvider>
                       </TeamProvider>
                     </StatImpactsProvider>
+                    </FacilitiesProvider>
                   </LocationsProvider>
                 </DrillObjectivesProvider>
               </DrillCategoryProvider>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  UserCog, Users, UsersRound, MapPin,
+  UserCog, Users, UsersRound, MapPin, Building2,
   Target, TrendingUp, Tag,
   Dumbbell, Lock, Package, BookOpen,
   Settings, ChevronRight, ShieldCheck, ClipboardList,
@@ -38,7 +38,13 @@ const SECTIONS = [
         href:  "/admin/locations",
         icon:  MapPin,
         title: "Locations",
-        desc:  "Practice venues and travel sites. Used when scheduling and printing plans.",
+        desc:  "Off-campus venues for games and away events.",
+      },
+      {
+        href:  "/admin/facilities",
+        icon:  Building2,
+        title: "Facilities",
+        desc:  "On-campus rooms and gyms used when scheduling practices.",
       },
     ],
   },

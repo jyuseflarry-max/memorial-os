@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { X, Download, Upload, Loader2, CheckCircle2, AlertCircle, FileText } from "lucide-react";
 
-type ImportType = "roster" | "games" | "practices";
+type ImportType = "roster" | "games" | "practices" | "strength";
 
 interface ImportResult {
   success: number;
@@ -25,6 +25,11 @@ const CSV_TEMPLATES: Record<ImportType, { headers: string[]; example: string[]; 
     headers: ["practice_date", "start_time", "end_time", "location_name", "notes"],
     example: ["2025-11-18", "15:30", "17:30", "Memorial HS Gym", "Film review first 20 min"],
     filename: "practices_template.csv",
+  },
+  strength: {
+    headers: ["schedule_date", "start_time", "end_time", "program_name", "notes"],
+    example: ["2025-11-18", "07:00", "08:00", "Pre-Season Block 1", ""],
+    filename: "strength_schedule_template.csv",
   },
 };
 
@@ -118,24 +123,37 @@ export default function BulkImportModal({ teamId, onClose, onImported }: Props) 
         if (res.ok) success++; else { const d = await res.json(); errors.push(`${row.opponent} (${row.game_date}): ${d.error ?? "Failed"}`); }
       }
     } else if (activeTab === "practices") {
-      // First fetch locations for name→id mapping
-      const locsRes = await fetch("/api/locations");
-      const locs: { id: string; name: string }[] = locsRes.ok ? await locsRes.json() : [];
-
       for (const row of rows) {
         if (!row.practice_date?.trim()) { errors.push(`Row missing date: ${JSON.stringify(row)}`); continue; }
-        const locName = row.location_name?.trim();
-        const locId   = locName ? (locs.find((l) => l.name.toLowerCase() === locName.toLowerCase())?.id ?? null) : null;
         const payload = {
           practice_date: row.practice_date.trim(),
           start_time:    row.start_time?.trim() || "15:30",
           end_time:      row.end_time?.trim() || "17:30",
-          location_id:   locId,
           team_id:       teamId,
           notes:         row.notes?.trim() || null,
         };
         const res = await fetch("/api/practice-schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         if (res.ok) success++; else { const d = await res.json(); errors.push(`${row.practice_date}: ${d.error ?? "Failed"}`); }
+      }
+    } else if (activeTab === "strength") {
+      // Fetch programs for name→id mapping
+      const progsRes = await fetch("/api/strength/programs");
+      const progs: { id: string; name: string }[] = progsRes.ok ? await progsRes.json() : [];
+
+      for (const row of rows) {
+        if (!row.schedule_date?.trim()) { errors.push(`Row missing date: ${JSON.stringify(row)}`); continue; }
+        const progName = row.program_name?.trim();
+        const progId   = progName ? (progs.find((p) => p.name.toLowerCase() === progName.toLowerCase())?.id ?? null) : null;
+        const payload = {
+          schedule_date: row.schedule_date.trim(),
+          start_time:    row.start_time?.trim() || "07:00",
+          end_time:      row.end_time?.trim() || "08:00",
+          program_id:    progId,
+          team_id:       teamId,
+          notes:         row.notes?.trim() || null,
+        };
+        const res = await fetch("/api/strength-schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (res.ok) success++; else { const d = await res.json(); errors.push(`${row.schedule_date}: ${d.error ?? "Failed"}`); }
       }
     }
 
@@ -149,6 +167,7 @@ export default function BulkImportModal({ teamId, onClose, onImported }: Props) 
     { key: "roster",    label: "Roster"    },
     { key: "games",     label: "Games"     },
     { key: "practices", label: "Practices" },
+    { key: "strength",  label: "Strength"  },
   ];
 
   return (
@@ -185,10 +204,12 @@ export default function BulkImportModal({ teamId, onClose, onImported }: Props) 
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-semibold">Step 1 — Download Template</p>
               <p className="text-gray-500 text-xs mt-0.5">
-                {activeTab === "practices"
-                  ? "Location names are matched by exact name (case-insensitive) to your Locations list."
+                {activeTab === "strength"
+                  ? "program_name is matched by exact name (case-insensitive) to your Strength Programs."
                   : activeTab === "games"
                   ? "location_type must be: home, away, or neutral. game_type: non-district, district, scrimmage, tournament, playoffs."
+                  : activeTab === "practices"
+                  ? "Imports date, time, and notes. Assign a facility after importing."
                   : "status must be: Active, Out, or Restricted."}
               </p>
             </div>
