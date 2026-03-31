@@ -52,53 +52,52 @@ const NAV_GROUPS = [
     label: "Players",
     icon: Users,
     items: [
-      { label: "Vibe Check", href: "/vibe-check",   icon: Users,      staff: false, playerOk: true,  coachHide: true  },
-      { label: "Vibe Check", href: "/players",       icon: Users,      staff: false, playerOk: false, coachHide: false },
-      { label: "Groups",     href: "/player-groups", icon: UsersRound, staff: false, playerOk: false, coachHide: false },
+      { label: "Roster",    href: "/players",           icon: Users,      playerOk: true,  coachHide: false },
+      { label: "Readiness", href: "/strength/readiness", icon: Zap,        playerOk: false, coachHide: false },
+      { label: "Groups",    href: "/player-groups",     icon: UsersRound, playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Practice",
     icon: Dumbbell,
     items: [
-      { label: "Build a Plan",    href: "/build-a-plan",            icon: Sparkles,   staff: false, playerOk: false, coachHide: false },
-      { label: "View Plans",      href: "/view-plans",              icon: ListChecks, staff: false, playerOk: true,  coachHide: false },
-      { label: "Drill Vault",     href: "/drill-vault",             icon: Layers,     staff: false, playerOk: false, coachHide: false },
+      { label: "Build a Plan", href: "/build-a-plan", icon: Sparkles,    playerOk: false, coachHide: false },
+      { label: "View Plans",   href: "/view-plans",   icon: ListChecks,  playerOk: true,  coachHide: false },
+      { label: "Drill Vault",  href: "/drill-vault",  icon: Layers,      playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Reports",
     icon: BarChart3,
     items: [
-      { label: "Practice Time", href: "/reports",             icon: BarChart3, staff: false, playerOk: false, coachHide: false },
-      { label: "Attendance",    href: "/reports/attendance",  icon: Users,     staff: false, playerOk: false, coachHide: false },
+      { label: "Practice Time", href: "/reports",            icon: BarChart3, playerOk: false, coachHide: false },
+      { label: "Attendance",    href: "/reports/attendance", icon: Users,     playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Schedules",
     icon: Swords,
     items: [
-      { label: "Game",        href: "/schedules/game",     icon: Gamepad2,    staff: false, playerOk: true,  coachHide: false },
-      { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,    staff: false, playerOk: false, coachHide: false },
-      { label: "Weekly View", href: "/schedules/weekly",   icon: CalendarDays, staff: false, playerOk: true,  coachHide: false },
+      { label: "Game",        href: "/schedules/game",    icon: Gamepad2,    playerOk: true,  coachHide: false },
+      { label: "Practice",    href: "/schedules/practice", icon: Dumbbell,   playerOk: false, coachHide: false },
+      { label: "Weekly View", href: "/schedules/weekly",  icon: CalendarDays, playerOk: true,  coachHide: false },
     ],
   },
   {
     label: "Strength",
     icon: Flame,
     items: [
-      { label: "Dashboard",   href: "/strength",              icon: Flame,     staff: false, playerOk: false, coachHide: false },
-      { label: "Leaderboard", href: "/strength/leaderboard",  icon: Trophy,    staff: false, playerOk: true,  coachHide: false },
-      { label: "Readiness",   href: "/strength/readiness",     icon: Zap,       staff: false, playerOk: false, coachHide: false },
-      { label: "Programs",    href: "/strength/programs",     icon: Dumbbell,  staff: false, playerOk: false, coachHide: false },
+      { label: "Dashboard",   href: "/strength",             icon: Flame,    playerOk: false, coachHide: false },
+      { label: "Leaderboard", href: "/strength/leaderboard", icon: Trophy,   playerOk: true,  coachHide: false },
+      { label: "Programs",    href: "/strength/programs",    icon: Dumbbell, playerOk: false, coachHide: false },
     ],
   },
   {
     label: "Inventory",
     icon: Package,
     items: [
-      { label: "Equipment",  href: "/inventory",       icon: Package,    staff: false, playerOk: false, coachHide: false },
-      { label: "Full Audit", href: "/inventory/audit", icon: Package,    staff: false, playerOk: false, coachHide: false },
+      { label: "Equipment",  href: "/inventory",       icon: Package, playerOk: false, coachHide: false },
+      { label: "Full Audit", href: "/inventory/audit", icon: Package, playerOk: false, coachHide: false },
     ],
   },
   {
@@ -107,7 +106,7 @@ const NAV_GROUPS = [
     alwaysShow: true,
     coachOnly: true,
     items: [
-      { label: "Settings", href: "/admin", icon: ShieldCheck, staff: false, playerOk: false, coachHide: false },
+      { label: "Settings", href: "/admin", icon: ShieldCheck, playerOk: false, coachHide: false },
     ],
   },
 ];
