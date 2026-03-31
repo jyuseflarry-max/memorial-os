@@ -517,7 +517,7 @@ function EmptyState() {
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function AttendanceReportPage() {
-  const { activeTeam } = useTeam();
+  const { activeTeam, teams } = useTeam();
   const { settings }   = useSettings();
   const today          = isoToday();
   const seasonStart    = settings.season_start ?? undefined;
@@ -528,8 +528,9 @@ export default function AttendanceReportPage() {
   const [report,       setReport]       = useState<AttendanceReport | null>(null);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState<string | null>(null);
-  const [consequences, setConsequences] = useState<ConsequenceMap>({});
-  const [viewMode,     setViewMode]     = useState<ViewMode>("date");
+  const [consequences,    setConsequences]    = useState<ConsequenceMap>({});
+  const [viewMode,        setViewMode]        = useState<ViewMode>("date");
+  const [selectedTeamId,  setSelectedTeamId]  = useState<string | null>(activeTeam?.id ?? null);
 
   useEffect(() => {
     fetch("/api/attendance/consequences")
@@ -556,7 +557,7 @@ export default function AttendanceReportPage() {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
-    if (activeTeam) params.set("team_id", activeTeam.id);
+    if (selectedTeamId) params.set("team_id", selectedTeamId);
     if (from) params.set("from", from);
     if (to)   params.set("to", to);
 
@@ -565,7 +566,7 @@ export default function AttendanceReportPage() {
       .then((d) => { if (d.error) setError(d.error); else setReport(d); })
       .catch(() => setError("Failed to load attendance report"))
       .finally(() => setLoading(false));
-  }, [activeTeam, from, to]);
+  }, [selectedTeamId, from, to]);
 
   function recomputeTotals(records: Record<string, AttendanceRecord>) {
     let excused = 0, unexcused = 0, makeup_required = 0, makeup_done = 0;
@@ -598,7 +599,7 @@ export default function AttendanceReportPage() {
       <div className="mb-6">
         <h1 className="text-white text-2xl font-bold tracking-tight">Attendance</h1>
         <p className="text-gray-400 text-sm mt-0.5 font-mono">
-          {activeTeam?.name.toUpperCase() ?? "ALL TEAMS"} · ABSENCES &amp; MAKEUP TRACKING
+          {(teams.find((t) => t.id === selectedTeamId)?.name ?? "ALL TEAMS").toUpperCase()} · ABSENCES &amp; MAKEUP TRACKING
         </p>
       </div>
 
@@ -636,6 +637,37 @@ export default function AttendanceReportPage() {
           </div>
         )}
       </div>
+
+      {/* Team filter */}
+      {teams.length > 1 && (
+        <div className="flex gap-2 flex-wrap mb-4">
+          <button
+            type="button"
+            onClick={() => setSelectedTeamId(null)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              selectedTeamId === null
+                ? "bg-gray-700 border-gray-600 text-white"
+                : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+            }`}
+          >
+            All Teams
+          </button>
+          {teams.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSelectedTeamId(t.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                selectedTeamId === t.id
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+              }`}
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* View toggle */}
       <div className="flex gap-2 mb-4">
