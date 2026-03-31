@@ -426,7 +426,7 @@ export default function WeeklyEventsPage() {
                   <p className={`text-xs font-mono ${isToday ? "text-coaches-red/80" : "text-gray-500"}`}>{short}</p>
                   {isToday && <span className="text-[9px] font-mono bg-coaches-red text-white px-1.5 py-0.5 rounded-full">TODAY</span>}
                 </div>
-                {renderEventItems(items, isPlayer, canEdit, canPreview, reportedDates, makeupByDate, uploadingDate, uploadError, locations, setAbsenceSheet, setMakeupByDate, setUploadingDate, setUploadError)}
+                {renderEventItems(items, isPlayer, canEdit, canPreview, reportedDates, makeupByDate, uploadingDate, uploadError, locations, setAbsenceSheet, setMakeupByDate, setUploadingDate, setUploadError, consequences)}
               </div>
             );
           })}
