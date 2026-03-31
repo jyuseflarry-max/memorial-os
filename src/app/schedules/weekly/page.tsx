@@ -464,7 +464,7 @@ function renderEventItems(
 
     // ── Staff action buttons (Coach / Admin / Manager) ──────────────────────
     function StaffButtons() {
-      if (!canEdit && !canPreview) return null;
+      if (isPlayer || (!canEdit && !canPreview)) return null;
 
       if (ev.kind === "session") {
         const qp = new URLSearchParams({ date: ev.session.date });
