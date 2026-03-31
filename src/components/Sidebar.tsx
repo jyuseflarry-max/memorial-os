@@ -44,9 +44,9 @@ const NAV_GROUPS = [
     label: "Messages",
     icon: MessageSquare,
     alwaysShow: true,
-    items: [
-      { label: "Messages", href: "/messages", icon: MessageSquare, pageKey: "messages" },
-    ],
+    directHref: "/messages",
+    pageKey: "messages",
+    items: [],
   },
   {
     label: "Players",
@@ -119,6 +119,7 @@ function NavGroup({
   pathname,
   onClose,
   badge,
+  directHref,
 }: {
   label: string;
   icon: React.ElementType;
@@ -126,32 +127,46 @@ function NavGroup({
   pathname: string;
   onClose: () => void;
   badge?: number;
+  directHref?: string;
 }) {
-  const hasActive = items.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+  const hasActive = directHref
+    ? pathname === directHref || pathname.startsWith(directHref + "/")
+    : items.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
   const [open, setOpen] = useState(true);
+
+  const headerCls = "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors text-gray-500 hover:text-gray-300 hover:bg-gray-800/60";
+  const headerContent = (
+    <div className="flex items-center gap-2">
+      <GroupIcon size={13} className={hasActive ? "text-coaches-blue" : "text-gray-600"} />
+      <span className={hasActive ? "text-coaches-blue" : ""}>{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="min-w-[18px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
+    </div>
+  );
 
   return (
     <div>
-      {/* Group header */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors text-gray-500 hover:text-gray-300 hover:bg-gray-800/60"
-      >
-        <div className="flex items-center gap-2">
-          <GroupIcon size={13} className={hasActive ? "text-coaches-blue" : "text-gray-600"} />
-          <span className={hasActive ? "text-coaches-blue" : ""}>{label}</span>
-          {badge != null && badge > 0 && (
-            <span className="min-w-[18px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-              {badge > 9 ? "9+" : badge}
-            </span>
-          )}
-        </div>
-        <ChevronDown
-          size={13}
-          className={`transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"}`}
-        />
-      </button>
+      {/* Group header — direct link or collapsible toggle */}
+      {directHref ? (
+        <Link href={directHref} onClick={onClose} className={headerCls}>
+          {headerContent}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className={headerCls}
+        >
+          {headerContent}
+          <ChevronDown
+            size={13}
+            className={`transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"}`}
+          />
+        </button>
+      )}
 
       {/* Items */}
       {open && (
@@ -261,6 +276,24 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
             return (settings.enabled_modules ?? []).includes(g.label);
           })
           .map((group) => {
+            // Direct-link groups (no sub-items) — check permission by pageKey
+            if ("directHref" in group && group.directHref) {
+              const key = "pageKey" in group ? (group.pageKey as string) : "";
+              if (!permsLoading && key && !canView(key)) return null;
+              return (
+                <div key={group.label}>
+                  <NavGroup
+                    label={group.label}
+                    icon={group.icon}
+                    items={[]}
+                    pathname={pathname}
+                    onClose={onClose}
+                    badge={group.label === "Messages" ? unread : undefined}
+                    directHref={group.directHref}
+                  />
+                </div>
+              );
+            }
             const visibleItems = group.items.filter((i) => permsLoading || canView(i.pageKey));
             if (visibleItems.length === 0) return null;
             return (
