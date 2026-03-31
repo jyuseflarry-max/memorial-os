@@ -37,7 +37,9 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 5. Storage RLS: players can upload to their own folder only
 --    Path convention: {tenant_id}/{player_id}/{filename}
-CREATE POLICY IF NOT EXISTS "Players can upload their own proof"
+--    CREATE POLICY has no IF NOT EXISTS; use DROP IF EXISTS first to stay idempotent.
+DROP POLICY IF EXISTS "Players can upload their own proof" ON storage.objects;
+CREATE POLICY "Players can upload their own proof"
   ON storage.objects FOR INSERT
   TO authenticated
   WITH CHECK (
@@ -45,7 +47,8 @@ CREATE POLICY IF NOT EXISTS "Players can upload their own proof"
     AND (storage.foldername(name))[2] = auth.uid()::text
   );
 
-CREATE POLICY IF NOT EXISTS "Players can view their own proof"
+DROP POLICY IF EXISTS "Players can view their own proof" ON storage.objects;
+CREATE POLICY "Players can view their own proof"
   ON storage.objects FOR SELECT
   TO authenticated
   USING (
@@ -53,7 +56,8 @@ CREATE POLICY IF NOT EXISTS "Players can view their own proof"
     AND (storage.foldername(name))[2] = auth.uid()::text
   );
 
-CREATE POLICY IF NOT EXISTS "Staff can view all proof in their tenant"
+DROP POLICY IF EXISTS "Staff can view all proof in their tenant" ON storage.objects;
+CREATE POLICY "Staff can view all proof in their tenant"
   ON storage.objects FOR SELECT
   TO authenticated
   USING (
