@@ -31,14 +31,7 @@ export async function GET() {
       if (!error && data) return Response.json(data);
     }
 
-    // Fallback: try legacy singleton row, then defaults
-    const { data } = await supabase
-      .from("program_settings")
-      .select("*")
-      .eq("id", "singleton")
-      .single();
-
-    return Response.json(data ?? DEFAULT_SETTINGS);
+    return Response.json(DEFAULT_SETTINGS);
   } catch (err: unknown) {
     return apiError(err);
   }
@@ -62,22 +55,10 @@ export async function PUT(request: NextRequest) {
         .single();
 
       if (!error) return Response.json(data);
-      // If tenant_id column doesn't exist yet, fall through to legacy path
-      if (!error.message?.includes("tenant_id")) throw error;
+      throw error;
     }
 
-    // Legacy fallback: singleton row (single-tenant installs)
-    const { data, error } = await supabase
-      .from("program_settings")
-      .upsert(
-        { id: "singleton", ...body, updated_at: new Date().toISOString() },
-        { onConflict: "id" }
-      )
-      .select()
-      .single();
-
-    if (error) throw error;
-    return Response.json(data);
+    return apiError("No tenant context — cannot save settings", 400);
   } catch (err: unknown) {
     return apiError(err);
   }
