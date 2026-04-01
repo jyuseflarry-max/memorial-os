@@ -14,6 +14,7 @@ import { FacilitiesProvider } from "@/context/FacilitiesContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { StatImpactsProvider } from "@/context/StatImpactsContext";
 import PrintOrientationStyle from "@/components/PrintOrientationStyle";
+import BrandStyle from "@/components/BrandStyle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
         <AuthProvider>
           <PermissionsProvider>
             <SettingsProvider>
+              <BrandStyle />
               <DrillCategoryProvider>
                 <DrillObjectivesProvider>
                   <PrintOrientationStyle />

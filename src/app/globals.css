@@ -6,20 +6,12 @@
 /* ── Brand Palette ──────────────────────────────────────────────────────── */
 
 @theme inline {
-  /* Coach's OS platform colours */
+  /* Platform colours — defaults; overridden at runtime by BrandStyle for primary */
   --color-coaches-blue:      #4a9eca;
   --color-coaches-blue-dark: #3a7fa8;
   --color-coaches-navy:      #0a0f1e;
-  --color-coaches-red:       #e63946;  /* platform action / interactive elements */
-  --color-coaches-red-dark:  #c1121f;  /* hover / pressed state */
-
-  /* Mustang tenant colours (Memorial Basketball) */
-  --color-mustang-red:       #ED1C24;
-  --color-mustang-red-dark:  #C01920;   /* hover / pressed state */
-  --color-mustang-grey:      #A7A9AC;
-  --color-mustang-dark-grey: #58595B;
-  --color-mustang-black:     #000000;
-  --color-mustang-white:     #FFFFFF;
+  --color-coaches-red:       #e63946;  /* default primary — overridden by tenant settings */
+  --color-coaches-red-dark:  #c1121f;  /* default primary dark */
 
   /* Surface scale — dark-mode-first */
   --color-surface-0:  #000000;   /* page background  */
@@ -63,8 +55,8 @@ body {
 }
 
 html.dark body {
-  background-color: var(--color-mustang-black);
-  color: var(--color-mustang-white);
+  background-color: #000000;
+  color: #ffffff;
 }
 
 /* ── Light mode overrides ────────────────────────────────────────────────
@@ -130,7 +122,7 @@ html.dark body {
 :root:not(.dark) [class*="bg-yellow-"].text-white,
 :root:not(.dark) [class*="bg-lime-"].text-white,
 :root:not(.dark) [class*="bg-pink-"].text-white,
-:root:not(.dark) [class*="bg-mustang-"].text-white,
+
 :root:not(.dark) [class*="bg-slate-"].text-white,
 :root:not(.dark) [class*="bg-zinc-"].text-white,
 :root:not(.dark) [class*="bg-stone-"].text-white,
