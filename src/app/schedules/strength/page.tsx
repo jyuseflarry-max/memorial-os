@@ -38,7 +38,8 @@ function durationMins(start: string, end: string): number {
 
 type ModalMode = { type: "add" } | { type: "edit"; entry: StrengthScheduleEntry };
 
-interface Program { id: string; name: string; phase: string | null; }
+interface ProgramBlock { week: number; day: number; label?: string; }
+interface Program { id: string; name: string; phase: string | null; weeks: number; blocks: ProgramBlock[]; }
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ function StrengthModal({
     start_time:    "07:00",
     end_time:      "08:00",
     program_id:    null as string | null,
+    program_week:  null as number | null,
+    program_day:   null as number | null,
     facility_id:   null as string | null,
     team_id:       teamId,
     notes:         null as string | null,
@@ -70,17 +73,39 @@ function StrengthModal({
           start_time:    mode.entry.start_time,
           end_time:      mode.entry.end_time,
           program_id:    mode.entry.program_id,
+          program_week:  mode.entry.program_week,
+          program_day:   mode.entry.program_day,
           facility_id:   mode.entry.facility_id,
           team_id:       mode.entry.team_id,
           notes:         mode.entry.notes,
         }
       : blank
   );
+
+  // Derive available weeks/days from selected program
+  const selectedProgram = programs.find((p) => p.id === draft.program_id) ?? null;
+  const weekCount = selectedProgram?.weeks ?? 0;
+  const availableWeeks = weekCount > 0 ? Array.from({ length: weekCount }, (_, i) => i + 1) : [];
+  const daysForWeek: number[] = selectedProgram && draft.program_week
+    ? [...new Set(
+        (selectedProgram.blocks ?? [])
+          .filter((b) => b.week === draft.program_week)
+          .map((b) => b.day)
+      )].sort((a, b) => a - b)
+    : [];
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
 
   function patch<K extends keyof typeof draft>(key: K, val: (typeof draft)[K]) {
     setDraft((d) => ({ ...d, [key]: val }));
+  }
+
+  function selectProgram(id: string | null) {
+    setDraft((d) => ({ ...d, program_id: id, program_week: null, program_day: null }));
+  }
+
+  function selectWeek(week: number | null) {
+    setDraft((d) => ({ ...d, program_week: week, program_day: null }));
   }
 
   async function handleSave() {
@@ -124,7 +149,7 @@ function StrengthModal({
           </div>
           <div className="flex flex-col gap-1">
             <label className={labelCls}>Program / Workout</label>
-            <select value={draft.program_id ?? ""} onChange={(e) => patch("program_id", e.target.value || null)} className={inputCls + " appearance-none"}>
+            <select value={draft.program_id ?? ""} onChange={(e) => selectProgram(e.target.value || null)} className={inputCls + " appearance-none"}>
               <option value="">— No program assigned —</option>
               {programs.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -133,6 +158,39 @@ function StrengthModal({
               ))}
             </select>
           </div>
+
+          {/* Week / Day — only shown when a program with weeks is selected */}
+          {selectedProgram && weekCount > 0 && (
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className={labelCls}>Week</label>
+                <select
+                  value={draft.program_week ?? ""}
+                  onChange={(e) => selectWeek(e.target.value ? Number(e.target.value) : null)}
+                  className={inputCls + " appearance-none"}
+                >
+                  <option value="">— Any week —</option>
+                  {availableWeeks.map((w) => (
+                    <option key={w} value={w}>Week {w}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className={labelCls}>Day</label>
+                <select
+                  value={draft.program_day ?? ""}
+                  onChange={(e) => patch("program_day", e.target.value ? Number(e.target.value) : null)}
+                  disabled={!draft.program_week || daysForWeek.length === 0}
+                  className={inputCls + " appearance-none disabled:opacity-40"}
+                >
+                  <option value="">— Any day —</option>
+                  {daysForWeek.map((d) => (
+                    <option key={d} value={d}>Day {d}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <label className={labelCls}>Facility</label>
             <select value={draft.facility_id ?? ""} onChange={(e) => patch("facility_id", e.target.value || null)} className={inputCls + " appearance-none"}>
@@ -334,6 +392,11 @@ export default function StrengthSchedulePage() {
                           {entry.program.phase && (
                             <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.5 rounded-full shrink-0">
                               {entry.program.phase}
+                            </span>
+                          )}
+                          {entry.program_week != null && (
+                            <span className="text-[9px] font-mono text-coaches-blue bg-coaches-blue/10 border border-coaches-blue/20 px-1.5 py-0.5 rounded-full shrink-0">
+                              Wk {entry.program_week}{entry.program_day != null ? ` · Day ${entry.program_day}` : ""}
                             </span>
                           )}
                         </div>

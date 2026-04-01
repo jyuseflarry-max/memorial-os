@@ -10,6 +10,8 @@ export interface StrengthScheduleEntry {
   start_time:    string;
   end_time:      string;
   program_id:    string | null;
+  program_week:  number | null;
+  program_day:   number | null;
   facility_id:   string | null;
   notes:         string | null;
   created_at:    string;
