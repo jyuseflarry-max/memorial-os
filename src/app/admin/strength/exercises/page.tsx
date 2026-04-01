@@ -20,6 +20,7 @@ type EditDraft = {
   category: ExerciseCategory;
   primary_muscles: string;
   demo_video_url: string;
+  coaching_cues: string;
   is_primary_lift: boolean;
 };
 
@@ -29,6 +30,7 @@ function draftFrom(ex: StrengthExercise): EditDraft {
     category:        ex.category,
     primary_muscles: ex.primary_muscles.join(", "),
     demo_video_url:  ex.demo_video_url ?? "",
+    coaching_cues:   ex.coaching_cues ?? "",
     is_primary_lift: ex.is_primary_lift,
   };
 }
@@ -92,6 +94,7 @@ export default function ExercisesAdminPage() {
         category:        draft.category,
         primary_muscles: draft.primary_muscles.split(",").map(s => s.trim()).filter(Boolean),
         demo_video_url:  draft.demo_video_url.trim() || null,
+        coaching_cues:   draft.coaching_cues.trim() || null,
         is_primary_lift: draft.is_primary_lift,
       };
       const res = await fetch(`/api/strength/exercises/${ex.id}`, {
@@ -254,6 +257,7 @@ export default function ExercisesAdminPage() {
                     <th className={thCls}>Category</th>
                     <th className={thCls}>Primary Muscles</th>
                     <th className={thCls}>Video URL</th>
+                    <th className={thCls}>Coaching Cues</th>
                     <th className={thCls}>Primary Lift</th>
                     <th className={thCls + " text-right"}>Actions</th>
                   </tr>
@@ -324,6 +328,22 @@ export default function ExercisesAdminPage() {
                                 className={inCls + " w-52"} />
                             : ex.demo_video_url
                               ? <a href={ex.demo_video_url} target="_blank" rel="noreferrer" className="text-blue-400 text-xs hover:underline truncate max-w-[180px] block">Link</a>
+                              : <span className="text-gray-700 text-xs">—</span>
+                          }
+                        </td>
+
+                        {/* Coaching Cues */}
+                        <td className={tdCls}>
+                          {isEditing
+                            ? <textarea
+                                value={draft!.coaching_cues}
+                                onChange={e => setDraft(d => d ? {...d, coaching_cues: e.target.value} : d)}
+                                placeholder="Cues, technique notes…"
+                                rows={3}
+                                className={inCls + " w-56 resize-none text-xs leading-relaxed"}
+                              />
+                            : ex.coaching_cues
+                              ? <span className="text-gray-400 text-xs line-clamp-2 max-w-[180px]">{ex.coaching_cues}</span>
                               : <span className="text-gray-700 text-xs">—</span>
                           }
                         </td>

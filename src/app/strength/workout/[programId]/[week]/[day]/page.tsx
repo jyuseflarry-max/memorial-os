@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronDown, ChevronUp, Video, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import type { StrengthProgram, ProgramBlock, WorkoutLogEntry } from "@/types/strength";
+import type { StrengthProgram, ProgramBlock, WorkoutLogEntry, StrengthExercise } from "@/types/strength";
 
 interface PlayerMax {
   exercise_id: string;
@@ -22,6 +22,127 @@ function roundTo5(n: number): number {
   return Math.round(n / 5) * 5;
 }
 
+// ── Scroll drum picker ─────────────────────────────────────────────────────
+// Click and scroll (mouse wheel) or drag (touch) to change value.
+
+function ScrollPicker({
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+  label,
+  unit,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  label: string;
+  unit?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY  = useRef(0);
+  const touchAccum   = useRef(0);
+
+  function clamp(v: number) {
+    return Math.min(max, Math.max(min, Math.round(v / step) * step));
+  }
+
+  function increment() { onChange(clamp(value + step)); }
+  function decrement() { onChange(clamp(value - step)); }
+
+  // Non-passive wheel listener so we can preventDefault and stop page scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    function handler(e: WheelEvent) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.deltaY < 0) onChange(clamp(value + step));
+      else               onChange(clamp(value - step));
+    }
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, step, min, max]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartY.current = e.touches[0].clientY;
+    touchAccum.current  = 0;
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    e.preventDefault();
+    const delta = touchStartY.current - e.touches[0].clientY;
+    touchAccum.current += delta;
+    touchStartY.current = e.touches[0].clientY;
+    const steps = Math.floor(Math.abs(touchAccum.current) / 28);
+    if (steps > 0) {
+      const dir = touchAccum.current > 0 ? 1 : -1;
+      onChange(clamp(value + dir * step * steps));
+      touchAccum.current = touchAccum.current % 28;
+    }
+  }
+
+  const prevVal = clamp(value - step);
+  const nextVal = clamp(value + step);
+
+  return (
+    <div className="flex flex-col items-center gap-1 select-none">
+      <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">{label}</span>
+      <div
+        ref={containerRef}
+        className="flex flex-col items-center cursor-ns-resize touch-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+      >
+        {/* Up button */}
+        <button
+          type="button"
+          onClick={increment}
+          className="w-10 flex items-center justify-center py-0.5 text-gray-600 hover:text-gray-300 transition-colors"
+          aria-label="Increase"
+        >
+          <svg viewBox="0 0 10 6" className="w-3 h-3 fill-current"><path d="M5 0L10 6H0z"/></svg>
+        </button>
+
+        {/* Drum roll */}
+        <div className="flex flex-col items-center w-16 bg-gray-800 border border-gray-600 rounded-xl overflow-hidden">
+          {/* Prev */}
+          <div className="h-7 flex items-center justify-center w-full border-b border-gray-700/60">
+            <span className="text-gray-600 text-sm font-mono">
+              {value > min ? prevVal : ""}
+            </span>
+          </div>
+          {/* Current */}
+          <div className="h-10 flex items-center justify-center w-full bg-gray-700/60">
+            <span className="text-white text-xl font-bold font-mono leading-none">{value}</span>
+            {unit && <span className="text-gray-500 text-[9px] font-mono ml-0.5 mt-1">{unit}</span>}
+          </div>
+          {/* Next */}
+          <div className="h-7 flex items-center justify-center w-full border-t border-gray-700/60">
+            <span className="text-gray-600 text-sm font-mono">
+              {value < max ? nextVal : ""}
+            </span>
+          </div>
+        </div>
+
+        {/* Down button */}
+        <button
+          type="button"
+          onClick={decrement}
+          className="w-10 flex items-center justify-center py-0.5 text-gray-600 hover:text-gray-300 transition-colors"
+          aria-label="Decrease"
+        >
+          <svg viewBox="0 0 10 6" className="w-3 h-3 fill-current"><path d="M5 6L0 0H10z"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Set logging row ────────────────────────────────────────────────────────
 
 function SetRow({
@@ -32,58 +153,76 @@ function SetRow({
   onLog,
 }: {
   setNum: number;
-  target: string; // reps string from program e.g. "5" or "3-5"
+  target: string;
   logged: WorkoutLogEntry | undefined;
   targetWeight: number | null;
   onLog: (setNum: number, reps: number | null, weight: number | null) => void;
 }) {
-  const prefill = !logged && targetWeight ? String(targetWeight) : "";
-  const [reps,   setReps]   = useState<string>(logged?.reps_completed?.toString() ?? "");
-  const [weight, setWeight] = useState<string>(logged?.weight_lbs?.toString() ?? prefill);
+  const initWeight = logged?.weight_lbs != null
+    ? roundTo5(logged.weight_lbs)
+    : (targetWeight ?? 0);
+  const initReps = logged?.reps_completed ?? 0;
 
-  function flush() {
-    onLog(
-      setNum,
-      reps.trim()   ? parseInt(reps)     : null,
-      weight.trim() ? parseFloat(weight) : null,
-    );
+  const [weight, setWeight] = useState(initWeight);
+  const [reps,   setReps]   = useState(initReps);
+
+  // Debounce: save 800ms after last change
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function scheduleLog(w: number, r: number) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onLog(setNum, r > 0 ? r : null, w > 0 ? w : null);
+    }, 800);
   }
 
-  const isDone = logged?.reps_completed != null;
+  function handleWeightChange(v: number) {
+    setWeight(v);
+    scheduleLog(v, reps);
+  }
+  function handleRepsChange(v: number) {
+    setReps(v);
+    scheduleLog(weight, v);
+  }
+
+  const isDone = (logged?.reps_completed ?? 0) > 0;
 
   return (
-    <div className="flex flex-col gap-1">
-      {/* Target weight pill — shown when intensity is programmed and a max exists */}
+    <div className={`flex flex-col gap-2 p-3 rounded-xl transition-colors ${isDone ? "bg-green-900/20 border border-green-800/30" : "bg-gray-800/50 border border-gray-700/50"}`}>
+      <div className="flex items-center justify-between">
+        <span className={`text-xs font-mono font-bold ${isDone ? "text-green-400" : "text-gray-500"}`}>
+          Set {setNum}
+        </span>
+        <span className="text-xs font-mono text-gray-600">{target} reps</span>
+        {isDone && <CheckCircle2 size={13} className="text-green-400" />}
+      </div>
+
+      {/* Target weight pill */}
       {targetWeight !== null && !isDone && (
-        <div className="flex items-center gap-1.5 px-3">
-          <span className="text-[10px] font-mono text-coaches-red/80 bg-coaches-red/10 border border-coaches-red/20 rounded-full px-2 py-0.5">
-            Target: ~{targetWeight} lbs
-          </span>
-        </div>
+        <span className="self-start text-[10px] font-mono text-coaches-red/80 bg-coaches-red/10 border border-coaches-red/20 rounded-full px-2 py-0.5">
+          Target: ~{targetWeight} lbs
+        </span>
       )}
-      <div className={`grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 items-center px-3 py-2 rounded-lg transition-colors ${isDone ? "bg-green-900/20 border border-green-800/30" : "bg-gray-800/60 border border-gray-700/60"}`}>
-        <span className={`text-xs font-mono font-bold ${isDone ? "text-green-400" : "text-gray-500"}`}>{setNum}</span>
-        <span className="text-xs text-gray-500 font-mono">{target}</span>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[9px] font-mono text-gray-600 uppercase">lbs</span>
-          <input
-            type="number" inputMode="decimal" placeholder="0"
-            value={weight}
-            onChange={e => setWeight(e.target.value)}
-            onBlur={flush}
-            className="bg-transparent border-b border-gray-600 text-white text-sm focus:outline-none focus:border-coaches-red text-center w-full"
-          />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[9px] font-mono text-gray-600 uppercase">reps</span>
-          <input
-            type="number" inputMode="numeric" placeholder="0"
-            value={reps}
-            onChange={e => setReps(e.target.value)}
-            onBlur={flush}
-            className="bg-transparent border-b border-gray-600 text-white text-sm focus:outline-none focus:border-coaches-red text-center w-full"
-          />
-        </div>
+
+      {/* Pickers */}
+      <div className="flex items-start justify-around pt-1">
+        <ScrollPicker
+          value={weight}
+          onChange={handleWeightChange}
+          min={0}
+          max={500}
+          step={5}
+          label="Weight"
+          unit="lbs"
+        />
+        <div className="w-px bg-gray-700 self-stretch mx-2" />
+        <ScrollPicker
+          value={reps}
+          onChange={handleRepsChange}
+          min={0}
+          max={20}
+          step={1}
+          label="Reps"
+        />
       </div>
     </div>
   );
@@ -96,27 +235,29 @@ function ExerciseCard({
   index,
   logs,
   maxByExercise,
+  coachingCues,
   onLog,
 }: {
   block: ProgramBlock;
   index: number;
   logs: WorkoutLogEntry[];
   maxByExercise: Map<string, number>;
+  coachingCues: string | null;
   onLog: (exerciseId: string, setNum: number, reps: number | null, weight: number | null) => void;
 }) {
-  const [cuesOpen, setCuesOpen] = useState(false);
   const sets = Array.from({ length: block.sets }, (_, i) => i + 1);
-  const completedSets = logs.filter(l => l.exercise_id === block.exercise_id && l.reps_completed != null).length;
+  const completedSets = logs.filter(l => l.exercise_id === block.exercise_id && (l.reps_completed ?? 0) > 0).length;
   const allDone = completedSets >= block.sets;
 
   const ytId = block.demo_video_url ? getYouTubeId(block.demo_video_url) : null;
 
-  // Compute target weight from 1RM max and intensity_pct
   const exerciseMax = maxByExercise.get(block.exercise_id) ?? null;
   const targetWeight =
     exerciseMax !== null && block.intensity_pct > 0
       ? roundTo5(exerciseMax * block.intensity_pct / 100)
       : null;
+
+  const displayCues = coachingCues || block.notes || null;
 
   return (
     <div className={`bg-gray-900 border rounded-2xl overflow-hidden transition-colors ${allDone ? "border-green-700/50" : "border-gray-700"}`}>
@@ -126,53 +267,46 @@ function ExerciseCard({
           <span className="text-[10px] font-mono text-gray-600 shrink-0">#{index + 1}</span>
           <div className="min-w-0">
             <p className="text-white font-semibold text-sm truncate">{block.exercise_name || "Exercise"}</p>
-            <p className="text-gray-500 text-xs font-mono">{block.sets} sets × {block.reps} reps{block.intensity_pct ? ` @ ${block.intensity_pct}%` : ""}</p>
+            <p className="text-gray-500 text-xs font-mono">
+              {block.sets} sets × {block.reps} reps
+              {block.intensity_pct ? ` @ ${block.intensity_pct}%` : ""}
+              {block.tempo ? ` · ${block.tempo}` : ""}
+            </p>
           </div>
         </div>
-        {allDone && <CheckCircle2 size={16} className="text-green-400 shrink-0" />}
-        {!allDone && <span className="text-[10px] font-mono text-gray-600 shrink-0">{completedSets}/{block.sets}</span>}
+        <div className="flex items-center gap-2 shrink-0">
+          {allDone
+            ? <CheckCircle2 size={16} className="text-green-400" />
+            : <span className="text-[10px] font-mono text-gray-600">{completedSets}/{block.sets}</span>
+          }
+        </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-3">
-        {/* Video */}
-        {block.demo_video_url && (
-          ytId ? (
-            <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${ytId}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={block.exercise_name}
-              />
-            </div>
-          ) : (
-            <a href={block.demo_video_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors">
-              <Video size={14} /> Watch Demo
-            </a>
-          )
-        )}
-
-        {/* Coaching cues */}
-        {block.notes && (
-          <button onClick={() => setCuesOpen(o => !o)} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors text-left">
-            {cuesOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            {cuesOpen ? "Hide" : "Show"} notes
-          </button>
-        )}
-        {cuesOpen && block.notes && (
-          <p className="text-gray-400 text-xs leading-relaxed border-l-2 border-gray-700 pl-3">{block.notes}</p>
-        )}
-
-        {/* Set rows */}
-        <div className="flex flex-col gap-1.5">
-          <div className="grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 px-3">
-            <span className="text-[9px] font-mono text-gray-600 uppercase">Set</span>
-            <span className="text-[9px] font-mono text-gray-600 uppercase">Target</span>
-            <span className="text-[9px] font-mono text-gray-600 uppercase">Weight</span>
-            <span className="text-[9px] font-mono text-gray-600 uppercase">Reps</span>
+      <div className="p-4 flex flex-col gap-4">
+        {/* Coaching cues — always visible when present */}
+        {displayCues && (
+          <div className="border-l-2 border-coaches-blue/50 pl-3">
+            <p className="text-[9px] font-mono text-coaches-blue/70 uppercase tracking-wider mb-1">Coaching Cues</p>
+            <p className="text-gray-300 text-xs leading-relaxed whitespace-pre-line">{displayCues}</p>
           </div>
+        )}
+
+        {/* Video — autoplay muted, native controls (unmute + fullscreen available) */}
+        {ytId && (
+          <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              title={block.exercise_name}
+            />
+          </div>
+        )}
+
+        {/* Set logging */}
+        <div className="flex flex-col gap-2">
+          <p className="text-[9px] font-mono text-gray-600 uppercase tracking-wider px-1">Log Your Sets</p>
           {sets.map(s => (
             <SetRow
               key={s}
@@ -199,29 +333,32 @@ export default function WorkoutPage() {
   const { programId, week, day } = useParams<{ programId: string; week: string; day: string }>();
   const router = useRouter();
 
-  const [program,     setProgram]     = useState<StrengthProgram | null>(null);
-  const [logs,        setLogs]        = useState<WorkoutLogEntry[]>([]);
-  const [playerMaxes, setPlayerMaxes] = useState<PlayerMax[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [finished,    setFinished]    = useState(false);
+  const [program,      setProgram]      = useState<StrengthProgram | null>(null);
+  const [logs,         setLogs]         = useState<WorkoutLogEntry[]>([]);
+  const [playerMaxes,  setPlayerMaxes]  = useState<PlayerMax[]>([]);
+  const [exercises,    setExercises]    = useState<StrengthExercise[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [finished,     setFinished]     = useState(false);
 
   const weekNum = parseInt(week);
   const dayNum  = parseInt(day);
 
   const blocks = (program?.blocks ?? []).filter(b => b.week === weekNum && b.day === dayNum);
 
-  // Build exercise_id → best 1RM lookup for the current player
   const maxByExercise = new Map(playerMaxes.map(m => [m.exercise_id, m.estimated_1rm]));
+  const exerciseMap   = new Map(exercises.map(e => [e.id, e]));
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/strength/programs/${programId}`).then(r => r.json()),
       fetch(`/api/strength/workout-log?program_id=${programId}&week=${week}&day=${day}`).then(r => r.json()),
       fetch(`/api/strength/maxes?player_id=me`).then(r => r.json()),
-    ]).then(([p, l, mx]) => {
+      fetch(`/api/strength/exercises`).then(r => r.json()),
+    ]).then(([p, l, mx, ex]) => {
       if (!p.error) setProgram(p as StrengthProgram);
-      if (Array.isArray(l)) setLogs(l as WorkoutLogEntry[]);
+      if (Array.isArray(l))  setLogs(l as WorkoutLogEntry[]);
       if (Array.isArray(mx)) setPlayerMaxes(mx as PlayerMax[]);
+      if (Array.isArray(ex)) setExercises(ex as StrengthExercise[]);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [programId, week, day]);
 
@@ -246,7 +383,7 @@ export default function WorkoutPage() {
 
   const sessionLabel = dayNum === 1 ? "A" : dayNum === 2 ? "B" : String(dayNum);
   const totalSets    = blocks.reduce((n, b) => n + b.sets, 0);
-  const loggedSets   = logs.filter(l => l.reps_completed != null).length;
+  const loggedSets   = logs.filter(l => (l.reps_completed ?? 0) > 0).length;
 
   if (loading) return (
     <DashboardLayout>
@@ -302,16 +439,20 @@ export default function WorkoutPage() {
           <p className="text-gray-600 font-mono text-sm text-center py-12">No exercises programmed for this session.</p>
         ) : (
           <div className="flex flex-col gap-4">
-            {blocks.map((block, idx) => (
-              <ExerciseCard
-                key={`${block.exercise_id}-${idx}`}
-                block={block}
-                index={idx}
-                logs={logs.filter(l => l.exercise_id === block.exercise_id)}
-                maxByExercise={maxByExercise}
-                onLog={handleLog}
-              />
-            ))}
+            {blocks.map((block, idx) => {
+              const ex = exerciseMap.get(block.exercise_id);
+              return (
+                <ExerciseCard
+                  key={`${block.exercise_id}-${idx}`}
+                  block={block}
+                  index={idx}
+                  logs={logs.filter(l => l.exercise_id === block.exercise_id)}
+                  maxByExercise={maxByExercise}
+                  coachingCues={ex?.coaching_cues ?? block.notes ?? null}
+                  onLog={handleLog}
+                />
+              );
+            })}
 
             <button
               onClick={() => setFinished(true)}
