@@ -34,12 +34,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: "The Program Suite",
     description: "The Program Suite — The Operating System for Winning Programs.",
-    images: [{ url: "/og-coaches-os.jpg" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og-coaches-os.jpg"],
   },
 };
 
