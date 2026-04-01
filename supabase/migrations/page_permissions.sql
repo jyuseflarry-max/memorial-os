@@ -116,6 +116,24 @@ CROSS JOIN (
     ('strength_programs', 'Manager', 'edit'),
     ('strength_programs', 'Player',  'none'),
     ('strength_programs', 'Family',  'none'),
+    -- strength_maxes
+    ('strength_maxes', 'Admin',   'full'),
+    ('strength_maxes', 'Coach',   'full'),
+    ('strength_maxes', 'Manager', 'view'),
+    ('strength_maxes', 'Player',  'none'),
+    ('strength_maxes', 'Family',  'none'),
+    -- strength_library
+    ('strength_library', 'Admin',   'full'),
+    ('strength_library', 'Coach',   'full'),
+    ('strength_library', 'Manager', 'view'),
+    ('strength_library', 'Player',  'none'),
+    ('strength_library', 'Family',  'none'),
+    -- strength_schedule
+    ('strength_schedule', 'Admin',   'full'),
+    ('strength_schedule', 'Coach',   'full'),
+    ('strength_schedule', 'Manager', 'edit'),
+    ('strength_schedule', 'Player',  'none'),
+    ('strength_schedule', 'Family',  'none'),
     -- inventory
     ('inventory', 'Admin',   'full'),
     ('inventory', 'Coach',   'edit'),
