@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X, List, Eye, Pencil, Printer, AlertCircle, Upload, CheckCircle2 } from "lucide-react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight, Clock, X, List, Eye, Pencil, Printer, AlertCircle, Upload, CheckCircle2, Play } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useTeam } from "@/context/TeamContext";
 import { useLocations } from "@/context/LocationsContext";
@@ -576,10 +576,16 @@ function renderEventItems(
         );
       }
       if (ev.kind === "strength") {
+        const s = ev.strength;
+        const planHref    = s.program_id ? `/strength/programs/${s.program_id}` : null;
+        const workoutHref = s.program_id && s.program_week != null && s.program_day != null
+          ? `/strength/workout/${s.program_id}/${s.program_week}/${s.program_day}`
+          : null;
         return (
-          <div className="flex items-center gap-1 mt-2">
-            {canPreview && <ActionBtn href="/schedules/strength" icon={<Eye size={10}/>} label="Preview" />}
-            {canEdit    && <ActionBtn href="/schedules/strength" icon={<Pencil size={10}/>} label="Edit" />}
+          <div className="flex items-center gap-1 mt-2 flex-wrap">
+            {canPreview && planHref    && <ActionBtn href={planHref}    icon={<Eye size={10}/>}    label="View Plan" />}
+            {canEdit    && planHref    && <ActionBtn href={planHref}    icon={<Pencil size={10}/>} label="Edit Plan" />}
+            {workoutHref               && <ActionBtn href={workoutHref} icon={<Play size={10}/>}   label="Begin Workout" />}
           </div>
         );
       }
@@ -597,14 +603,18 @@ function renderEventItems(
     // ── Player action buttons ───────────────────────────────────────────────
     function PlayerButtons() {
       if (!isPlayer) return null;
+      const workoutHref = ev.kind === "strength" && ev.strength.program_id && ev.strength.program_week != null && ev.strength.program_day != null
+        ? `/strength/workout/${ev.strength.program_id}/${ev.strength.program_week}/${ev.strength.program_day}`
+        : null;
       return (
-        <div className="flex items-center gap-1 mt-2">
+        <div className="flex items-center gap-1 mt-2 flex-wrap">
           {ev.kind === "session" && (() => {
             const qp = new URLSearchParams({ date: ev.session.date });
             if (ev.session.team_id) qp.set("team_id", ev.session.team_id);
             if (ev.session.label)   qp.set("label", ev.session.label);
             return <ActionBtn href={`/view-plans/${ev.session.date}?${qp}`} icon={<Eye size={10}/>} label="Preview" />;
           })()}
+          {workoutHref && <ActionBtn href={workoutHref} icon={<Play size={10}/>} label="Begin Workout" />}
           <button
             type="button"
             onClick={() => setAbsenceSheet(ev)}
@@ -664,15 +674,26 @@ function renderEventItems(
       const timeStr  = `${fmt12h(s.start_time)} – ${fmt12h(s.end_time)}`;
       const facility = s.facility?.name ?? null;
       const phase    = s.program?.phase ?? null;
+      const sessionLabel = s.program_week != null
+        ? `Wk ${s.program_week}${s.program_day != null ? ` · Day ${s.program_day}` : ""}`
+        : null;
       return (
         <div key={key} className={`flex items-start gap-3 px-4 py-3 ${border}`}>
           <div className="w-2 h-2 rounded-full shrink-0 bg-orange-400 mt-1.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium">{label}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-white text-sm font-medium">{label}</p>
+              {sessionLabel && (
+                <span className="text-[9px] font-mono text-coaches-blue bg-coaches-blue/10 border border-coaches-blue/20 px-1.5 py-0.5 rounded-full shrink-0">
+                  {sessionLabel}
+                </span>
+              )}
+            </div>
             <p className="text-gray-500 text-[11px] font-mono mt-0.5">
               {timeStr}{facility ? ` · ${facility}` : ""}{phase ? ` · ${phase}` : ""}
             </p>
             <StaffButtons />
+            <PlayerButtons />
           </div>
         </div>
       );
