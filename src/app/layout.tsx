@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   title: "The Program Suite",
   description: "The Program Suite — The Operating System for Winning Programs.",
-  icons: { icon: "/thecoachsOS.jpg", apple: "/thecoachsOS.jpg" },
+  icons: { icon: "/favicon.png", apple: "/favicon.png" },
   openGraph: {
     title: "The Program Suite",
     description: "The Program Suite — The Operating System for Winning Programs.",

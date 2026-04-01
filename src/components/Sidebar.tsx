@@ -234,7 +234,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
         ) : (
           /* Platform default — The Program Suite wordmark */
           <div className="flex-1 min-w-0">
-            <Image src="/thecoachsOS.jpg" alt="The Program Suite" width={180} height={72} className="w-full h-auto object-contain rounded-lg" priority />
+            <Image src="/logo.png" alt="The Program Suite" width={180} height={72} className="w-full h-auto object-contain rounded-lg" priority />
           </div>
         )}
         <button
@@ -344,7 +344,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       <div className="px-2 pb-3">
         <div className="border-t border-gray-800/60 pt-3 flex flex-col items-center gap-1">
           <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest">Powered by</p>
-          <Image src="/thecoachsOS.jpg" alt="The Program Suite" width={140} height={56} className="w-full max-w-[140px] h-auto object-contain rounded opacity-70 hover:opacity-100 transition-opacity" />
+          <Image src="/logo.png" alt="The Program Suite" width={140} height={56} className="w-full max-w-[140px] h-auto object-contain rounded opacity-70 hover:opacity-100 transition-opacity" />
         </div>
       </div>
 
