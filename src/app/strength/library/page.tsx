@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Plus, Trash2, Lock, Pencil, X, Video, Check, Loader2, Copy } from "lucide-react";
+import { Plus, Trash2, Lock, Pencil, X, Video, Check, Loader2 } from "lucide-react";
 import type { StrengthExercise, MuscleGroup, StrengthEquipment } from "@/types/strength";
 
 type Tab = "exercises" | "muscles" | "equipment";
@@ -41,7 +41,7 @@ function ExercisePanel({
   muscles: MuscleGroup[];
   equipment: StrengthEquipment[];
   onClose: () => void;
-  onSaved: (ex: StrengthExercise) => void;
+  onSaved: (ex: StrengthExercise, replacedGlobalId?: string) => void;
 }) {
   const [name,         setName]         = useState(editing?.name ?? "");
   const [category,     setCategory]     = useState<string>(editing?.category ?? "compound");
@@ -70,10 +70,12 @@ function ExercisePanel({
         secondary_muscles: secondaryIds.map(sid => muscles.find(m => m.id === sid)?.name ?? "").filter(Boolean),
         equipment_keys:    equipIds.map(eid => equipment.find(eq => eq.id === eid)?.name ?? "").filter(Boolean),
       };
-      const url    = editing ? `/api/strength/exercises/${editing.id}` : "/api/strength/exercises";
-      const method = editing ? "PATCH" : "POST";
+      // Global exercises cannot be mutated — save as a tenant-owned copy instead
+      const isGlobalEdit = editing?.is_global;
+      const url    = (editing && !isGlobalEdit) ? `/api/strength/exercises/${editing.id}` : "/api/strength/exercises";
+      const method = (editing && !isGlobalEdit) ? "PATCH" : "POST";
       const res    = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) { const saved = await res.json(); onSaved(saved); }
+      if (res.ok) { const saved = await res.json(); onSaved(saved, isGlobalEdit ? editing!.id : undefined); }
     } finally { setSaving(false); }
   }
 
@@ -92,7 +94,10 @@ function ExercisePanel({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md bg-gray-900 border-l border-gray-700 h-full overflow-y-auto flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
-          <h2 className="text-white font-bold text-sm">{editing ? "Edit Exercise" : "Add Exercise"}</h2>
+          <div>
+            <h2 className="text-white font-bold text-sm">{editing ? "Edit Exercise" : "Add Exercise"}</h2>
+            {editing?.is_global && <p className="text-[10px] text-yellow-500/80 font-mono mt-0.5">Saves as your own copy</p>}
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white"><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 flex-1">
@@ -228,8 +233,10 @@ export default function LibraryPage() {
   }
 
   // ── Exercise CRUD ────────────────────────────────────────────────────────
-  function onExerciseSaved(ex: StrengthExercise) {
+  function onExerciseSaved(ex: StrengthExercise, replacedGlobalId?: string) {
     setExercises(prev => {
+      // If we copied a global exercise, replace the global entry with the new tenant copy
+      if (replacedGlobalId) return prev.map(e => e.id === replacedGlobalId ? ex : e);
       const idx = prev.findIndex(e => e.id === ex.id);
       if (idx >= 0) { const next = [...prev]; next[idx] = ex; return next; }
       return [ex, ...prev];
@@ -241,29 +248,6 @@ export default function LibraryPage() {
     if (res.ok || res.status === 204) setExercises(prev => prev.filter(e => e.id !== id));
   }
 
-  async function duplicateExercise(ex: StrengthExercise) {
-    const res = await fetch("/api/strength/exercises", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name:                       `${ex.name} (copy)`,
-        category:                   ex.category,
-        primary_muscles:            ex.primary_muscles,
-        secondary_muscles:          ex.secondary_muscles,
-        equipment_keys:             ex.equipment_keys,
-        demo_video_url:             ex.demo_video_url,
-        coaching_cues:              ex.coaching_cues,
-        is_primary_lift:            ex.is_primary_lift,
-        primary_muscle_group_id:    ex.primary_muscle_group_id,
-        secondary_muscle_group_ids: ex.secondary_muscle_group_ids,
-        equipment_ids:              ex.equipment_ids,
-      }),
-    });
-    if (res.ok) {
-      const copy = await res.json() as StrengthExercise;
-      setExercises(prev => [copy, ...prev]);
-    }
-  }
 
   const thCls = "text-left text-[10px] font-mono text-gray-500 uppercase tracking-wider px-3 py-2.5 font-medium";
   const tdCls = "px-3 py-2.5 text-sm text-gray-300 align-middle";
@@ -365,18 +349,11 @@ export default function LibraryPage() {
                         </td>
                         <td className={tdCls}>
                           <div className="flex items-center gap-2">
+                            <button onClick={() => { setPanel(ex); setPanelOpen(true); }} className="text-gray-500 hover:text-white transition-colors"><Pencil size={13} /></button>
                             {!ex.is_global && (
-                              <>
-                                <button onClick={() => { setPanel(ex); setPanelOpen(true); }} className="text-gray-500 hover:text-white transition-colors"><Pencil size={13} /></button>
-                                <button onClick={() => deleteExercise(ex.id)} className="text-gray-600 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
-                              </>
+                              <button onClick={() => deleteExercise(ex.id)} className="text-gray-600 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
                             )}
-                            {ex.is_global && (
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => duplicateExercise(ex)} title="Duplicate to edit" className="text-gray-600 hover:text-blue-400 transition-colors"><Copy size={13} /></button>
-                                <Lock size={13} className="text-gray-700" />
-                              </div>
-                            )}
+                            {ex.is_global && <Lock size={13} className="text-gray-700" />}
                           </div>
                         </td>
                       </tr>
