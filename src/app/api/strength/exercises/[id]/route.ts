@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { apiError } from "@/lib/api-error";
 import { ROLE_COACH } from "@/lib/roles";
 
@@ -9,9 +10,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!ROLE_COACH.includes(db.role)) return apiError("Forbidden", 403);
     const { id } = await params;
     const body = await req.json();
-    const { data, error } = await db.update("strength_exercises", body).eq("id", id).select().single();
+
+    const sb = getSupabaseServer();
+
+    // Verify ownership — global exercises (tenant_id IS NULL) cannot be edited
+    const { data: existing } = await sb
+      .from("strength_exercises")
+      .select("tenant_id")
+      .eq("id", id)
+      .single();
+    if (!existing) return apiError("Not found", 404);
+    if (existing.tenant_id === null) return apiError("Global exercises cannot be edited — duplicate it first", 403);
+    if (existing.tenant_id !== db.tenantId) return apiError("Forbidden", 403);
+
+    const { data, error } = await sb
+      .from("strength_exercises")
+      .update(body)
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
-    return Response.json({ ...data, is_global: data.tenant_id === null });
+    return Response.json({ ...data, is_global: false });
   } catch (err) { return apiError(err); }
 }
 

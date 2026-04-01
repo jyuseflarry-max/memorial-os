@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Plus, Trash2, Lock, Pencil, X, Video, Check, Loader2 } from "lucide-react";
+import { Plus, Trash2, Lock, Pencil, X, Video, Check, Loader2, Copy } from "lucide-react";
 import type { StrengthExercise, MuscleGroup, StrengthEquipment } from "@/types/strength";
 
 type Tab = "exercises" | "muscles" | "equipment";
@@ -241,6 +241,30 @@ export default function LibraryPage() {
     if (res.ok || res.status === 204) setExercises(prev => prev.filter(e => e.id !== id));
   }
 
+  async function duplicateExercise(ex: StrengthExercise) {
+    const res = await fetch("/api/strength/exercises", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name:                       `${ex.name} (copy)`,
+        category:                   ex.category,
+        primary_muscles:            ex.primary_muscles,
+        secondary_muscles:          ex.secondary_muscles,
+        equipment_keys:             ex.equipment_keys,
+        demo_video_url:             ex.demo_video_url,
+        coaching_cues:              ex.coaching_cues,
+        is_primary_lift:            ex.is_primary_lift,
+        primary_muscle_group_id:    ex.primary_muscle_group_id,
+        secondary_muscle_group_ids: ex.secondary_muscle_group_ids,
+        equipment_ids:              ex.equipment_ids,
+      }),
+    });
+    if (res.ok) {
+      const copy = await res.json() as StrengthExercise;
+      setExercises(prev => [copy, ...prev]);
+    }
+  }
+
   const thCls = "text-left text-[10px] font-mono text-gray-500 uppercase tracking-wider px-3 py-2.5 font-medium";
   const tdCls = "px-3 py-2.5 text-sm text-gray-300 align-middle";
 
@@ -347,7 +371,12 @@ export default function LibraryPage() {
                                 <button onClick={() => deleteExercise(ex.id)} className="text-gray-600 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
                               </>
                             )}
-                            {ex.is_global && <Lock size={13} className="text-gray-700" />}
+                            {ex.is_global && (
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => duplicateExercise(ex)} title="Duplicate to edit" className="text-gray-600 hover:text-blue-400 transition-colors"><Copy size={13} /></button>
+                                <Lock size={13} className="text-gray-700" />
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
