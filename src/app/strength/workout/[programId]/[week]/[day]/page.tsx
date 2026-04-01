@@ -236,6 +236,7 @@ function ExerciseCard({
   logs,
   maxByExercise,
   coachingCues,
+  videoUrl,
   onLog,
 }: {
   block: ProgramBlock;
@@ -243,13 +244,14 @@ function ExerciseCard({
   logs: WorkoutLogEntry[];
   maxByExercise: Map<string, number>;
   coachingCues: string | null;
+  videoUrl: string | null;
   onLog: (exerciseId: string, setNum: number, reps: number | null, weight: number | null) => void;
 }) {
   const sets = Array.from({ length: block.sets }, (_, i) => i + 1);
   const completedSets = logs.filter(l => l.exercise_id === block.exercise_id && (l.reps_completed ?? 0) > 0).length;
   const allDone = completedSets >= block.sets;
 
-  const ytId = block.demo_video_url ? getYouTubeId(block.demo_video_url) : null;
+  const ytId = videoUrl ? getYouTubeId(videoUrl) : null;
 
   const exerciseMax = maxByExercise.get(block.exercise_id) ?? null;
   const targetWeight =
@@ -449,6 +451,7 @@ export default function WorkoutPage() {
                   logs={logs.filter(l => l.exercise_id === block.exercise_id)}
                   maxByExercise={maxByExercise}
                   coachingCues={ex?.coaching_cues ?? block.notes ?? null}
+                  videoUrl={ex?.demo_video_url ?? block.demo_video_url ?? null}
                   onLog={handleLog}
                 />
               );
