@@ -9,7 +9,7 @@ import PlayerShell from "./PlayerShell";
 import { useAuth } from "@/context/AuthContext";
 
 // Routes players are allowed to visit. Everything else redirects to /.
-const PLAYER_ALLOWED = ["/", "/view-plans", "/vibe-check", "/reports", "/account", "/schedules", "/messages"];
+const PLAYER_ALLOWED = ["/", "/view-plans", "/vibe-check", "/reports", "/account", "/schedules", "/messages", "/strength"];
 
 export default function DashboardLayout({
   children,
@@ -72,7 +72,7 @@ export default function DashboardLayout({
           >
             <Menu size={20} />
           </button>
-          <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-7 w-auto object-contain rounded" />
+          <Image src="/logo.png" alt="The Program Suite" width={120} height={48} className="h-7 w-auto object-contain rounded" />
         </div>
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 print:p-6 min-w-0">

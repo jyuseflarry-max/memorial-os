@@ -44,13 +44,13 @@ export default function PlayerShell({ children }: { children: React.ReactNode })
               </span>
             </>
           ) : (
-            <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-8 w-auto object-contain rounded" priority />
+            <Image src="/logo.png" alt="The Program Suite" width={120} height={48} className="h-8 w-auto object-contain rounded" priority />
           )}
         </div>
         {/* Coach's OS logo + avatar */}
         <div className="flex items-center gap-3">
           {settings.logo_url && (
-            <Image src="/thecoachsOS.jpg" alt="The Coach's OS" width={120} height={48} className="h-7 w-auto object-contain rounded opacity-80" />
+            <Image src="/logo.png" alt="The Program Suite" width={120} height={48} className="h-7 w-auto object-contain rounded opacity-80" />
           )}
           <Link href="/account" className="flex items-center gap-1.5">
             <div className="w-7 h-7 rounded-full bg-coaches-blue/20 border border-coaches-blue/30 flex items-center justify-center">

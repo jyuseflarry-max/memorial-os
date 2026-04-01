@@ -11,9 +11,9 @@ interface PlayerMax {
   estimated_1rm: number;
 }
 
-// Extract YouTube video ID from URL
+// Extract YouTube video ID from any common URL format
 function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
 }
 
@@ -351,17 +351,21 @@ export default function WorkoutPage() {
   const exerciseMap   = new Map(exercises.map(e => [e.id, e]));
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/strength/programs/${programId}`).then(r => r.json()),
-      fetch(`/api/strength/workout-log?program_id=${programId}&week=${week}&day=${day}`).then(r => r.json()),
-      fetch(`/api/strength/maxes?player_id=me`).then(r => r.json()),
-      fetch(`/api/strength/exercises`).then(r => r.json()),
+    const json = (r: Response) => r.ok ? r.json() : Promise.reject(r.status);
+
+    setLoading(true);
+    // Fetch all four independently so a failure in one doesn't block the rest
+    Promise.allSettled([
+      fetch(`/api/strength/programs/${programId}`).then(json),
+      fetch(`/api/strength/workout-log?program_id=${programId}&week=${week}&day=${day}`).then(json),
+      fetch(`/api/strength/maxes?player_id=me`).then(json),
+      fetch(`/api/strength/exercises`).then(json),
     ]).then(([p, l, mx, ex]) => {
-      if (!p.error) setProgram(p as StrengthProgram);
-      if (Array.isArray(l))  setLogs(l as WorkoutLogEntry[]);
-      if (Array.isArray(mx)) setPlayerMaxes(mx as PlayerMax[]);
-      if (Array.isArray(ex)) setExercises(ex as StrengthExercise[]);
-    }).catch(() => {}).finally(() => setLoading(false));
+      if (p.status  === "fulfilled" && !p.value?.error)  setProgram(p.value as StrengthProgram);
+      if (l.status  === "fulfilled" && Array.isArray(l.value)) setLogs(l.value as WorkoutLogEntry[]);
+      if (mx.status === "fulfilled" && Array.isArray(mx.value)) setPlayerMaxes(mx.value as PlayerMax[]);
+      if (ex.status === "fulfilled" && Array.isArray(ex.value)) setExercises(ex.value as StrengthExercise[]);
+    }).finally(() => setLoading(false));
   }, [programId, week, day]);
 
   const handleLog = useCallback(async (
