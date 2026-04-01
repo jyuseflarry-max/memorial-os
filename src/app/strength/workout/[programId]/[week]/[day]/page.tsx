@@ -6,10 +6,20 @@ import { ChevronLeft, ChevronDown, ChevronUp, Video, Loader2, CheckCircle2 } fro
 import DashboardLayout from "@/components/DashboardLayout";
 import type { StrengthProgram, ProgramBlock, WorkoutLogEntry } from "@/types/strength";
 
+interface PlayerMax {
+  exercise_id: string;
+  estimated_1rm: number;
+}
+
 // Extract YouTube video ID from URL
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
+}
+
+// Round to nearest 5 lbs
+function roundTo5(n: number): number {
+  return Math.round(n / 5) * 5;
 }
 
 // ── Set logging row ────────────────────────────────────────────────────────
@@ -18,15 +28,18 @@ function SetRow({
   setNum,
   target,
   logged,
+  targetWeight,
   onLog,
 }: {
   setNum: number;
   target: string; // reps string from program e.g. "5" or "3-5"
   logged: WorkoutLogEntry | undefined;
+  targetWeight: number | null;
   onLog: (setNum: number, reps: number | null, weight: number | null) => void;
 }) {
+  const prefill = !logged && targetWeight ? String(targetWeight) : "";
   const [reps,   setReps]   = useState<string>(logged?.reps_completed?.toString() ?? "");
-  const [weight, setWeight] = useState<string>(logged?.weight_lbs?.toString() ?? "");
+  const [weight, setWeight] = useState<string>(logged?.weight_lbs?.toString() ?? prefill);
 
   function flush() {
     onLog(
@@ -39,28 +52,38 @@ function SetRow({
   const isDone = logged?.reps_completed != null;
 
   return (
-    <div className={`grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 items-center px-3 py-2 rounded-lg transition-colors ${isDone ? "bg-green-900/20 border border-green-800/30" : "bg-gray-800/60 border border-gray-700/60"}`}>
-      <span className={`text-xs font-mono font-bold ${isDone ? "text-green-400" : "text-gray-500"}`}>{setNum}</span>
-      <span className="text-xs text-gray-500 font-mono">{target}</span>
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] font-mono text-gray-600 uppercase">lbs</span>
-        <input
-          type="number" inputMode="decimal" placeholder="0"
-          value={weight}
-          onChange={e => setWeight(e.target.value)}
-          onBlur={flush}
-          className="bg-transparent border-b border-gray-600 text-white text-sm focus:outline-none focus:border-coaches-red text-center w-full"
-        />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] font-mono text-gray-600 uppercase">reps</span>
-        <input
-          type="number" inputMode="numeric" placeholder="0"
-          value={reps}
-          onChange={e => setReps(e.target.value)}
-          onBlur={flush}
-          className="bg-transparent border-b border-gray-600 text-white text-sm focus:outline-none focus:border-coaches-red text-center w-full"
-        />
+    <div className="flex flex-col gap-1">
+      {/* Target weight pill — shown when intensity is programmed and a max exists */}
+      {targetWeight !== null && !isDone && (
+        <div className="flex items-center gap-1.5 px-3">
+          <span className="text-[10px] font-mono text-coaches-red/80 bg-coaches-red/10 border border-coaches-red/20 rounded-full px-2 py-0.5">
+            Target: ~{targetWeight} lbs
+          </span>
+        </div>
+      )}
+      <div className={`grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 items-center px-3 py-2 rounded-lg transition-colors ${isDone ? "bg-green-900/20 border border-green-800/30" : "bg-gray-800/60 border border-gray-700/60"}`}>
+        <span className={`text-xs font-mono font-bold ${isDone ? "text-green-400" : "text-gray-500"}`}>{setNum}</span>
+        <span className="text-xs text-gray-500 font-mono">{target}</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[9px] font-mono text-gray-600 uppercase">lbs</span>
+          <input
+            type="number" inputMode="decimal" placeholder="0"
+            value={weight}
+            onChange={e => setWeight(e.target.value)}
+            onBlur={flush}
+            className="bg-transparent border-b border-gray-600 text-white text-sm focus:outline-none focus:border-coaches-red text-center w-full"
+          />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[9px] font-mono text-gray-600 uppercase">reps</span>
+          <input
+            type="number" inputMode="numeric" placeholder="0"
+            value={reps}
+            onChange={e => setReps(e.target.value)}
+            onBlur={flush}
+            className="bg-transparent border-b border-gray-600 text-white text-sm focus:outline-none focus:border-coaches-red text-center w-full"
+          />
+        </div>
       </div>
     </div>
   );
@@ -72,11 +95,13 @@ function ExerciseCard({
   block,
   index,
   logs,
+  maxByExercise,
   onLog,
 }: {
   block: ProgramBlock;
   index: number;
   logs: WorkoutLogEntry[];
+  maxByExercise: Map<string, number>;
   onLog: (exerciseId: string, setNum: number, reps: number | null, weight: number | null) => void;
 }) {
   const [cuesOpen, setCuesOpen] = useState(false);
@@ -85,6 +110,13 @@ function ExerciseCard({
   const allDone = completedSets >= block.sets;
 
   const ytId = block.demo_video_url ? getYouTubeId(block.demo_video_url) : null;
+
+  // Compute target weight from 1RM max and intensity_pct
+  const exerciseMax = maxByExercise.get(block.exercise_id) ?? null;
+  const targetWeight =
+    exerciseMax !== null && block.intensity_pct > 0
+      ? roundTo5(exerciseMax * block.intensity_pct / 100)
+      : null;
 
   return (
     <div className={`bg-gray-900 border rounded-2xl overflow-hidden transition-colors ${allDone ? "border-green-700/50" : "border-gray-700"}`}>
@@ -147,6 +179,7 @@ function ExerciseCard({
               setNum={s}
               target={block.reps}
               logged={logs.find(l => l.exercise_id === block.exercise_id && l.set_number === s)}
+              targetWeight={targetWeight}
               onLog={(setNum, reps, weight) => onLog(block.exercise_id, setNum, reps, weight)}
             />
           ))}
@@ -166,23 +199,29 @@ export default function WorkoutPage() {
   const { programId, week, day } = useParams<{ programId: string; week: string; day: string }>();
   const router = useRouter();
 
-  const [program,  setProgram]  = useState<StrengthProgram | null>(null);
-  const [logs,     setLogs]     = useState<WorkoutLogEntry[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [finished, setFinished] = useState(false);
+  const [program,     setProgram]     = useState<StrengthProgram | null>(null);
+  const [logs,        setLogs]        = useState<WorkoutLogEntry[]>([]);
+  const [playerMaxes, setPlayerMaxes] = useState<PlayerMax[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [finished,    setFinished]    = useState(false);
 
   const weekNum = parseInt(week);
   const dayNum  = parseInt(day);
 
   const blocks = (program?.blocks ?? []).filter(b => b.week === weekNum && b.day === dayNum);
 
+  // Build exercise_id → best 1RM lookup for the current player
+  const maxByExercise = new Map(playerMaxes.map(m => [m.exercise_id, m.estimated_1rm]));
+
   useEffect(() => {
     Promise.all([
       fetch(`/api/strength/programs/${programId}`).then(r => r.json()),
       fetch(`/api/strength/workout-log?program_id=${programId}&week=${week}&day=${day}`).then(r => r.json()),
-    ]).then(([p, l]) => {
-      if (!p.error) setProgram(p);
-      if (Array.isArray(l)) setLogs(l);
+      fetch(`/api/strength/maxes?player_id=me`).then(r => r.json()),
+    ]).then(([p, l, mx]) => {
+      if (!p.error) setProgram(p as StrengthProgram);
+      if (Array.isArray(l)) setLogs(l as WorkoutLogEntry[]);
+      if (Array.isArray(mx)) setPlayerMaxes(mx as PlayerMax[]);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [programId, week, day]);
 
@@ -269,6 +308,7 @@ export default function WorkoutPage() {
                 block={block}
                 index={idx}
                 logs={logs.filter(l => l.exercise_id === block.exercise_id)}
+                maxByExercise={maxByExercise}
                 onLog={handleLog}
               />
             ))}

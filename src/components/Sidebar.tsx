@@ -29,6 +29,7 @@ import {
   Zap,
   Package,
   BookOpen,
+  Target,
 } from "lucide-react";
 import { logout } from "@/actions/auth";
 import { usePlayers } from "@/context/PlayerContext";
@@ -91,6 +92,7 @@ const NAV_GROUPS = [
       { label: "Dashboard",   href: "/strength",             icon: Flame,     pageKey: "strength" },
       { label: "Leaderboard", href: "/strength/leaderboard", icon: Trophy,    pageKey: "leaderboard" },
       { label: "Programs",    href: "/strength/programs",    icon: Dumbbell,  pageKey: "strength_programs" },
+      { label: "Maxes",       href: "/strength/maxes",       icon: Target,    pageKey: "strength_maxes" },
       { label: "Library",     href: "/strength/library",     icon: BookOpen,  pageKey: "strength_library" },
     ],
   },
