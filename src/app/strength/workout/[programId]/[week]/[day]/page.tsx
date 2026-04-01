@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, TrendingUp } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import type { StrengthProgram, ProgramBlock, WorkoutLogEntry, StrengthExercise } from "@/types/strength";
 
@@ -409,10 +409,16 @@ export default function WorkoutPage() {
         <CheckCircle2 size={56} className="text-green-400" />
         <h2 className="text-white text-2xl font-bold">Session Complete!</h2>
         <p className="text-gray-400 text-sm font-mono">Week {weekNum} · Session {sessionLabel} · {loggedSets}/{totalSets} sets logged</p>
-        <button onClick={() => router.push(`/strength/programs/${programId}`)}
-          className="mt-4 px-6 py-2.5 bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold rounded-xl transition-colors">
-          Back to Program
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+          <button onClick={() => router.push(`/strength/programs/${programId}`)}
+            className="px-6 py-2.5 bg-coaches-red hover:bg-coaches-red-dark text-white text-sm font-semibold rounded-xl transition-colors">
+            Back to Program
+          </button>
+          <button onClick={() => router.push("/strength/progress")}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-sm font-semibold rounded-xl transition-colors">
+            <TrendingUp size={15} /> View My Progress
+          </button>
+        </div>
       </div>
     </DashboardLayout>
   );

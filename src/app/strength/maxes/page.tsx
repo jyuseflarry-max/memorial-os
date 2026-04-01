@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Loader2, Plus, X, Check } from "lucide-react";
+import { Loader2, Plus, X, Check, TrendingUp } from "lucide-react";
 import type { StrengthExercise } from "@/types/strength";
+import LiftProgressChart from "@/components/LiftProgressChart";
 
 interface Player {
   id: string;
@@ -206,6 +207,7 @@ export default function MaxesPage() {
   const [modalOpen,     setModalOpen]     = useState(false);
   const [modalPlayer,   setModalPlayer]   = useState("");
   const [modalExercise, setModalExercise] = useState("");
+  const [expandedChart, setExpandedChart] = useState<string | null>(null); // player_id
 
   // Only primary lifts for the exercise filter tabs
   const primaryLifts = exercises
@@ -354,59 +356,74 @@ export default function MaxesPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-800/60">
                     {sortedPlayers.map(player => {
-                      const record = maxMap.get(player.id);
+                      const record      = maxMap.get(player.id);
+                      const chartOpen   = expandedChart === player.id;
                       return (
-                        <tr
-                          key={player.id}
-                          className="hover:bg-gray-800/30 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-gray-500 text-sm font-mono">
-                            {player.jersey_number ?? "—"}
-                          </td>
-                          <td className="px-4 py-3 text-white text-sm font-medium">
-                            {player.name}
-                          </td>
-                          <td className="px-4 py-3">
-                            {record ? (
-                              <span className="text-white font-bold text-sm">
-                                {record.estimated_1rm.toFixed(1)}{" "}
-                                <span className="text-gray-500 font-normal text-xs">
-                                  lbs
+                        <>
+                          <tr
+                            key={player.id}
+                            className="hover:bg-gray-800/30 transition-colors"
+                          >
+                            <td className="px-4 py-3 text-gray-500 text-sm font-mono">
+                              {player.jersey_number ?? "—"}
+                            </td>
+                            <td className="px-4 py-3 text-white text-sm font-medium">
+                              {player.name}
+                            </td>
+                            <td className="px-4 py-3">
+                              {record ? (
+                                <span className="text-white font-bold text-sm">
+                                  {record.estimated_1rm.toFixed(1)}{" "}
+                                  <span className="text-gray-500 font-normal text-xs">lbs</span>
                                 </span>
-                              </span>
-                            ) : (
-                              <span className="text-gray-700 text-sm font-mono">
-                                —
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 text-sm font-mono">
-                            {record
-                              ? `${record.weight_lbs} × ${record.reps}`
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 text-xs font-mono">
-                            {record
-                              ? new Date(record.recorded_at).toLocaleDateString()
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => openModal(player.id, selectedEx)}
-                              className="text-[11px] font-mono text-gray-600 hover:text-coaches-red transition-colors"
-                            >
-                              {record ? "Update" : "+ Log"}
-                            </button>
-                          </td>
-                        </tr>
+                              ) : (
+                                <span className="text-gray-700 text-sm font-mono">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-gray-400 text-sm font-mono">
+                              {record ? `${record.weight_lbs} × ${record.reps}` : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 text-xs font-mono">
+                              {record ? new Date(record.recorded_at).toLocaleDateString() : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2 justify-end">
+                                {record && (
+                                  <button
+                                    onClick={() => setExpandedChart(chartOpen ? null : player.id)}
+                                    className={`p-1.5 rounded-lg transition-colors ${chartOpen ? "text-coaches-blue bg-coaches-blue/10" : "text-gray-600 hover:text-coaches-blue hover:bg-coaches-blue/10"}`}
+                                    title="View progress chart"
+                                  >
+                                    <TrendingUp size={13} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => openModal(player.id, selectedEx)}
+                                  className="text-[11px] font-mono text-gray-600 hover:text-coaches-red transition-colors"
+                                >
+                                  {record ? "Update" : "+ Log"}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {chartOpen && (
+                            <tr key={`${player.id}-chart`}>
+                              <td colSpan={7} className="px-4 pb-4 bg-gray-900/50">
+                                <LiftProgressChart
+                                  playerId={player.id}
+                                  exerciseId={selectedEx}
+                                  exerciseName={`${player.name} — ${selectedExercise?.name}`}
+                                  color="var(--color-coaches-red)"
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       );
                     })}
                     {players.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={6}
-                          className="text-center text-gray-600 font-mono text-sm py-10"
-                        >
+                        <td colSpan={7} className="text-center text-gray-600 font-mono text-sm py-10">
                           No players found.
                         </td>
                       </tr>
