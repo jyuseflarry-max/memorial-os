@@ -3,11 +3,11 @@ import { getSupabaseUser, getSupabaseServer } from "@/lib/supabase/server";
 
 /**
  * GET /api/conversations/unread-count
- * Returns { count: number } — the number of conversations with unread messages.
+ * Returns { count: number } — number of conversations with an unread message.
  *
- * This is a lightweight alternative to GET /api/conversations that the
- * unread badge uses. It runs 2 queries instead of 4 and skips the full
- * participant profile joins that the conversation list needs.
+ * Now reads conversations.last_message_{at,sender_id} directly. The previous
+ * implementation scanned the messages table for every conversation the user
+ * was in; this version is two bounded queries regardless of message volume.
  */
 export async function GET() {
   const userClient = await getSupabaseUser();
@@ -22,7 +22,6 @@ export async function GET() {
     .single();
   if (!profile) return NextResponse.json({ count: 0 });
 
-  // Q1: all conversations the user is in, with their last-read timestamp
   const { data: participations } = await sb
     .from("conversation_participants")
     .select("conversation_id, last_read_at")
@@ -36,30 +35,17 @@ export async function GET() {
     participations.map((p) => [p.conversation_id, p.last_read_at])
   );
 
-  // Q2: latest message per conversation, from other users only.
-  // Order DESC so the first occurrence per conv_id is the most recent.
-  const { data: messages } = await sb
-    .from("messages")
-    .select("conversation_id, sender_id, created_at")
-    .in("conversation_id", convIds)
-    .eq("is_deleted", false)
-    .neq("sender_id", user.id)
-    .order("created_at", { ascending: false });
-
-  // Keep only the newest message from others per conversation
-  const latestByConv = new Map<string, string>(); // conv_id → created_at
-  for (const msg of messages ?? []) {
-    if (!latestByConv.has(msg.conversation_id)) {
-      latestByConv.set(msg.conversation_id, msg.created_at);
-    }
-  }
+  const { data: convs } = await sb
+    .from("conversations")
+    .select("id, last_message_at, last_message_sender_id")
+    .in("id", convIds);
 
   let count = 0;
-  for (const convId of convIds) {
-    const latestAt = latestByConv.get(convId);
-    if (!latestAt) continue;
-    const lastRead = lastReadMap[convId];
-    if (!lastRead || latestAt > lastRead) count++;
+  for (const c of convs ?? []) {
+    if (!c.last_message_at) continue;
+    if (c.last_message_sender_id === user.id) continue;
+    const lastRead = lastReadMap[c.id];
+    if (!lastRead || c.last_message_at > lastRead) count++;
   }
 
   return NextResponse.json({ count });

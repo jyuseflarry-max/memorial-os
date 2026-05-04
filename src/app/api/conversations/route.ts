@@ -4,12 +4,21 @@ import { apiError }           from "@/lib/api-error";
 import { getSupabaseServer }  from "@/lib/supabase/server";
 import { findOrCreate1on1 }   from "@/lib/conversations";
 
-// GET /api/conversations — list all conversations for the current user
+// GET /api/conversations — list all conversations for the current user.
+//
+// Reads conversations.last_message_{at,preview,sender_id} directly instead
+// of scanning every row in `messages`. The previous implementation returned
+// O(total messages across all the user's threads), which was unbounded for
+// staff in many group conversations. We now do four bounded queries:
+//   Q1: participations (the user's threads + last_read_at)
+//   Q2: conversations  (denorm columns, ordered by last_message_at)
+//   Q3: participants   (other members per thread, for display)
+//   Q4: profiles       (names/roles for those members)
+// Q2-Q4 run in parallel since they only depend on convIds.
 export async function GET() {
   const db = await getDb();
   const sb = getSupabaseServer();
 
-  // Get all conversation IDs the user participates in
   const { data: participations } = await sb
     .from("conversation_participants")
     .select("conversation_id, last_read_at")
@@ -21,64 +30,54 @@ export async function GET() {
   }
 
   const convIds = participations.map((p) => p.conversation_id);
+  const lastReadMap = Object.fromEntries(
+    participations.map((p) => [p.conversation_id, p.last_read_at])
+  );
 
-  // Fetch participants and last messages in parallel — both only depend on convIds
-  const [{ data: participants }, { data: lastMessages }] = await Promise.all([
+  const [{ data: convs }, { data: parts }] = await Promise.all([
+    sb
+      .from("conversations")
+      .select("id, title, last_message_at, last_message_preview, last_message_sender_id")
+      .in("id", convIds)
+      .order("last_message_at", { ascending: false, nullsFirst: false }),
     sb
       .from("conversation_participants")
       .select("conversation_id, user_id")
       .in("conversation_id", convIds),
-    sb
-      .from("messages")
-      .select("id, conversation_id, sender_id, body, created_at")
-      .in("conversation_id", convIds)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false }),
   ]);
 
-  // Fetch user profiles for all participants (depends on participants result above)
-  const allUserIds = [...new Set((participants ?? []).map((p) => p.user_id))];
-  const { data: userProfiles } = await sb
+  const allUserIds = [...new Set((parts ?? []).map((p) => p.user_id))];
+  const { data: profiles } = await sb
     .from("users")
     .select("id, full_name, role")
     .in("id", allUserIds);
 
-  const profileMap = Object.fromEntries((userProfiles ?? []).map((u) => [u.id, u]));
-
-  // Build conversation objects
-  const lastMsgMap: Record<string, typeof lastMessages extends (infer T)[] | null ? T : never> = {};
-  for (const msg of lastMessages ?? []) {
-    if (!lastMsgMap[msg.conversation_id]) lastMsgMap[msg.conversation_id] = msg;
-  }
+  const profileMap = Object.fromEntries((profiles ?? []).map((u) => [u.id, u]));
 
   const participantMap: Record<string, string[]> = {};
-  for (const p of participants ?? []) {
-    if (!participantMap[p.conversation_id]) participantMap[p.conversation_id] = [];
-    participantMap[p.conversation_id].push(p.user_id);
+  for (const p of parts ?? []) {
+    (participantMap[p.conversation_id] ??= []).push(p.user_id);
   }
 
-  const lastReadMap = Object.fromEntries(participations.map((p) => [p.conversation_id, p.last_read_at]));
+  const conversations = (convs ?? []).map((c) => {
+    const otherIds = (participantMap[c.id] ?? []).filter((uid) => uid !== db.userId);
+    const others = otherIds.map((uid) => profileMap[uid]).filter(Boolean);
+    const lastReadAt = lastReadMap[c.id];
 
-  const conversations = convIds.map((id) => {
-    const otherUserIds = (participantMap[id] ?? []).filter((uid) => uid !== db.userId);
-    const otherUsers = otherUserIds.map((uid) => profileMap[uid]).filter(Boolean);
-    const lastMsg = lastMsgMap[id] ?? null;
-    const lastReadAt = lastReadMap[id];
-    const hasUnread = lastMsg && (!lastReadAt || lastMsg.created_at > lastReadAt) && lastMsg.sender_id !== db.userId;
+    const lastMessage = c.last_message_at
+      ? {
+          body:        c.last_message_preview ?? "",
+          created_at:  c.last_message_at,
+          sender_id:   c.last_message_sender_id,
+        }
+      : null;
 
-    return {
-      id,
-      participants: otherUsers,
-      lastMessage: lastMsg,
-      hasUnread,
-    };
-  });
+    const hasUnread =
+      !!c.last_message_at
+      && c.last_message_sender_id !== db.userId
+      && (!lastReadAt || c.last_message_at > lastReadAt);
 
-  // Sort by last message date desc
-  conversations.sort((a, b) => {
-    const aTime = a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0;
-    const bTime = b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0;
-    return bTime - aTime;
+    return { id: c.id, participants: others, lastMessage, hasUnread };
   });
 
   return NextResponse.json(conversations);
@@ -120,7 +119,6 @@ export async function POST(req: Request) {
   const convId = await findOrCreate1on1(db.userId, recipientId, db.tenantId);
   if (!convId) return apiError("Failed to create conversation", 500);
 
-  // Determine if the conversation already existed
   const { data: participants } = await sb
     .from("conversation_participants")
     .select("conversation_id")

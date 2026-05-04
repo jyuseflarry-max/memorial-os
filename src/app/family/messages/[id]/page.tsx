@@ -43,7 +43,8 @@ export default function FamilyMessageThreadPage({ params }: { params: Promise<{ 
     fetch(`/api/conversations/${id}/messages`)
       .then((r) => r.json())
       .then((data) => {
-        setMessages(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : (data?.messages ?? []);
+        setMessages(list);
         setLoading(false);
       });
   }, [id]);
@@ -61,7 +62,8 @@ export default function FamilyMessageThreadPage({ params }: { params: Promise<{ 
         { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` },
         () => {
           fetch(`/api/conversations/${id}/messages`).then((r) => r.json()).then((data) => {
-            if (Array.isArray(data)) setMessages(data);
+            const list = Array.isArray(data) ? data : (data?.messages ?? null);
+            if (list) setMessages(list);
           });
         }
       )
@@ -76,11 +78,14 @@ export default function FamilyMessageThreadPage({ params }: { params: Promise<{ 
     const res = await fetch(`/api/conversations/${id}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, client_uuid: crypto.randomUUID() }),
     });
     if (res.ok) {
       const msg = await res.json();
-      setMessages((prev) => [...prev, { ...msg, sender: { id: authUser?.id ?? "", full_name: authUser?.fullName ?? "", role: authUser?.role ?? "" } }]);
+      setMessages((prev) => prev.some((m) => m.id === msg.id)
+        ? prev
+        : [...prev, { ...msg, sender: { id: authUser?.id ?? "", full_name: authUser?.fullName ?? "", role: authUser?.role ?? "" } }]
+      );
       setBody("");
       inputRef.current?.focus();
     }
